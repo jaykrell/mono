@@ -1320,3 +1320,19 @@ MINI_OP(OP_GET_LAST_ERROR, "get_last_error", IREG, NONE, NONE)
  * should be enough to locate arguments and variables.
  */
 MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
+
+
+/* Rotates analogous to shifts. */
+MINI_OP(OP_IROL,        "int_rol",      IREG, IREG, IREG)
+MINI_OP(OP_IROR,        "int_ror",      IREG, IREG, IREG)
+MINI_OP(OP_IROL_IMM,    "int_rol_imm",  IREG, IREG, NONE)
+MINI_OP(OP_IROR_IMM,    "int_ror_imm",  IREG, IREG, NONE)
+MINI_OP(OP_LROL,        "long_rol",     LREG, LREG, IREG)
+MINI_OP(OP_LROR,        "long_ror",     LREG, LREG, IREG)
+MINI_OP(OP_LROL_IMM,    "long_rol_imm", LREG, LREG, NONE)
+MINI_OP(OP_LROR_IMM,    "long_ror_imm", LREG, LREG, NONE)
+/* Native word size -- int or long. */
+MINI_OP(OP_ROL_IMM,     "rol_imm",      IREG, IREG, NONE)
+MINI_OP(OP_ROR_IMM,     "ror_imm",      IREG, IREG, NONE)
+
+MINI_OP(OP_READ_TIME_STAMP_COUNTER, "rdtsc", LREG, NONE, NONE) // x86 rdtsc

@@ -1138,6 +1138,33 @@ typedef union {
 #define amd64_movsd_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_movsd(inst); amd64_codegen_post(inst); } while (0)
 #define amd64_prefix_size(inst,p,size) do { x86_prefix((inst), p); } while (0)
 #define amd64_rdtsc_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_rdtsc(inst); amd64_codegen_post(inst); } while (0)
+
+/* This is a bit of a hack, but possibly the best approach.
+What seems ideal is to use edx:eax regpair, but amd64 otherwise has no
+regpairs. The approach precludes optimizing:
+	(uint)ReadTimeStampCounter
+to throw out the upper half, and skip the shl/or, but
+even Visual C++ fails that, and it wraps around in a few seconds or less
+so is of very limited use.
+
+Instead unconditionally form the full 64bit value and
+declare in cpu-amd64.md that rdtsc clobbers rdx, which is true anyway.
+
+	0F 31              rdtsc
+	48 C1 E2 20        shl         rdx,20h
+	48 0B C2           or          rax,rdx
+*/
+#define amd64_rdtsc_no_regpair_workaround(inst) \
+	do {	\
+		amd64_codegen_pre(inst); \
+		*(inst)++ = 0x0f;	\
+		*(inst)++ = 0x31;	\
+		amd64_shift_reg_imm (code, X86_SHL, AMD64_RDX, 32); \
+		amd64_alu_reg_reg (code, X86_OR, AMD64_RAX, AMD64_RDX); \
+		amd64_codegen_post(inst); \
+	} while (0)
+
+
 #define amd64_cmpxchg_reg_reg_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_cmpxchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_cmpxchg_mem_reg_size(inst,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_cmpxchg_mem_reg((inst),(mem),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_cmpxchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_cmpxchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)

@@ -4752,13 +4752,19 @@ static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 #ifdef MONO_ARCH_SIMD_INTRINSICS
-	MonoInst *ins = NULL;
-
 	if (cfg->opt & MONO_OPT_SIMD) {
-		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+    	MonoInst *ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
 			return ins;
 	}
+#endif
+
+#ifdef MONO_ARCH_MONOEXT
+
+    MonoInst *ins = mono_handle_monoext (cfg, cmethod, fsig, args);
+    if (ins)
+        return ins;
+
 #endif
 
 	return mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
@@ -5820,6 +5826,14 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		if (ins)
 			return ins;
 	}
+#endif
+
+#ifdef MONO_ARCH_MONOEXT
+
+    ins = mono_handle_monoext (cfg, cmethod, fsig, args);
+    if (ins)
+        return ins;
+
 #endif
 
 	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
@@ -12870,6 +12884,15 @@ mono_op_to_op_imm (int opcode)
 		return OP_ISHR_IMM;
 	case OP_ISHR_UN:
 		return OP_ISHR_UN_IMM;
+
+	case OP_IROL:
+		return OP_IROL_IMM;
+	case OP_IROR:
+		return OP_IROR_IMM;
+	case OP_LROL:
+		return OP_LROL_IMM;
+	case OP_LROR:
+		return OP_LROR_IMM;
 
 	case OP_LADD:
 		return OP_LADD_IMM;

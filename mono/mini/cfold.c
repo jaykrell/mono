@@ -53,6 +53,11 @@ mono_is_power_of_two (guint32 val)
 	    dest->inst_c0 = arg1->inst_c0 op ins->inst_imm;	\
         break;
 
+#define FOLD_BINFUN_IMM(name, function) \
+	case name:	\
+	    dest->inst_c0 = function(arg1->inst_c0, ins->inst_imm);	\
+        break;
+
 #define FOLD_BINOPC2_IMM(name, op, cast) \
 	case name:	\
 	    dest->inst_c0 = (cast)arg1->inst_c0 op (cast)ins->inst_imm;	\
@@ -71,6 +76,17 @@ mono_is_power_of_two (guint32 val)
 } while (0)
 
 #ifndef DISABLE_JIT
+
+#define MONO_ROTATE(type, name, direction, other_direction) \
+static type name(type value, int count)						\
+{															\
+	return (value direction count) | (value other_direction (sizeof(type) * 8 - count)); \
+}
+
+MONO_ROTATE(guint32, mono_rotate_left_32 , <<, >>)
+MONO_ROTATE(guint32, mono_rotate_right_32, >>, <<)
+MONO_ROTATE(guint64, mono_rotate_left_64 , <<, >>)
+MONO_ROTATE(guint64, mono_rotate_right_64, >>, <<)
 
 /**
  * mono_constant_fold_ins:
@@ -131,6 +147,12 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	case OP_ISHR_IMM:
 	case OP_ISHR_UN_IMM:
 	case OP_SHL_IMM:
+#if SIZEOF_REGISTER == 4
+	case OP_ROL_IMM:
+	case OP_ROR_IMM:
+#endif
+	case OP_IROL_IMM:
+	case OP_IROR_IMM:
 		if (arg1->opcode == OP_ICONST) {
 			ALLOC_DEST (cfg, dest, ins);
 			switch (ins->opcode) {
@@ -144,11 +166,53 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOPC2_IMM (OP_ISHR_IMM, >>, gint32);
 				FOLD_BINOPC2_IMM (OP_ISHR_UN_IMM, >>, guint32);
 				FOLD_BINOP2_IMM (OP_SHL_IMM, <<);
+				FOLD_BINFUN_IMM (OP_IROL_IMM, mono_rotate_left_32);
+				FOLD_BINFUN_IMM (OP_IROR_IMM, mono_rotate_right_32);
+#if SIZEOF_REGISTER == 4
+				FOLD_BINFUN_IMM (OP_ROL_IMM, mono_rotate_left_32);
+				FOLD_BINFUN_IMM (OP_ROR_IMM, mono_rotate_right_32);
+#endif
 			}
 			dest->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (dest);
 		}
 		break;
+
+#if SIZEOF_REGISTER == 8
+	case OP_ROL_IMM:
+	case OP_ROR_IMM:
+#endif
+	case OP_LROL_IMM:
+	case OP_LROR_IMM:
+		if (arg1->opcode != OP_I8CONST)
+			break;
+		ALLOC_DEST (cfg, dest, ins);
+		switch (ins->opcode) {
+#if SIZEOF_REGISTER == 8
+			FOLD_BINFUN_IMM (OP_ROL_IMM, mono_rotate_left_64);
+			FOLD_BINFUN_IMM (OP_ROR_IMM, mono_rotate_right_64);
+#endif
+			FOLD_BINFUN_IMM (OP_LROL_IMM, mono_rotate_left_64);
+			FOLD_BINFUN_IMM (OP_LROR_IMM, mono_rotate_right_64);
+		}
+		dest->opcode = OP_I8CONST;
+		MONO_INST_NULLIFY_SREGS (dest);
+		break;
+
+	// NOTE: For other operations, convert to immediate is done by mono_method_to_ir.
+    // Rotate does not occur in IL so this cannot be there.
+	case OP_IROL:
+	case OP_IROR:
+	case OP_LROL:
+	case OP_LROR:
+		if (arg2->opcode != OP_ICONST)
+			break;
+		ALLOC_DEST (cfg, dest, ins);
+		dest->opcode = mono_op_to_op_imm (ins->opcode);
+		dest->inst_imm = arg2->inst_c0;
+		dest->sreg2 = -1;
+		break;
+
 	case OP_ISUB:
 	case OP_ISHL:
 	case OP_ISHR:
@@ -223,10 +287,11 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 		break;
 	case OP_MOVE:
 #if SIZEOF_REGISTER == 8
-		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST)) {
+		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST))
 #else
-		if (arg1->opcode == OP_ICONST) {
+		if (arg1->opcode == OP_ICONST)
 #endif
+		{
 			ALLOC_DEST (cfg, dest, ins);
 			dest->opcode = arg1->opcode;
 			MONO_INST_NULLIFY_SREGS (dest);
@@ -400,9 +465,9 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	default:
 		return NULL;
 	}
-		
-    return dest;
-}	
 
+
+	return dest;
+}
 
 #endif /* DISABLE_JIT */

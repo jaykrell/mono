@@ -1198,6 +1198,22 @@ if test "x$mono_feature_disable_simd" = "xyes"; then
 	AC_MSG_NOTICE([Disabled SIMD support])
 fi
 
+if test "x$mono_feature_disable_monoext" = "xyes"; then
+	AC_DEFINE(DISABLE_MONOEXT, 1, [Disable MonoExt (DebugBreak, ReadTimeStampCounter).])
+	AC_MSG_NOTICE([Disabled MonoExt break, rdtsc.])
+fi
+
+if test "x$mono_feature_disable_monoext_rotate" = "xyes"; then
+	AC_DEFINE(DISABLE_ROTATE_INTRINSICS, 1, [Disable rotate intrinsics (in MonoExt).])
+	AC_MSG_NOTICE([Disabled rotate intrinscs (in MonoExt).])
+fi
+
+# TODO
+#if test "x$mono_feature_disable_opt_rotate" = "xyes"; then
+#	AC_DEFINE(DISABLE_OPT_ROTATE, 1, [Disable JIT compiler recognition of rotate patterns.])
+#	AC_MSG_NOTICE([Disabled JIT rotate optimization.])
+#fi
+
 if test "x$mono_feature_disable_soft_debug" = "xyes"; then
 	AC_DEFINE(DISABLE_SOFT_DEBUG, 1, [Disable Soft Debugger Agent.])
 	AC_MSG_NOTICE([Disabled Soft Debugger.])

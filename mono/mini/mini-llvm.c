@@ -8273,7 +8273,7 @@ add_intrinsics (LLVMModuleRef module)
 {
 	int i;
 
-	/* Emit declarations of instrinsics */
+	/* Emit declarations of intrinsics */
 	/*
 	 * It would be nicer to emit only the intrinsics actually used, but LLVM's Module
 	 * type doesn't seem to do any locking.

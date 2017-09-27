@@ -4246,11 +4246,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->sreg2 == AMD64_RCX);
 			amd64_shift_reg (code, X86_SAR, ins->dreg);
 			break;
+
+		case OP_LROL:
+			g_assert (ins->sreg2 == AMD64_RCX);
+			amd64_shift_reg (code, X86_ROL, ins->dreg);
+			break;
+
+        case OP_LROR:
+			g_assert (ins->sreg2 == AMD64_RCX);
+			amd64_shift_reg (code, X86_ROR, ins->dreg);
+			break;
+
 		case OP_SHR_IMM:
 		case OP_LSHR_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SAR, ins->dreg, ins->inst_imm);
 			break;
+
+		case OP_ROR_IMM:
+		case OP_LROR_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
+			break;
+
 		case OP_SHR_UN_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, ins->inst_imm, 4);
@@ -4267,6 +4285,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LSHL_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SHL, ins->dreg, ins->inst_imm);
+			break;
+
+		case OP_ROL_IMM:
+		case OP_LROL_IMM:
+			g_assert (amd64_is_imm32 (ins->inst_imm));
+			amd64_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
 			break;
 
 		case OP_IADDCC:
@@ -4340,6 +4364,23 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHL_IMM:
 			amd64_shift_reg_imm_size (code, X86_SHL, ins->dreg, ins->inst_imm, 4);
 			break;
+
+		case OP_IROL:
+			g_assert (ins->sreg2 == AMD64_RCX);
+			amd64_shift_reg_size (code, X86_ROL, ins->dreg, 4);
+			break;
+		case OP_IROR:
+			g_assert (ins->sreg2 == AMD64_RCX);
+			amd64_shift_reg_size (code, X86_ROR, ins->dreg, 4);
+			break;
+
+		case OP_IROL_IMM:
+			amd64_shift_reg_imm_size (code, X86_ROL, ins->dreg, ins->inst_imm, 4);
+			break;
+		case OP_IROR_IMM:
+			amd64_shift_reg_imm_size (code, X86_ROR, ins->dreg, ins->inst_imm, 4);
+			break;
+
 		case OP_IMUL:
 			amd64_imul_reg_reg_size (code, ins->sreg1, ins->sreg2, 4);
 			break;
@@ -6440,6 +6481,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) || i == AMD64_RSP)
 					amd64_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, gregs) + i * sizeof (mgreg_t), i, sizeof (mgreg_t));
 			break;
+
+		case OP_READ_TIME_STAMP_COUNTER:
+			amd64_rdtsc_no_regpair_workaround (code);
+			break;
+
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

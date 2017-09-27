@@ -118,7 +118,14 @@ struct sigcontext {
 #define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
+#ifndef DISABLE_MONOEXT
+#define MONO_ARCH_MONOEXT 1
+#endif
 
+#ifndef DISABLE_ROTATE_INTRINSICS
+#define MONO_ARCH_MONOEXT 1
+#define MONO_ARCH_ROTATE_INTRINSICS 1
+#endif
 
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ

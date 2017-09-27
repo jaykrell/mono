@@ -3207,6 +3207,9 @@ MonoInst*   mono_emit_simd_field_load (MonoCompile *cfg, MonoClassField *field, 
 guint32     mono_arch_cpu_enumerate_simd_versions (void);
 void        mono_simd_intrinsics_init (void);
 
+/* Handle mono extensions such as rotate. */
+MonoInst*   mono_handle_monoext (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
+
 gboolean    mono_class_is_magic_int (MonoClass *klass);
 gboolean    mono_class_is_magic_float (MonoClass *klass);
 MonoInst*   mono_emit_native_types_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
@@ -3296,5 +3299,6 @@ void mono_interruption_checkpoint_from_trampoline (void);
 
 #endif
 
+const char * cvtMonoType(MonoTypeEnum t);
 
 #endif /* __MONO_MINI_H__ */
