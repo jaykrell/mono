@@ -4815,6 +4815,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHL:
 			ARM_SHL_REG (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+   /* TODOROTATE */
 		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
 			if (ins->inst_imm)

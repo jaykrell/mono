@@ -502,6 +502,7 @@ mono_op_imm_to_op (int opcode)
 		return OP_IXOR;
 	case OP_LXOR_IMM:
 		return OP_LXOR;
+/* TODOROTATE? */
 	case OP_ISHL_IMM:
 		return OP_ISHL;
 	case OP_LSHL_IMM:

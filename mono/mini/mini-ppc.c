@@ -3708,7 +3708,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		CASE_PPC64 (OP_LSHL)
 			ppc_shift_left (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-		case OP_SHL_IMM:
+/* TODOROTATE */
+        case OP_SHL_IMM:
 		case OP_ISHL_IMM:
 		CASE_PPC64 (OP_LSHL_IMM)
 			ppc_shift_left_imm (code, ins->dreg, ins->sreg1, MASK_SHIFT_IMM (ins->inst_imm));
