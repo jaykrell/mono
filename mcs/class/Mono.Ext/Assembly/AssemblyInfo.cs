@@ -47,4 +47,4 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible (false)]
 [assembly: NeutralResourcesLanguage ("en-US")]
 [assembly: AssemblyDelaySign(true)]
-[assembly: CLSCompliant(true)]
+[assembly: CLSCompliant(false)]

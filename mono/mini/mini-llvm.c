@@ -4868,7 +4868,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SHL_IMM:
 		case OP_SHR_IMM:
 		case OP_SHR_UN_IMM: {
-   /* TODOROTATE */
 			LLVMValueRef imm;
 
 			if (spec [MONO_INST_SRC1] == 'l') {
@@ -4936,7 +4935,6 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			case OP_ISHL_IMM:
 			case OP_LSHL_IMM:
 			case OP_SHL_IMM:
-   /* TODOROTATE */
 				values [ins->dreg] = LLVMBuildShl (builder, lhs, imm, dname);
 				break;
 			case OP_ISHR_IMM:
@@ -8275,7 +8273,7 @@ add_intrinsics (LLVMModuleRef module)
 {
 	int i;
 
-	/* Emit declarations of instrinsics */
+	/* Emit declarations of intrinsics */
 	/*
 	 * It would be nicer to emit only the intrinsics actually used, but LLVM's Module
 	 * type doesn't seem to do any locking.

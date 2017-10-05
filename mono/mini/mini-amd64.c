@@ -46,20 +46,6 @@
 #include "debugger-agent.h"
 #include "mini-gc.h"
 
-volatile int jk_debug_noopt; // help not be optimized
-
-void jk_no_opt(void * volatile a) // help not be optimized
-{
-    a = a;
-}
-
-void jk_debug(const char* volatile file, int volatile line, const char* volatile message) // and set a breakpoint here
-{
-	printf("jk_debug: %s(%d) %s\n", file, line, message);
-}
-
-#define JK_DEBUG(a) (jk_debug(__FILE__, __LINE__, (a)))
-
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;
 #else
@@ -3990,7 +3976,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_BREAK:
-			JK_DEBUG("OP_BREAK");
 			amd64_breakpoint (code);
 			break;
 		case OP_RELAXED_NOP:
@@ -4383,21 +4368,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_IROL:
 			g_assert (ins->sreg2 == AMD64_RCX);
-			JK_DEBUG("OP_IROL");
 			amd64_shift_reg_size (code, X86_ROL, ins->dreg, 4);
 			break;
 		case OP_IROR:
-			JK_DEBUG("OP_IROR");
 			g_assert (ins->sreg2 == AMD64_RCX);
 			amd64_shift_reg_size (code, X86_ROR, ins->dreg, 4);
 			break;
 
 		case OP_IROL_IMM:
-			JK_DEBUG("OP_IROL_IMM");
 			amd64_shift_reg_imm_size (code, X86_ROL, ins->dreg, ins->inst_imm, 4);
 			break;
 		case OP_IROR_IMM:
-			JK_DEBUG("OP_IROR_IMM");
 			amd64_shift_reg_imm_size (code, X86_ROR, ins->dreg, ins->inst_imm, 4);
 			break;
 
@@ -6503,8 +6484,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_READ_TIME_STAMP_COUNTER:
-			JK_DEBUG("OP_READ_TIME_STAMP_COUNTER");
-			x86_rdtsc (code);
+			amd64_rdtsc_no_regpair_workaround (code);
 			break;
 
 		default:
