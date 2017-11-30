@@ -4751,21 +4751,19 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+	MonoInst *ins = NULL;
+
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
-    	MonoInst *ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
+		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
 			return ins;
 	}
 #endif
 
-#ifdef MONO_ARCH_MONOEXT
-
-    MonoInst *ins = mono_handle_monoext (cfg, cmethod, fsig, args);
+    ins = mono_handle_monoext (cfg, cmethod, fsig, args);
     if (ins)
         return ins;
-
-#endif
 
 	return mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 }
@@ -5828,13 +5826,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 #endif
 
-#ifdef MONO_ARCH_MONOEXT
-
     ins = mono_handle_monoext (cfg, cmethod, fsig, args);
     if (ins)
         return ins;
-
-#endif
 
 	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)
@@ -9593,19 +9587,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case CEE_SHL:
 		case CEE_SHR:
 		case CEE_SHR_UN:
-
-        // case OP_ROL:
-        // case OP_IROL:
-        // case OP_LROL:
-        // case OP_ROR:
-        // case OP_IROR:
-        // case OP_LROR:
-        // NOTE: This is where "immediate op conversion" (add => add_imm) occurs
-        // for a lot of operations, however rotate cannot be converted here,
-        // as it the wrong level -- CEE IL -> IR instead of optimizing IR.
-        // This is what therefore motivates some of the inconsistency
-        // in how rotate is optimized vs. how shift, add, etc. is optimized.
-
 			CHECK_STACK (2);
 
 			MONO_INST_NEW (cfg, ins, (*ip));
@@ -12865,9 +12846,7 @@ store_membase_reg_to_store_membase_imm (int opcode)
 	}
 
 	return -1;
-}
-
-//void mono_op_to_op_imm_breakpoint() { }
+}		
 
 int
 mono_op_to_op_imm (int opcode)
@@ -12900,19 +12879,7 @@ mono_op_to_op_imm (int opcode)
 	case OP_ISHR_UN:
 		return OP_ISHR_UN_IMM;
 
-	case OP_IROL:
-		return OP_IROL_IMM;
-	case OP_IROR:
-		return OP_IROR_IMM;
-	case OP_LROL:
-		return OP_LROL_IMM;
-	case OP_LROR:
-		return OP_LROR_IMM;
-
 	case OP_LADD:
-        //printf("mono_op_to_op_imm OP_LADD_IMM\n");
-        //G_BREAKPOINT();
-        //mono_op_to_op_imm_breakpoint();
 		return OP_LADD_IMM;
 	case OP_LSUB:
 		return OP_LSUB_IMM;

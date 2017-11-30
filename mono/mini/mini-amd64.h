@@ -118,35 +118,7 @@ struct sigcontext {
 #define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
-// TODO DebugBreak / ReadTimeStampCounter
-// need API policing and then static and dynamic flags.
-//
-// The naming here is confusing but let's press on for now.
-//
-// Configure does not associate "rotate intrinsics" with "monoext".
-// Configure does associate DebugBreak and ReadTimeStampCounter with "monoext".
-// Internally, monoext is somewhat associated with both.
-//
-// Thee is no C-based or IL-based substitute for DebugBreak/ReadTimeStampCounter,
-// so disabling them and falling through to Mono.Ext.cs is not very sensible.
-// Whereas the rotate intrinsics do work ok without any runtime assistance,
-// via portable C#/IL.
-//
-// There is another very reasonable but as yet hypothetical way to implement
-// rotate -- by recognizing shift/or patterns in portable IL. The configury
-// and #defines should be named such as to accomodate names for that.
-//
-// The "pivot" is that "intrinsics" are recognized function names with
-// inline/optimized implementations, but that "optimize" or "opt" is
-// pattern recognization and optimization in the JIT or AOT.
-#ifndef DISABLE_MONOEXT
-#define MONO_ARCH_MONOEXT 1
-#endif
 
-#ifndef DISABLE_ROTATE_INTRINSICS
-#define MONO_ARCH_MONOEXT 1
-#define MONO_ARCH_ROTATE_INTRINSICS 1
-#endif
 
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ

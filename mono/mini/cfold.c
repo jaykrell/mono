@@ -48,21 +48,9 @@ mono_is_power_of_two (guint32 val)
 	    dest->inst_c0 = (cast)arg1->inst_c0 op (cast)arg2->inst_c0;	\
         break;
 
-#define FOLD_BINFUN(name, function) \
-	case name:	\
-        MONO_CFOLD_COVERAGE(); \
-	    dest->inst_c0 = function(arg1->inst_c0, arg2->inst_c0);	\
-        break;
-
 #define FOLD_BINOP2_IMM(name, op) \
 	case name:	\
 	    dest->inst_c0 = arg1->inst_c0 op ins->inst_imm;	\
-        break;
-
-#define FOLD_BINFUN_IMM(name, function) \
-	case name:	\
-        MONO_CFOLD_COVERAGE(); \
-	    dest->inst_c0 = function(arg1->inst_c0, ins->inst_imm);	\
         break;
 
 #define FOLD_BINOPC2_IMM(name, op, cast) \
@@ -84,44 +72,6 @@ mono_is_power_of_two (guint32 val)
 
 #ifndef DISABLE_JIT
 
-static void mono_cfold_coverage(guint line);
-#define MONO_CFOLD_COVERAGE() mono_cfold_coverage(__LINE__)
-
-static void mono_rotate_print_number(int64_t i)
-{
-    if (i >= 0)
-    {
-        if (i <= 10)
-        {
-	        printf("%" PRId64 " ", i);
-            return;
-        }
-	    printf("0x%" PRIX64 " ", i);
-        return;
-    }
-	printf("%" PRId64 " ", i);
-}
-
-#define MONO_ROTATE(type, name, direction, other_direction) \
-static type name(type value, int count)						\
-{															\
-    MONO_CFOLD_COVERAGE();                                  \
-	type const result = (value direction count) | (value other_direction (sizeof(type) * 8 - count)); \
-    if (0) { \
-        printf(#name " "); \
-        mono_rotate_print_number(value); \
-        mono_rotate_print_number(count); \
-        mono_rotate_print_number(result); \
-        printf("\n"); \
-    } \
-    return result; \
-}
-
-MONO_ROTATE(guint32, mono_rotate_left_32 , <<, >>)
-MONO_ROTATE(guint32, mono_rotate_right_32, >>, <<)
-MONO_ROTATE(guint64, mono_rotate_left_64 , <<, >>)
-MONO_ROTATE(guint64, mono_rotate_right_64, >>, <<)
-
 /**
  * mono_constant_fold_ins:
  *
@@ -129,10 +79,6 @@ MONO_ROTATE(guint64, mono_rotate_right_64, >>, <<)
  * true, then store the result back into INS and return INS. Otherwise allocate a new ins,
  * store the result into it and return it. If constant folding cannot be performed, return
  * NULL.
- *
- * Note that this function should/does optimize rotate more than other operations,
- * because other operations get optimizations in mono_method_to_ir.
- * i.e. convert to immediate opcodes.
  */
 MonoInst*
 mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoInst *arg2, gboolean overwrite)
@@ -185,12 +131,7 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	case OP_ISHR_IMM:
 	case OP_ISHR_UN_IMM:
 	case OP_SHL_IMM:
-#if SIZEOF_REGISTER == 4
-	case OP_ROL_IMM:
-	case OP_ROR_IMM:
-#endif
-	case OP_IROL_IMM:
-	case OP_IROR_IMM:
+    /* TODOROTATE */
 		if (arg1->opcode == OP_ICONST) {
 			ALLOC_DEST (cfg, dest, ins);
 			switch (ins->opcode) {
@@ -204,114 +145,27 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 				FOLD_BINOPC2_IMM (OP_ISHR_IMM, >>, gint32);
 				FOLD_BINOPC2_IMM (OP_ISHR_UN_IMM, >>, guint32);
 				FOLD_BINOP2_IMM (OP_SHL_IMM, <<);
-				FOLD_BINFUN_IMM (OP_IROL_IMM, mono_rotate_left_32);
-				FOLD_BINFUN_IMM (OP_IROR_IMM, mono_rotate_right_32);
-#if SIZEOF_REGISTER == 4
-				FOLD_BINFUN_IMM (OP_ROL_IMM, mono_rotate_left_32);
-				FOLD_BINFUN_IMM (OP_ROR_IMM, mono_rotate_right_32);
-#endif
 			}
 			dest->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (dest);
-        } else {
-            switch (ins->opcode) {
-#if SIZEOF_REGISTER == 4
-            case OP_ROL_IMM: MONO_CFOLD_COVERAGE(); break;
-            case OP_ROR_IMM: MONO_CFOLD_COVERAGE(); break;
-#endif
-            case OP_IROL_IMM: MONO_CFOLD_COVERAGE(); break;
-            case OP_IROR_IMM: MONO_CFOLD_COVERAGE(); break;
-            }
-        }
+		}
 		break;
-
-#if SIZEOF_REGISTER == 8
-	case OP_ROL_IMM:
-	case OP_ROR_IMM:
-#endif
-	case OP_LROL_IMM:
-	case OP_LROR_IMM:
-        if (arg1->opcode == OP_I8CONST) { // rotate constant by constant, convert to constant
+	case OP_ISUB:
+	case OP_ISHL:
+	case OP_ISHR:
+	case OP_ISHR_UN:
+		if ((arg1->opcode == OP_ICONST) && (arg2->opcode == OP_ICONST)) {
 			ALLOC_DEST (cfg, dest, ins);
 			switch (ins->opcode) {
-				FOLD_BINFUN_IMM (OP_LROL_IMM, mono_rotate_left_64);
-				FOLD_BINFUN_IMM (OP_LROR_IMM, mono_rotate_right_64);
+				FOLD_BINOP (OP_ISUB, -);
+				FOLD_BINOP (OP_ISHL, <<);
+				FOLD_BINOP (OP_ISHR, >>);
+				FOLD_BINOPC (OP_ISHR_UN, >>, guint32);
 			}
-			dest->opcode = OP_I8CONST;
+			dest->opcode = OP_ICONST;
 			MONO_INST_NULLIFY_SREGS (dest);
-        } else {
-            switch (ins->opcode) {
-#if SIZEOF_REGISTER == 8
-            case OP_ROL_IMM: MONO_CFOLD_COVERAGE(); break;
-            case OP_ROR_IMM: MONO_CFOLD_COVERAGE(); break;
-#endif
-            case OP_LROL_IMM: MONO_CFOLD_COVERAGE(); break;
-            case OP_LROR_IMM: MONO_CFOLD_COVERAGE(); break;
-            }
-        }
+		}
 		break;
-
-    // NOTE: More optimization of rotate belongs here than for other optimizations,
-    // because CEE_FOO => OP_FOO_IMM at the IL to IR level. We do not have rotate IL,
-    // but that is not a bad idea.
-	case OP_IROL:
-	case OP_IROR:
-        if (arg2->opcode == OP_ICONST) { // rotate by constant
-			ALLOC_DEST (cfg, dest, ins);
-#if 0 // efficient but redundant, will be handled later
-            if (arg1->opcode == OP_ICONST) { // rotate constant by constant, convert to constant
-			    switch (ins->opcode) {
-				    FOLD_BINFUN (OP_IROL, mono_rotate_left_32);
-				    FOLD_BINFUN (OP_IROR, mono_rotate_right_32);
-			    }
-			    dest->opcode = OP_ICONST;
-			    MONO_INST_NULLIFY_SREGS (dest);
-                MONO_CFOLD_COVERAGE();
-            } else
-#endif
-            { // convert to rotate by constant (immediate)
-				dest->opcode = mono_op_to_op_imm (ins->opcode);
-                dest->inst_imm = arg2->inst_c0;
-				dest->sreg2 = -1;
-                MONO_CFOLD_COVERAGE();
-		    }
-        } else {
-            switch (ins->opcode) {
-            case OP_IROL: MONO_CFOLD_COVERAGE(); break;
-            case OP_IROR: MONO_CFOLD_COVERAGE(); break;
-            }
-        }
-		break;
-
-	case OP_LROL:
-	case OP_LROR:
-        if (arg2->opcode == OP_ICONST) { // rotate 64bit by constant
-			ALLOC_DEST (cfg, dest, ins);
-#if 0 // efficient but redundant, will be handled later
-            if (arg1->opcode == OP_I8CONST) { // rotate 64bit constant by constant, convert to constant
-                switch (ins->opcode) {
-				    FOLD_BINFUN (OP_LROL, mono_rotate_left_64);
-				    FOLD_BINFUN (OP_LROR, mono_rotate_right_64);
-			    }
-			    dest->opcode = OP_I8CONST;
-			    MONO_INST_NULLIFY_SREGS (dest);
-                MONO_CFOLD_COVERAGE();
-            } else
-#endif
-            { // convert to rotate by constant (immediate)
-				dest->opcode = mono_op_to_op_imm (ins->opcode);
-                dest->inst_imm = arg2->inst_c0;
-				dest->sreg2 = -1;
-                MONO_CFOLD_COVERAGE();
-		    }
-        } else {
-            switch (ins->opcode) {
-            case OP_LROL: MONO_CFOLD_COVERAGE(); break;
-            case OP_IROR: MONO_CFOLD_COVERAGE(); break;
-            }
-        }
-		break;
-
 	case OP_IDIV:
 	case OP_IDIV_UN:
 	case OP_IREM:
@@ -370,11 +224,10 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 		break;
 	case OP_MOVE:
 #if SIZEOF_REGISTER == 8
-		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST))
+		if ((arg1->opcode == OP_ICONST) || (arg1->opcode == OP_I8CONST)) {
 #else
-		if (arg1->opcode == OP_ICONST)
+		if (arg1->opcode == OP_ICONST) {
 #endif
-        {
 			ALLOC_DEST (cfg, dest, ins);
 			dest->opcode = arg1->opcode;
 			MONO_INST_NULLIFY_SREGS (dest);
@@ -548,16 +401,9 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	default:
 		return NULL;
 	}
-    
+		
     return dest;
-}
+}	
 
-// THIS MUST BE LATE IN THE FILE TO AVOID OVERFLOW.
-static guint mono_cfold_coverage_data[__LINE__];
-
-static void mono_cfold_coverage(guint line)
-{
-    mono_cfold_coverage_data[line] += 1;
-}
 
 #endif /* DISABLE_JIT */

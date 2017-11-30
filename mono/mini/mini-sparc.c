@@ -2726,6 +2726,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHL:
 			sparc_sll (code, ins->sreg1, ins->sreg2, ins->dreg);
 			break;
+/* TODOROTATE */
 		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
 			if (ins->inst_imm < (1 << 5))

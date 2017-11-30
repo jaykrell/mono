@@ -3300,6 +3300,8 @@ void mono_interruption_checkpoint_from_trampoline (void);
 
 #endif
 
-const char * cvtMonoType(MonoTypeEnum t);
+void jk_debug(const char* volatile file, int volatile line, const char* volatile message); // and set a breakpoint here
+
+#define JK_DEBUG(a) (jk_debug(__FILE__, __LINE__, (a)))
 
 #endif /* __MONO_MINI_H__ */

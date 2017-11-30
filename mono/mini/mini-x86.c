@@ -2823,35 +2823,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IXOR_IMM:
 			x86_alu_reg_imm (code, X86_XOR, ins->sreg1, ins->inst_imm);
 			break;
-
-		case OP_IROL:
-			g_assert (ins->sreg2 == X86_ECX);
-			x86_shift_reg (code, X86_ROL, ins->dreg);
-			break;
-
-		case OP_IROR:
-			g_assert (ins->sreg2 == X86_ECX);
-			x86_shift_reg (code, X86_ROR, ins->dreg);
-			break;
-
-		case OP_LROL_IMM:
-			x86_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_LROR_IMM:
-			x86_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_IROL_IMM:
-		case OP_ROL_IMM:
-			x86_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_IROR_IMM:
-        case OP_ROR_IMM:
-			x86_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
-			break;
-
+/* TODOROTATE */
 		case OP_ISHL:
 			g_assert (ins->sreg2 == X86_ECX);
 			x86_shift_reg (code, X86_SHL, ins->dreg);

@@ -266,6 +266,8 @@ MINI_OP(OP_LSHL,    "long_shl", LREG, LREG, IREG)
 MINI_OP(OP_LSHR,    "long_shr", LREG, LREG, IREG)
 MINI_OP(OP_LSHR_UN, "long_shr_un", LREG, LREG, IREG)
 
+/* TBD MINI_OP(OP_LROR_UN, "long_shr_un", LREG, LREG, IREG) */
+
 /* 64 bit opcodes: must be in the same order as the matching CEE_ opcodes: unops_op_map */
 MINI_OP(OP_LNEG,       "long_neg", LREG, LREG, NONE)
 MINI_OP(OP_LNOT,       "long_not", LREG, LREG, NONE)

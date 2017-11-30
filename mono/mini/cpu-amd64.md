@@ -17,7 +17,7 @@
 #	f  floating point register
 #	a  EAX register
 #  d  EDX register
-#	l  long reg (forced eax:edx) (not implemented for amd64)
+#	l  long reg (forced eax:edx)
 #  s  ECX register
 #  c  register which can be used as a byte register (RAX..RDX)
 #  A - first arg reg (rdi/rcx)
@@ -812,7 +812,5 @@ int_rol_imm: dest:i src1:i clob:1 len:8
 int_ror_imm: dest:i src1:i clob:1 len:8
 
 # ReadTimeStampCounter x86 cycle counter
-# l is edx:eax but regpairs not implemented for AMD64
-#rdtsc: dest:l len:2
-# hack instead:
-rdtsc: dest:a len:9 clob:d
+# l is edx:eax
+rdtsc: dest:l len:2

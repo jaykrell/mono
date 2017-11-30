@@ -137,7 +137,7 @@ endif
 endif
 
 if DISABLE_EXECUTABLES
-noinst_PROGRAMS = genmdesc monoext-gentestdata
+noinst_PROGRAMS = genmdesc
 else
 noinst_PROGRAMS = genmdesc mono
 endif
@@ -473,7 +473,6 @@ common_sources = \
 	tasklets.c		\
 	tasklets.h		\
 	simd-intrinsics.c	\
-	monoext.c		\
 	mini-native-types.c \
 	mini-unwind.h		\
 	unwind.c		\
@@ -539,8 +538,7 @@ regtests_UNIVERSAL = \
 	generics.exe \
 	basic-simd.exe \
 	unaligned.exe	\
-	basic-vectors.exe \
-    monoext-test.exe
+	basic-vectors.exe
 
 regtests_DISABLED = 
 
@@ -662,25 +660,6 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 libmonoinclude_HEADERS = jit.h
 
 CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649,0618
-
-# monoext-gentestdata is based on genmdesc,
-# no Perl option is present, and cross builds and
-# Canadian cross might suffer.
-
-monoext_gentestdata_SOURCES = \
-	monoext-gentestdata.c
-
-# Don't link this against libmonoruntime to speed up rebuilds
-monoext_gentestdata_LDADD = 
-
-monoext-testdata.cs: monoext-gentestdata$(EXEEXT)
-	./monoext-gentestdata > $@
-
-monoext-testdata.dll: monoext-testdata.cs
-	$(MCS) -out:$@ $(CSFLAGS) $< /target:library
-
-monoext-test.exe: monoext-test.cs monoext-testdata.dll TestDriver.dll $(CLASS)/Mono.Ext.dll
-	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll /r:monoext-testdata.dll,$(CLASS)/Mono.Ext.dll
 
 basic-simd.exe: basic-simd.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll
