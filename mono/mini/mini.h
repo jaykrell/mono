@@ -48,13 +48,16 @@
 #include "mono/metadata/marshal.h"
 #include "mono/metadata/security-manager.h"
 #include "mono/metadata/exception.h"
+#include "mono/metadata/callspec.h"
 
 /*
  * The mini code should not have any compile time dependencies on the GC being used, so the same object file from mini/
  * can be linked into both mono and mono-sgen.
  */
+#if !defined(MONO_DLL_EXPORT) || !defined(_MSC_VER)
 #if defined(HAVE_BOEHM_GC) || defined(HAVE_SGEN_GC)
 #error "The code in mini/ should not depend on these defines."
+#endif
 #endif
 
 #ifndef __GNUC__
@@ -184,6 +187,7 @@ typedef enum {
 	MONO_AOT_FILE_FLAG_LLVM_ONLY = 16,
 	MONO_AOT_FILE_FLAG_SAFEPOINTS = 32,
 	MONO_AOT_FILE_FLAG_SEPARATE_DATA = 64,
+	MONO_AOT_FILE_FLAG_EAGER_LOAD = 128,
 } MonoAotFileFlags;
 
 typedef enum {
@@ -538,9 +542,8 @@ typedef struct MonoMethodVar MonoMethodVar;
 typedef struct MonoBasicBlock MonoBasicBlock;
 typedef struct MonoLMF MonoLMF;
 typedef struct MonoSpillInfo MonoSpillInfo;
-typedef struct MonoTraceSpec MonoTraceSpec;
 
-extern MonoTraceSpec *mono_jit_trace_calls;
+extern MonoCallSpec *mono_jit_trace_calls;
 extern gboolean mono_break_on_exc;
 extern int mono_exc_esp_offset;
 extern gboolean mono_compile_aot;
@@ -756,8 +759,11 @@ struct MonoBasicBlock {
 	/* List of call sites in this bblock sorted by pc_offset */
 	GSList *gc_callsites;
 
-	/* If this is not null, the basic block is a try hole for this clause */
-	MonoExceptionClause *clause_hole;
+	/*
+	 * If this is not null, the basic block is a try hole for all the clauses
+	 * in the list previous to this element (including the element).
+	 */
+	GList *clause_holes;
 
 	/*
 	 * The region encodes whether the basic block is inside
@@ -1923,6 +1929,9 @@ typedef struct {
 	int stat_code_reallocs;
 
 	MonoProfilerCallInstrumentationFlags prof_flags;
+
+	/* For deduplication */
+	gboolean skip;
 } MonoCompile;
 
 #define MONO_CFG_PROFILE(cfg, flag) \
@@ -2552,6 +2561,7 @@ gpointer mono_aot_get_imt_trampoline        (MonoVTable *vtable, MonoDomain *dom
 gpointer mono_aot_get_gsharedvt_arg_trampoline(gpointer arg, gpointer addr);
 guint8*  mono_aot_get_unwind_info           (MonoJitInfo *ji, guint32 *unwind_info_len);
 guint32  mono_aot_method_hash               (MonoMethod *method);
+gboolean mono_aot_can_dedup                 (MonoMethod *method);
 MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method);
 void     mono_aot_set_make_unreadable       (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
@@ -2784,7 +2794,8 @@ void      mono_arch_emit_outarg_vt              (MonoCompile *cfg, MonoInst *ins
 void      mono_arch_emit_setret                 (MonoCompile *cfg, MonoMethod *method, MonoInst *val);
 MonoDynCallInfo *mono_arch_dyn_call_prepare     (MonoMethodSignature *sig);
 void      mono_arch_dyn_call_free               (MonoDynCallInfo *info);
-void      mono_arch_start_dyn_call              (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf, int buf_len);
+int       mono_arch_dyn_call_get_buf_size       (MonoDynCallInfo *info);
+void      mono_arch_start_dyn_call              (MonoDynCallInfo *info, gpointer **args, guint8 *ret, guint8 *buf);
 void      mono_arch_finish_dyn_call             (MonoDynCallInfo *info, guint8 *buf);
 MonoInst *mono_arch_emit_inst_for_method        (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args);
 void      mono_arch_decompose_opts              (MonoCompile *cfg, MonoInst *ins);
@@ -2826,10 +2837,6 @@ gboolean  mono_arch_is_breakpoint_event         (void *info, void *sigctx);
 void     mono_arch_skip_breakpoint              (MonoContext *ctx, MonoJitInfo *ji);
 void     mono_arch_skip_single_step             (MonoContext *ctx);
 gpointer mono_arch_get_seq_point_info           (MonoDomain *domain, guint8 *code);
-#endif
-
-#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
-void     mono_arch_init_lmf_ext                 (MonoLMFExt *ext, gpointer prev_lmf);
 #endif
 
 gboolean
@@ -2890,7 +2897,7 @@ void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data);
 
 gboolean
-mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info);
+mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, /*optional*/ void *sigctx);
 
 
 /* Exception handling */
@@ -2992,8 +2999,7 @@ MONO_API void      mono_debugger_run_finally             (MonoContext *start_ctx
 MONO_API gboolean mono_breakpoint_clean_code (guint8 *method_start, guint8 *code, int offset, guint8 *buf, int size);
 
 /* Tracing */
-MonoTraceSpec *mono_trace_parse_options         (const char *options);
-void           mono_trace_set_assembly          (MonoAssembly *assembly);
+MonoCallSpec *mono_trace_set_options           (const char *options);
 gboolean       mono_trace_eval                  (MonoMethod *method);
 
 extern void
@@ -3269,30 +3275,24 @@ gboolean MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal);
 #define ARCH_VARARG_ICALLS 0
 #endif
 
-/*
- * Coop support for trampolines
- */
-void mono_interruption_checkpoint_from_trampoline (void);
-
-
 #if defined (HOST_WASM)
 
-#define RETURN_ADDRESS_N(N) NULL
-#define RETURN_ADDRESS() RETURN_ADDRESS_N(0)
+#define MONO_RETURN_ADDRESS_N(N) NULL
+#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
 
 
 #elif defined (__GNUC__)
 
-#define RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
-#define RETURN_ADDRESS() RETURN_ADDRESS_N(0)
+#define MONO_RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
+#define MONO_RETURN_ADDRESS() MONO_RETURN_ADDRESS_N(0)
 
 #elif defined(_MSC_VER)
 
 #include <intrin.h>
 #pragma intrinsic(_ReturnAddress)
 
-#define RETURN_ADDRESS() _ReturnAddress()
-#define RETURN_ADDRESS_N(N) NULL
+#define MONO_RETURN_ADDRESS() _ReturnAddress()
+#define MONO_RETURN_ADDRESS_N(N) NULL
 
 #else
 

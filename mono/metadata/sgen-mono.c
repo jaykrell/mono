@@ -593,7 +593,7 @@ typedef struct {
 static EphemeronLinkNode *ephemeron_list;
 
 /* LOCKING: requires that the GC lock is held */
-static void
+static MONO_PERMIT (need (sgen_gc_locked)) void
 null_ephemerons_for_domain (MonoDomain *domain)
 {
 	EphemeronLinkNode *current = ephemeron_list, *prev = NULL;
@@ -2261,8 +2261,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 
 	tid = mono_thread_info_get_tid (p);
 
-	if (p->client_info.info.runtime_thread)
-		mono_threads_add_joinable_thread ((gpointer)tid);
+	mono_threads_add_joinable_runtime_thread (&p->client_info.info);
 
 	if (mono_gc_get_gc_callbacks ()->thread_detach_func) {
 		mono_gc_get_gc_callbacks ()->thread_detach_func (p->client_info.runtime_data);
@@ -2362,6 +2361,10 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 {
 	scan_area_arg_start = start_nursery;
 	scan_area_arg_end = end_nursery;
+#ifdef HOST_WASM
+	//Under WASM we don't scan thread stacks and we can't trust the values we find there either.
+	return;
+#endif
 
 	FOREACH_THREAD (info) {
 		int skip_reason = 0;
@@ -2804,7 +2807,7 @@ void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedIncrement (&mono_perfcounters->gc_num_handles);
+	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, handle_type, obj));
@@ -2814,7 +2817,7 @@ void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
 #ifndef DISABLE_PERFCOUNTERS
-	InterlockedDecrement (&mono_perfcounters->gc_num_handles);
+	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, handle_type));
@@ -2883,14 +2886,14 @@ sgen_client_degraded_allocation (void)
 	static gint32 last_major_gc_warned = -1;
 	static gint32 num_degraded = 0;
 
-	gint32 major_gc_count = InterlockedRead (&gc_stats.major_gc_count);
-	if (InterlockedRead (&last_major_gc_warned) < major_gc_count) {
-		gint32 num = InterlockedIncrement (&num_degraded);
+	gint32 major_gc_count = mono_atomic_load_i32 (&gc_stats.major_gc_count);
+	if (mono_atomic_load_i32 (&last_major_gc_warned) < major_gc_count) {
+		gint32 num = mono_atomic_inc_i32 (&num_degraded);
 		if (num == 1 || num == 3)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
 		else if (num == 10)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
-		InterlockedWrite (&last_major_gc_warned, major_gc_count);
+		mono_atomic_store_i32 (&last_major_gc_warned, major_gc_count);
 	}
 }
 

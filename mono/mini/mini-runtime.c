@@ -76,6 +76,7 @@
 #include <ctype.h>
 #include "trace.h"
 #include "version.h"
+#include "aot-compiler.h"
 
 #include "jit-icalls.h"
 
@@ -91,7 +92,7 @@
 #endif
 #endif
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 #include "interp/interp.h"
 #endif
 
@@ -659,18 +660,17 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 }
 
 static void
-register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw)
+register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
 {
 #ifndef DISABLE_JIT
-	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_throw);
+	mini_register_opcode_emulation (opcode, name, sigstr, func, symbol, no_wrapper);
 #else
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	/* Opcode emulation functions are assumed to don't call mono_raise_exception () */
-	mono_register_jit_icall_full (func, name, sig, no_throw, TRUE, symbol);
+	mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
 #endif
 }
 
@@ -690,7 +690,7 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean av
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, FALSE, avoid_wrapper ? name : NULL);
+	mono_register_jit_icall_full (func, name, sig, avoid_wrapper, avoid_wrapper ? name : NULL);
 }
 
 static void
@@ -703,7 +703,7 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, TRUE, FALSE, name);
+	mono_register_jit_icall_full (func, name, sig, TRUE, name);
 }
 
 static void
@@ -716,7 +716,7 @@ register_icall_with_wrapper (gpointer func, const char *name, const char *sigstr
 	else
 		sig = NULL;
 
-	mono_register_jit_icall_full (func, name, sig, FALSE, FALSE, NULL);
+	mono_register_jit_icall_full (func, name, sig, FALSE, NULL);
 }
 
 static void
@@ -799,21 +799,19 @@ mono_set_lmf_addr (gpointer lmf_addr)
 void
 mono_push_lmf (MonoLMFExt *ext)
 {
-#ifdef MONO_ARCH_HAVE_INIT_LMF_EXT
 	MonoLMF **lmf_addr;
 
 	lmf_addr = mono_get_lmf_addr ();
 
-	mono_arch_init_lmf_ext (ext, *lmf_addr);
+	ext->lmf.previous_lmf = *lmf_addr;
+	/* Mark that this is a MonoLMFExt */
+	ext->lmf.previous_lmf = (gpointer)(((gssize)ext->lmf.previous_lmf) | 2);
 
 	mono_set_lmf ((MonoLMF*)ext);
-#else
-	NOT_IMPLEMENTED;
-#endif
 }
 
 /*
- * mono_push_lmf:
+ * mono_pop_lmf:
  *
  *   Pop the last frame from the LMF stack.
  */
@@ -1994,7 +1992,12 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 
 	error_init (error);
 
-#ifdef ENABLE_INTERPRETER
+	if (mono_class_is_open_constructed_type (&method->klass->byval_arg)) {
+		mono_error_set_invalid_operation (error, "Could not execute the method because the containing type is not fully instantiated.");
+		return NULL;
+	}
+
+#ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter && !jit_only) {
 		code = mono_interp_create_method_pointer (method, error);
 		if (code)
@@ -2051,7 +2054,7 @@ lookup_start:
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
 			MonoVTable *vtable;
 
-			InterlockedIncrement (&mono_jit_stats.methods_lookups);
+			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
 			vtable = mono_class_vtable_full (domain, method->klass, error);
 			if (!is_ok (error))
 				return NULL;
@@ -2212,8 +2215,16 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	gboolean destroy = TRUE;
 	GHashTableIter iter;
 	MonoJumpList *jlist;
+	MonoJitDomainInfo *info = domain_jit_info (domain);
 
 	g_assert (method->dynamic);
+
+	if (mono_use_interpreter) {
+		mono_domain_jit_code_hash_lock (domain);
+		/* InterpMethod is allocated in the domain mempool */
+		mono_internal_hash_table_remove (&info->interp_code_hash, method);
+		mono_domain_jit_code_hash_unlock (domain);
+	}
 
 	mono_domain_lock (domain);
 	ji = mono_dynamic_code_hash_lookup (domain, method);
@@ -2226,17 +2237,17 @@ mono_jit_free_method (MonoDomain *domain, MonoMethod *method)
 	mono_lldb_remove_method (domain, method, ji);
 
 	mono_domain_lock (domain);
-	g_hash_table_remove (domain_jit_info (domain)->dynamic_code_hash, method);
+	g_hash_table_remove (info->dynamic_code_hash, method);
 	mono_domain_jit_code_hash_lock (domain);
 	mono_internal_hash_table_remove (&domain->jit_code_hash, method);
 	mono_domain_jit_code_hash_unlock (domain);
-	g_hash_table_remove (domain_jit_info (domain)->jump_trampoline_hash, method);
+	g_hash_table_remove (info->jump_trampoline_hash, method);
 
 	/* requires the domain lock - took above */
-	mono_conc_hashtable_remove (domain_jit_info (domain)->runtime_invoke_hash, method);
+	mono_conc_hashtable_remove (info->runtime_invoke_hash, method);
 
 	/* Remove jump targets in this method */
-	g_hash_table_iter_init (&iter, domain_jit_info (domain)->jump_target_hash);
+	g_hash_table_iter_init (&iter, info->jump_target_hash);
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&jlist)) {
 		GSList *tmp, *remove;
 
@@ -2296,7 +2307,7 @@ mono_jit_find_compiled_method_with_jit_info (MonoDomain *domain, MonoMethod *met
 	if (info) {
 		/* We can't use a domain specific method in another domain */
 		if (! ((domain != target_domain) && !info->domain_neutral)) {
-			InterlockedIncrement (&mono_jit_stats.methods_lookups);
+			mono_atomic_inc_i32 (&mono_jit_stats.methods_lookups);
 			if (ji)
 				*ji = info;
 			return info->code_start;
@@ -2431,8 +2442,11 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		if (mono_class_is_contextbound (method->klass) || !info->compiled_method)
 			supported = FALSE;
 
-		if (supported)
+		if (supported) {
 			info->dyn_call_info = mono_arch_dyn_call_prepare (sig);
+			if (debug_options.dyn_runtime_invoke)
+				g_assert (info->dyn_call_info);
+		}
 	}
 #endif
 
@@ -2618,7 +2632,7 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 	MonoJitInfo *ji = NULL;
 	gboolean callee_gsharedvt = FALSE;
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		return mono_interp_runtime_invoke (method, obj, params, exc, error);
 #endif
@@ -2734,8 +2748,8 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 		MonoMethodSignature *sig = mono_method_signature (method);
 		gpointer *args;
 		static RuntimeInvokeDynamicFunction dyn_runtime_invoke;
-		int i, pindex;
-		guint8 buf [512];
+		int i, pindex, buf_size;
+		guint8 *buf;
 		guint8 retval [256];
 
 		if (!dyn_runtime_invoke) {
@@ -2764,7 +2778,11 @@ mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObjec
 
 		//printf ("M: %s\n", mono_method_full_name (method, TRUE));
 
-		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf, sizeof (buf));
+		buf_size = mono_arch_dyn_call_get_buf_size (info->dyn_call_info);
+		buf = g_alloca (buf_size);
+		g_assert (buf);
+
+		mono_arch_start_dyn_call (info->dyn_call_info, (gpointer**)args, retval, buf);
 
 		dyn_runtime_invoke (buf, exc, info->compiled_method);
 		mono_arch_finish_dyn_call (info->dyn_call_info, buf);
@@ -3304,12 +3322,13 @@ mini_get_delegate_arg (MonoMethod *method, gpointer method_ptr)
 void
 mini_init_delegate (MonoDelegate *del)
 {
-	if (mono_llvm_only)
-		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	if (mono_use_interpreter)
 		mono_interp_init_delegate (del);
+	else
 #endif
+	if (mono_llvm_only)
+		del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
 }
 
 char*
@@ -3787,7 +3806,7 @@ mini_init (const char *filename, const char *runtime_version)
 	}
 #endif
 
-#ifdef ENABLE_INTERPRETER
+#ifndef DISABLE_INTERPRETER
 	mono_interp_init ();
 #endif
 
@@ -3843,6 +3862,10 @@ mini_init (const char *filename, const char *runtime_version)
 #ifndef DISABLE_REMOTING
 	callbacks.create_remoting_trampoline = mono_jit_create_remoting_trampoline;
 #endif
+#endif
+#if !defined (DISABLE_INTERPRETER) && !defined (DISABLE_REMOTING)
+	if (mono_use_interpreter)
+		callbacks.interp_get_remoting_invoke = mono_interp_get_remoting_invoke;
 #endif
 
 	mono_install_callbacks (&callbacks);
@@ -4287,7 +4310,7 @@ register_icalls (void)
 	register_icall (mono_throw_method_access, "mono_throw_method_access", "void ptr ptr", FALSE);
 	register_icall_no_wrapper (mono_dummy_jit_icall, "mono_dummy_jit_icall", "void");
 
-	register_icall_with_wrapper (mono_monitor_enter_internal, "mono_monitor_enter_internal", "void obj");
+	register_icall_with_wrapper (mono_monitor_enter_internal, "mono_monitor_enter_internal", "int32 obj");
 	register_icall_with_wrapper (mono_monitor_enter_v4_internal, "mono_monitor_enter_v4_internal", "void obj ptr");
 	register_icall_no_wrapper (mono_monitor_enter_fast, "mono_monitor_enter_fast", "int obj");
 	register_icall_no_wrapper (mono_monitor_enter_v4_fast, "mono_monitor_enter_v4_fast", "int obj ptr");
