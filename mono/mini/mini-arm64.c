@@ -3360,7 +3360,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				arm_asrw (code, dreg, sreg1, imm);
 			break;
-   /* TODOROTATE */
 		case OP_LSHR_IMM:
 		case OP_SHR_IMM:
 			if (imm == 0)
@@ -3390,7 +3389,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Clean out the upper word */
 			arm_movw (code, dreg, sreg1);
 			break;
-		case OP_SHL_IMM: // TODO? Move this to OP_LSHL_IMM
+		case OP_SHL_IMM:
 			arm_lslx (code, dreg, sreg1, imm);
 			break;
 

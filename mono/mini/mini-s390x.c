@@ -3661,7 +3661,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_sllg (code, ins->dreg, ins->dreg, src2, 0);
 		}
 			break;
-/* TODOROTATE */
 		case OP_SHL_IMM: 
 		case OP_LSHL_IMM: {
 			if (ins->sreg1 != ins->dreg) {

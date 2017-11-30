@@ -46,20 +46,6 @@
 #include "debugger-agent.h"
 #include "mini-gc.h"
 
-volatile int jk_debug_noopt; // help not be optimized
-
-void jk_no_opt(void * volatile a) // help not be optimized
-{
-    a = a;
-}
-
-void jk_debug(const char* volatile file, int volatile line, const char* volatile message) // and set a breakpoint here
-{
-	printf("jk_debug: %s(%d) %s\n", file, line, message);
-}
-
-#define JK_DEBUG(a) (jk_debug(__FILE__, __LINE__, (a)))
-
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;
 #else
@@ -4010,7 +3996,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 
 		case OP_BREAK:
-			JK_DEBUG("OP_BREAK");
 			amd64_breakpoint (code);
 			break;
 		case OP_RELAXED_NOP:
@@ -4277,34 +4262,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->sreg2 == AMD64_RCX);
 			amd64_shift_reg (code, X86_SHL, ins->dreg);
 			break;
-
-        case OP_LSHR:
+		case OP_LSHR:
 			g_assert (ins->sreg2 == AMD64_RCX);
 			amd64_shift_reg (code, X86_SAR, ins->dreg);
 			break;
-
-		case OP_LROL:
-			g_assert (ins->sreg2 == AMD64_RCX);
-			amd64_shift_reg (code, X86_ROL, ins->dreg);
-			break;
-
-        case OP_LROR:
-			g_assert (ins->sreg2 == AMD64_RCX);
-			amd64_shift_reg (code, X86_ROR, ins->dreg);
-			break;
-
 		case OP_SHR_IMM:
 		case OP_LSHR_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm (code, X86_SAR, ins->dreg, ins->inst_imm);
 			break;
-
-		case OP_ROR_IMM:
-		case OP_LROR_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
-			amd64_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
-			break;
-
 		case OP_SHR_UN_IMM:
 			g_assert (amd64_is_imm32 (ins->inst_imm));
 			amd64_shift_reg_imm_size (code, X86_SHR, ins->dreg, ins->inst_imm, 4);
@@ -4323,13 +4289,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_shift_reg_imm (code, X86_SHL, ins->dreg, ins->inst_imm);
 			break;
 
-		case OP_ROL_IMM:
-		case OP_LROL_IMM:
-			g_assert (amd64_is_imm32 (ins->inst_imm));
-			amd64_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
-			break;
-
-        case OP_IADDCC:
+		case OP_IADDCC:
 		case OP_IADD:
 			amd64_alu_reg_reg_size (code, X86_ADD, ins->sreg1, ins->sreg2, 4);
 			break;
@@ -4400,27 +4360,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISHL_IMM:
 			amd64_shift_reg_imm_size (code, X86_SHL, ins->dreg, ins->inst_imm, 4);
 			break;
-
-		case OP_IROL:
-			g_assert (ins->sreg2 == AMD64_RCX);
-			JK_DEBUG("OP_IROL");
-			amd64_shift_reg_size (code, X86_ROL, ins->dreg, 4);
-			break;
-		case OP_IROR:
-			JK_DEBUG("OP_IROR");
-			g_assert (ins->sreg2 == AMD64_RCX);
-			amd64_shift_reg_size (code, X86_ROR, ins->dreg, 4);
-			break;
-
-		case OP_IROL_IMM:
-			JK_DEBUG("OP_IROL_IMM");
-			amd64_shift_reg_imm_size (code, X86_ROL, ins->dreg, ins->inst_imm, 4);
-			break;
-		case OP_IROR_IMM:
-			JK_DEBUG("OP_IROR_IMM");
-			amd64_shift_reg_imm_size (code, X86_ROR, ins->dreg, ins->inst_imm, 4);
-			break;
-
 		case OP_IMUL:
 			amd64_imul_reg_reg_size (code, ins->sreg1, ins->sreg2, 4);
 			break;
@@ -6545,12 +6484,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				if (AMD64_IS_CALLEE_SAVED_REG (i) || i == AMD64_RSP)
 					amd64_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, gregs) + i * sizeof (mgreg_t), i, sizeof (mgreg_t));
 			break;
-
-		case OP_READ_TIME_STAMP_COUNTER:
-			JK_DEBUG("OP_READ_TIME_STAMP_COUNTER");
-			x86_rdtsc (code);
-			break;
-
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

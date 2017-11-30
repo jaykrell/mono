@@ -4718,19 +4718,15 @@ emit_array_unsafe_mov (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **a
 static MonoInst*
 mini_emit_inst_for_ctor (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
+#ifdef MONO_ARCH_SIMD_INTRINSICS
 	MonoInst *ins = NULL;
 
-#ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
 		ins = mono_emit_simd_intrinsics (cfg, cmethod, fsig, args);
 		if (ins)
 			return ins;
 	}
 #endif
-
-    ins = mono_handle_monoext (cfg, cmethod, fsig, args);
-    if (ins)
-        return ins;
 
 	return mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 }
@@ -5792,10 +5788,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			return ins;
 	}
 #endif
-
-    ins = mono_handle_monoext (cfg, cmethod, fsig, args);
-    if (ins)
-        return ins;
 
 	ins = mono_emit_native_types_intrinsics (cfg, cmethod, fsig, args);
 	if (ins)

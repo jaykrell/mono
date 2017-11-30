@@ -3591,7 +3591,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (!(ins->inst_imm & 0xffff0000));
 			mips_xori (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
-   /* TODOROTATE */
 		case OP_ISHL:
 			mips_sllv (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;

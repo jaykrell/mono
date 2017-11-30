@@ -92,13 +92,11 @@ mobile_common_dirs := \
 testing_aot_full_dirs := \
 	$(mobile_common_dirs)	\
 	Mono.Simd			\
-	Mono.Ext			\
 	$(pcl_facade_dirs)
 
 testing_aot_hybrid_dirs := \
 	$(mobile_common_dirs)	\
 	Mono.Simd			\
-	Mono.Ext			\
 	$(pcl_facade_dirs)
 
 xammac_dirs := \
@@ -121,7 +119,6 @@ monodroid_tools_dirs := \
 monotouch_dirs := \
 	$(mobile_common_dirs)	\
 	Mono.Simd			\
-	Mono.Ext			\
 	$(pcl_facade_dirs)
 
 monotouch_watch_dirs := $(filter-out Mono.Security Mono.Data.Tds,$(monotouch_dirs))
@@ -300,7 +297,6 @@ net_4_x_parallel_dirs := \
 	Mono.Management			\
 	Mono.Options 			\
 	Mono.Simd			\
-	Mono.Ext			\
 	Mono.Tasklets       		\
 	Mono.CodeContracts \
 	Mono.Parallel \

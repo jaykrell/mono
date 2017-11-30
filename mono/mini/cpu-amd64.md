@@ -794,23 +794,3 @@ generic_class_init: src1:A len:32 clob:c
 get_last_error: dest:i len:32
 
 fill_prof_call_ctx: src1:i len:128
-
-# rotate analogous to shift
-# s is ecx
-# These are reachable via MonoExt.RotateLeft/Right
-# and maybe future pattern matching against the portable form: (a shift b) | (a other_shift (size - b))
-# TODOROTATE not all forms are used, esp. imm.
-long_rol: dest:i src1:i src2:s clob:1 len:3
-long_ror: dest:i src1:i src2:s clob:1 len:3
-rol_imm: dest:i src1:i len:8 clob:1
-ror_imm: dest:i src1:i len:8 clob:1
-long_ror_imm: dest:i src1:i clob:1 len:11
-long_rol_imm: dest:i src1:i clob:1 len:11
-int_rol: dest:i src1:i src2:s clob:1 len:4
-int_ror: dest:i src1:i src2:s clob:1 len:4
-int_rol_imm: dest:i src1:i clob:1 len:8
-int_ror_imm: dest:i src1:i clob:1 len:8
-
-# ReadTimeStampCounter x86 cycle counter
-# l is edx:eax
-rdtsc: dest:l len:2

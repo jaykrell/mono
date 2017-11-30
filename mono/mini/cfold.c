@@ -131,7 +131,6 @@ mono_constant_fold_ins (MonoCompile *cfg, MonoInst *ins, MonoInst *arg1, MonoIns
 	case OP_ISHR_IMM:
 	case OP_ISHR_UN_IMM:
 	case OP_SHL_IMM:
-    /* TODOROTATE */
 		if (arg1->opcode == OP_ICONST) {
 			ALLOC_DEST (cfg, dest, ins);
 			switch (ins->opcode) {
