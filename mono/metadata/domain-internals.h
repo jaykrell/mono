@@ -608,12 +608,12 @@ MonoJitInfo* mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, 
 void mono_enable_debug_domain_unload (gboolean enable);
 
 MonoReflectionAssembly *
-mono_try_resolve_type_name (MonoDomain *domain, const char *name, MonoError *error);
+mono_domain_try_type_resolve_name (MonoDomain *domain, const char *name, MonoError *error);
 
 typedef struct _MonoReflectionTypeBuilder MonoReflectionTypeBuilder;
 
 MonoReflectionAssembly *
-mono_try_resolve_type_builder (MonoDomain *domain, MonoReflectionTypeBuilder *builder, MonoError *error);
+mono_domain_try_type_resolve_builder (MonoDomain *domain, MonoReflectionTypeBuilder *builder, MonoError *error);
 
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error);

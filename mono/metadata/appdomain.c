@@ -750,8 +750,13 @@ mono_class_get_appdomain_do_type_resolve_method (void)
 }
 
 /**
+<<<<<<< HEAD
  * mono_try_resolve_type_name:
  * \param domain application domain where the name where the type is going to be resolved
+=======
+ * mono_domain_try_type_resolve_name:
+ * \param domain application domain in which to resolve the type
+>>>>>>> origin/master
  * \param name the name of the type to resolve.
  *
  * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
@@ -760,7 +765,11 @@ mono_class_get_appdomain_do_type_resolve_method (void)
  * \returns A \c MonoReflectionAssembly or NULL if not found
  */
 MonoReflectionAssembly *
+<<<<<<< HEAD
 mono_try_resolve_type_name (MonoDomain *domain, const char *name, MonoError *error)
+=======
+mono_domain_try_type_resolve_name (MonoDomain *domain, const char *name, MonoError *error)
+>>>>>>> origin/master
 {
 	g_assert (domain);
 	g_assert (name);
@@ -779,8 +788,13 @@ mono_try_resolve_type_name (MonoDomain *domain, const char *name, MonoError *err
 }
 
 /**
+<<<<<<< HEAD
  * mono_try_resolve_type_builder:
  * \param domain application domain where the name where the type is going to be resolved
+=======
+ * mono_domain_try_type_resolve_builder:
+ * \param domain application domain in which to resolve the type
+>>>>>>> origin/master
  * \param tb A \c System.Reflection.Emit.TypeBuilder; tb.FullName is the name of the type to resolve.
  *
  * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
@@ -789,7 +803,11 @@ mono_try_resolve_type_name (MonoDomain *domain, const char *name, MonoError *err
  * \returns A \c MonoReflectionAssembly or NULL if not found
  */
 MonoReflectionAssembly *
+<<<<<<< HEAD
 mono_try_resolve_type_builder (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoError *error)
+=======
+mono_domain_try_type_resolve_builder (MonoDomain *domain, MonoReflectionTypeBuilder *tb, MonoError *error)
+>>>>>>> origin/master
 {
 	g_assert (domain);
 	g_assert (tb);
