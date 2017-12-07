@@ -4,6 +4,7 @@
 #include <glib.h>
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
+#include <mono/metadata/callspec.h>
 
 #define BUF_ID 0x4D504C01
 #define LOG_HEADER_ID 0x4D505A01
@@ -511,6 +512,9 @@ typedef struct {
 	// Heapshot frequency in number of collections (for MONO_HEAPSHOT_X_GC). Can be changed at runtime.
 	unsigned int hs_freq_gc;
 
+	// Should root reports be done even outside of heapshots?
+	gboolean always_do_root_report;
+
 	// Whether to do a heapshot on shutdown.
 	gboolean hs_on_shutdown;
 
@@ -537,6 +541,9 @@ typedef struct {
 
 	// Sample mode. Only used at startup.
 	MonoProfilerSampleMode sampling_mode;
+
+	// Callspec config - which methods are to be instrumented
+	MonoCallSpec callspec;
 } ProfilerConfig;
 
 void proflog_parse_args (ProfilerConfig *config, const char *desc);

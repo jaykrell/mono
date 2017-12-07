@@ -39,6 +39,8 @@
 #include "cpu-x86.h"
 #include "ir-emit.h"
 #include "mini-gc.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 
 #ifndef TARGET_WIN32
 #ifdef MONO_XEN_OPT
@@ -2823,35 +2825,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IXOR_IMM:
 			x86_alu_reg_imm (code, X86_XOR, ins->sreg1, ins->inst_imm);
 			break;
-
-		case OP_IROL:
-			g_assert (ins->sreg2 == X86_ECX);
-			x86_shift_reg (code, X86_ROL, ins->dreg);
-			break;
-
-		case OP_IROR:
-			g_assert (ins->sreg2 == X86_ECX);
-			x86_shift_reg (code, X86_ROR, ins->dreg);
-			break;
-
-		case OP_LROL_IMM:
-			x86_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_LROR_IMM:
-			x86_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_IROL_IMM:
-		case OP_ROL_IMM:
-			x86_shift_reg_imm (code, X86_ROL, ins->dreg, ins->inst_imm);
-			break;
-
-		case OP_IROR_IMM:
-        case OP_ROR_IMM:
-			x86_shift_reg_imm (code, X86_ROR, ins->dreg, ins->inst_imm);
-			break;
-
 		case OP_ISHL:
 			g_assert (ins->sreg2 == X86_ECX);
 			x86_shift_reg (code, X86_SHL, ins->dreg);
@@ -6506,15 +6479,6 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;
-}
-
-void
-mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
-{
-	ext->lmf.previous_lmf = (gsize)prev_lmf;
-	/* Mark that this is a MonoLMFExt */
-	ext->lmf.previous_lmf = (gsize)(gpointer)(((gssize)ext->lmf.previous_lmf) | 2);
-	ext->lmf.ebp = (gssize)ext;
 }
 
 #endif

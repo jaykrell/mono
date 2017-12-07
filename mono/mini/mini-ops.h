@@ -327,11 +327,9 @@ MINI_OP(OP_LMUL_IMM,    "long_mul_imm", LREG, LREG, NONE)
 MINI_OP(OP_LAND_IMM,    "long_and_imm", LREG, LREG, NONE)
 MINI_OP(OP_LOR_IMM,     "long_or_imm", LREG, LREG, NONE)
 MINI_OP(OP_LXOR_IMM,    "long_xor_imm", LREG, LREG, NONE)
-
 MINI_OP(OP_LSHL_IMM,    "long_shl_imm", LREG, LREG, NONE)
 MINI_OP(OP_LSHR_IMM,    "long_shr_imm", LREG, LREG, NONE)
 MINI_OP(OP_LSHR_UN_IMM, "long_shr_un_imm", LREG, LREG, NONE)
-
 MINI_OP(OP_LDIV_IMM,    "long_div_imm", LREG, LREG, NONE)
 MINI_OP(OP_LDIV_UN_IMM, "long_div_un_imm", LREG, LREG, NONE)
 MINI_OP(OP_LREM_IMM,    "long_rem_imm", LREG, LREG, NONE)
@@ -1322,33 +1320,3 @@ MINI_OP(OP_GET_LAST_ERROR, "get_last_error", IREG, NONE, NONE)
  * should be enough to locate arguments and variables.
  */
 MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)
-
-
-/* Rotates analogous to shifts.
- This list gleaned with grep "SH" and manual filtering (e.g. "PSH" and "UN").
- TODO Does order matter in this file?
- These should be near their analogous shift opcodes.
- TODO More targets.
- In shift, "un" is unsigned.
- In rotate ,there is no signed vs. unsigned difference.
- int is 32bits
- long is 64bits
- Implementation suggests "untyped" is native word size, identical to int or long.
- arm64 has them separate.
-*/
-MINI_OP(OP_ROL_IMM,     "rol_imm",      IREG, IREG, NONE)
-MINI_OP(OP_ROR_IMM,     "ror_imm",      IREG, IREG, NONE)
-
-MINI_OP(OP_LROL,        "long_rol",     LREG, LREG, IREG)
-MINI_OP(OP_LROR,        "long_ror",     LREG, LREG, IREG)
-
-MINI_OP(OP_LROL_IMM,    "long_rol_imm", LREG, LREG, NONE)
-MINI_OP(OP_LROR_IMM,    "long_ror_imm", LREG, LREG, NONE)
-
-MINI_OP(OP_IROL,        "int_rol",      IREG, IREG, IREG)
-MINI_OP(OP_IROR,        "int_ror",      IREG, IREG, IREG)
-
-MINI_OP(OP_IROL_IMM,    "int_rol_imm",  IREG, IREG, NONE)
-MINI_OP(OP_IROR_IMM,    "int_ror_imm",  IREG, IREG, NONE)
-
-MINI_OP(OP_READ_TIME_STAMP_COUNTER, "rdtsc", LREG, NONE, NONE) // x86 rdtsc

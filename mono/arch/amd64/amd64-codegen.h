@@ -105,6 +105,10 @@ typedef enum
 #define AMD64_ARGUMENT_REGS ((1<<AMD64_RDX) | (1<<AMD64_RCX) | (1<<AMD64_R8) | (1<<AMD64_R9))
 #define AMD64_IS_ARGUMENT_REG(reg) (AMD64_ARGUMENT_REGS & (1 << (reg)))
 
+/* xmm0-xmm3 for standard calling convention, additionally xmm4-xmm5 for __vectorcall (not currently used) */
+#define AMD64_ARGUMENT_XREGS ((1<<AMD64_XMM0) | (1<<AMD64_XMM1) | (1<<AMD64_XMM2) | (1<<AMD64_XMM3) | (1<<AMD64_XMM4) | (1<<AMD64_XMM5))
+#define AMD64_IS_ARGUMENT_XREG(reg) (AMD64_ARGUMENT_XREGS & (1 << (reg)))
+
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RDI) | (1<<AMD64_RSI) | (1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
 #else
@@ -113,6 +117,9 @@ typedef enum
 
 #define AMD64_ARGUMENT_REGS ((1<<AMD64_RDI) | (1<<AMD64_RSI) | (1<<AMD64_RDX) | (1<<AMD64_RCX) | (1<<AMD64_R8) | (1<<AMD64_R9))
 #define AMD64_IS_ARGUMENT_REG(reg) (AMD64_ARGUMENT_REGS & (1 << (reg)))
+
+#define AMD64_ARGUMENT_XREGS ((1<<AMD64_XMM0) | (1<<AMD64_XMM1) | (1<<AMD64_XMM2) | (1<<AMD64_XMM3) | (1<<AMD64_XMM4) | (1<<AMD64_XMM5) | (1<<AMD64_XMM6) | (1<<AMD64_XMM7))
+#define AMD64_IS_ARGUMENT_XREG(reg) (AMD64_ARGUMENT_XREGS & (1 << (reg)))
 
 #define AMD64_CALLEE_SAVED_REGS ((1<<AMD64_RBX) | (1<<AMD64_R12) | (1<<AMD64_R13) | (1<<AMD64_R14) | (1<<AMD64_R15) | (1<<AMD64_RBP))
 #define AMD64_IS_CALLEE_SAVED_REG(reg) (AMD64_CALLEE_SAVED_REGS & (1 << (reg)))
@@ -537,6 +544,17 @@ typedef union {
 		amd64_codegen_post(inst); \
 	} while (0)
 
+#define amd64_movdqu_reg_membase(inst,reg,basereg,disp)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		x86_prefix((inst), 0xf3); \
+		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x6f;	\
+		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+
 #define amd64_movsd_reg_membase(inst,reg,basereg,disp)	\
 	do {	\
 		amd64_codegen_pre(inst); \
@@ -555,6 +573,17 @@ typedef union {
 		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x0f;	\
 		*(inst)++ = (unsigned char)0x10;	\
+		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
+		amd64_codegen_post(inst); \
+	} while (0)
+
+#define amd64_movdqu_membase_reg(inst,basereg,disp,reg)	\
+	do {	\
+		amd64_codegen_pre(inst); \
+		x86_prefix((inst), 0xf3); \
+		amd64_emit_rex(inst, 0, (reg), 0, (basereg)); \
+		*(inst)++ = (unsigned char)0x0f;	\
+		*(inst)++ = (unsigned char)0x7f;	\
 		x86_membase_emit ((inst), (reg) & 0x7, (basereg) & 0x7, (disp));	\
 		amd64_codegen_post(inst); \
 	} while (0)
@@ -1138,40 +1167,6 @@ typedef union {
 #define amd64_movsd_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_movsd(inst); amd64_codegen_post(inst); } while (0)
 #define amd64_prefix_size(inst,p,size) do { x86_prefix((inst), p); } while (0)
 #define amd64_rdtsc_size(inst,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,0); x86_rdtsc(inst); amd64_codegen_post(inst); } while (0)
-
-/* This is a bit of a hack, but possibly the best approach.
-What seems ideal is to use edx:eax regpair, but amd64 otherwise has no
-regpairs. The approach precludes optimizing:
-	(uint)ReadTimeStampCounter
-to throw out the upper half, and skip the shl/or, but
-even Visual C++ fails that, and it wraps around in a few seconds or less
-so is of very limited use.
-
-Instead unconditionally form the full 64bit value and
-declare in cpu-amd64.md that rdtsc clobbers rdx, which is true anyway.
-
-	0F 31              rdtsc
-	48 C1 E2 20        shl         rdx,20h
-	48 0B C2           or          rax,rdx
-*/
-#define amd64_rdtsc_no_regpair_workaround(inst) \
-	do {	\
-		amd64_codegen_pre(inst); \
-		*(inst)++ = 0x0f;	\
-		*(inst)++ = 0x31;	\
-		amd64_shift_reg_imm (code, X86_SHL, AMD64_RDX, 32); \
-		amd64_alu_reg_reg (code, X86_OR, AMD64_RAX, AMD64_RDX); \
-     /* *(inst)++ = 0x48;		\
-        *(inst)++ = 0xC1;		\
-        *(inst)++ = 0xE2;		\
-        *(inst)++ = 0x20;		\
-        *(inst)++ = 0x48;		\
-        *(inst)++ = 0x0B;		\
-        *(inst)++ = 0xC2;	*/	\
-		amd64_codegen_post(inst); \
-	} while (0)
-
-
 #define amd64_cmpxchg_reg_reg_size(inst,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_cmpxchg_reg_reg((inst),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_cmpxchg_mem_reg_size(inst,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_cmpxchg_mem_reg((inst),(mem),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_cmpxchg_membase_reg_size(inst,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_cmpxchg_membase_reg((inst),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)

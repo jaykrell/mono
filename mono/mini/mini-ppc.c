@@ -29,6 +29,8 @@
 #endif
 #include "trace.h"
 #include "ir-emit.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #endif
@@ -67,8 +69,6 @@ enum {
 #define mono_mini_arch_lock() mono_os_mutex_lock (&mini_arch_mutex)
 #define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
 static mono_mutex_t mini_arch_mutex;
-
-int mono_exc_esp_offset = 0;
 
 /*
  * The code generated for sequence points reads from this location, which is
@@ -1455,20 +1455,6 @@ mono_arch_allocate_vars (MonoCompile *m)
 		offset += 8;
 
 	/* the MonoLMF structure is stored just below the stack pointer */
-
-#if 0
-	/* this stuff should not be needed on ppc and the new jit,
-	 * because a call on ppc to the handlers doesn't change the 
-	 * stack pointer and the jist doesn't manipulate the stack pointer
-	 * for operations involving valuetypes.
-	 */
-	/* reserve space to store the esp */
-	offset += sizeof (gpointer);
-
-	/* this is a global constant */
-	mono_exc_esp_offset = offset;
-#endif
-
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
 		offset += sizeof(gpointer) - 1;
 		offset &= ~(sizeof(gpointer) - 1);
@@ -3708,7 +3694,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		CASE_PPC64 (OP_LSHL)
 			ppc_shift_left (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
-        case OP_SHL_IMM:
+		case OP_SHL_IMM:
 		case OP_ISHL_IMM:
 		CASE_PPC64 (OP_LSHL_IMM)
 			ppc_shift_left_imm (code, ins->dreg, ins->sreg1, MASK_SHIFT_IMM (ins->inst_imm));
@@ -6002,15 +5988,6 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;
-}
-
-void
-mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
-{
-	ext->lmf.previous_lmf = prev_lmf;
-	/* Mark that this is a MonoLMFExt */
-	ext->lmf.previous_lmf = (gpointer)(((gssize)ext->lmf.previous_lmf) | 2);
-	ext->lmf.ebp = (gssize)ext;
 }
 
 #endif

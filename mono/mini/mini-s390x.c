@@ -340,6 +340,8 @@ if (ins->inst_true_bb->native_offset) { 					\
 #include "ir-emit.h"
 #include "trace.h"
 #include "mini-gc.h"
+#include "aot-runtime.h"
+#include "mini-runtime.h"
 
 /*========================= End of Includes ========================*/
 
@@ -449,8 +451,6 @@ static void compare_and_branch(MonoBasicBlock *, MonoInst *, int, gboolean);
 /*------------------------------------------------------------------*/
 /*                 G l o b a l   V a r i a b l e s                  */
 /*------------------------------------------------------------------*/
-
-int mono_exc_esp_offset = 0;
 
 __thread int indent_level = 0;
 __thread FILE *trFd = NULL;
@@ -719,6 +719,97 @@ indent (int diff) {
 	}
 	if (diff > 0) 
 		indent_level += diff;
+}
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name		- cvtMonoType                                       */
+/*                                                                  */
+/* Function	- Convert a mono-type to a string.                  */
+/*		                               			    */
+/*------------------------------------------------------------------*/
+
+static const char *
+cvtMonoType(MonoTypeEnum t)
+{
+  switch(t)
+    {
+    case MONO_TYPE_END:
+      return "MONO_TYPE_END";
+    case MONO_TYPE_VOID:
+      return "MONO_TYPE_VOID";
+    case MONO_TYPE_BOOLEAN:
+      return "MONO_TYPE_BOOLEAN";
+    case MONO_TYPE_CHAR:
+      return "MONO_TYPE_CHAR";
+    case MONO_TYPE_I1:
+      return "MONO_TYPE_I1";
+    case MONO_TYPE_U1:
+      return "MONO_TYPE_U1";
+    case MONO_TYPE_I2:
+      return "MONO_TYPE_I2";
+    case MONO_TYPE_U2:
+      return "MONO_TYPE_U2";
+    case MONO_TYPE_I4:
+      return "MONO_TYPE_I4";
+    case MONO_TYPE_U4:
+      return "MONO_TYPE_U4";
+    case MONO_TYPE_I8:
+      return "MONO_TYPE_I8";
+    case MONO_TYPE_U8:
+      return "MONO_TYPE_U8";
+    case MONO_TYPE_R4:
+      return "MONO_TYPE_R4";
+    case MONO_TYPE_R8:
+      return "MONO_TYPE_R8";
+    case MONO_TYPE_STRING:
+      return "MONO_TYPE_STRING";
+    case MONO_TYPE_PTR:
+      return "MONO_TYPE_PTR";
+    case MONO_TYPE_BYREF:
+      return "MONO_TYPE_BYREF";
+    case MONO_TYPE_VALUETYPE:
+      return "MONO_TYPE_VALUETYPE";
+    case MONO_TYPE_CLASS:
+      return "MONO_TYPE_CLASS";
+    case MONO_TYPE_VAR:
+      return "MONO_TYPE_VAR";
+    case MONO_TYPE_ARRAY:
+      return "MONO_TYPE_ARRAY";
+    case MONO_TYPE_GENERICINST:
+      return "MONO_TYPE_GENERICINST";
+    case MONO_TYPE_TYPEDBYREF:
+      return "MONO_TYPE_TYPEDBYREF";
+    case MONO_TYPE_I:
+      return "MONO_TYPE_I";
+    case MONO_TYPE_U:
+      return "MONO_TYPE_U";
+    case MONO_TYPE_FNPTR:
+      return "MONO_TYPE_FNPTR";
+    case MONO_TYPE_OBJECT:
+      return "MONO_TYPE_OBJECT";
+    case MONO_TYPE_SZARRAY:
+      return "MONO_TYPE_SZARRAY";
+    case MONO_TYPE_MVAR:
+      return "MONO_TYPE_MVAR";
+    case MONO_TYPE_CMOD_REQD:
+      return "MONO_TYPE_CMOD_REQD";
+    case MONO_TYPE_CMOD_OPT:
+      return "MONO_TYPE_CMOD_OPT";
+    case MONO_TYPE_INTERNAL:
+      return "MONO_TYPE_INTERNAL";
+    case MONO_TYPE_MODIFIER:
+      return "MONO_TYPE_MODIFIER";
+    case MONO_TYPE_SENTINEL:
+      return "MONO_TYPE_SENTINEL";
+    case MONO_TYPE_PINNED:
+      return "MONO_TYPE_PINNED";
+    default:
+      ;
+    }
+  return "unknown";
 }
 
 /*========================= End of Function ========================*/
@@ -7223,25 +7314,6 @@ mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	NOT_IMPLEMENTED;
 	return NULL;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_init_lmf_ext.                           */
-/*                                                                  */
-/* Function -                                                       */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-void
-mono_arch_init_lmf_ext (MonoLMFExt *ext, gpointer prev_lmf)
-{
-	ext->lmf.previous_lmf = prev_lmf;
-	/* Mark that this is a MonoLMFExt */
-	ext->lmf.previous_lmf = (gpointer)(((gssize)ext->lmf.previous_lmf) | 2);
-	ext->lmf.ebp = (gssize)ext;
 }
 
 /*========================= End of Function ========================*/

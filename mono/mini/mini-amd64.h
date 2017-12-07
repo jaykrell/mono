@@ -118,35 +118,7 @@ struct sigcontext {
 #define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
-// TODO DebugBreak / ReadTimeStampCounter
-// need API policing and then static and dynamic flags.
-//
-// The naming here is confusing but let's press on for now.
-//
-// Configure does not associate "rotate intrinsics" with "monoext".
-// Configure does associate DebugBreak and ReadTimeStampCounter with "monoext".
-// Internally, monoext is somewhat associated with both.
-//
-// Thee is no C-based or IL-based substitute for DebugBreak/ReadTimeStampCounter,
-// so disabling them and falling through to Mono.Ext.cs is not very sensible.
-// Whereas the rotate intrinsics do work ok without any runtime assistance,
-// via portable C#/IL.
-//
-// There is another very reasonable but as yet hypothetical way to implement
-// rotate -- by recognizing shift/or patterns in portable IL. The configury
-// and #defines should be named such as to accomodate names for that.
-//
-// The "pivot" is that "intrinsics" are recognized function names with
-// inline/optimized implementations, but that "optimize" or "opt" is
-// pattern recognization and optimization in the JIT or AOT.
-#ifndef DISABLE_MONOEXT
-#define MONO_ARCH_MONOEXT 1
-#endif
 
-#ifndef DISABLE_ROTATE_INTRINSICS
-#define MONO_ARCH_MONOEXT 1
-#define MONO_ARCH_ROTATE_INTRINSICS 1
-#endif
 
 #if defined(__APPLE__)
 #define MONO_ARCH_SIGNAL_STACK_SIZE MINSIGSTKSZ
@@ -205,16 +177,13 @@ struct sigcontext {
 
 struct MonoLMF {
 	/* 
-	 * If the lowest bit is set, then this LMF has the rip field set. Otherwise,
-	 * the rip field is not set, and the rsp field points to the stack location where
-	 * the caller ip is saved.
+	 * The rsp field points to the stack location where the caller ip is saved.
 	 * If the second lowest bit is set, then this is a MonoLMFExt structure, and
 	 * the other fields are not valid.
 	 * If the third lowest bit is set, then this is a MonoLMFTramp structure, and
 	 * the 'rbp' field is not valid.
 	 */
 	gpointer    previous_lmf;
-	guint64     rip;
 	guint64     rbp;
 	guint64     rsp;
 };
@@ -298,15 +267,15 @@ typedef struct {
 	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
 } SeqPointInfo;
 
-#define DYN_CALL_STACK_ARGS 6
-
 typedef struct {
-	mgreg_t regs [PARAM_REGS + DYN_CALL_STACK_ARGS];
 	mgreg_t res;
 	guint8 *ret;
 	double fregs [8];
 	mgreg_t has_fp;
+	mgreg_t nstack_args;
 	guint8 buffer [256];
+	/* This should come last as the structure is dynamically extended */
+	mgreg_t regs [PARAM_REGS];
 } DynCallArgs;
 
 typedef enum {
@@ -457,7 +426,7 @@ typedef struct {
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
 #define MONO_ARCH_DYN_CALL_SUPPORTED 1
-#define MONO_ARCH_DYN_CALL_PARAM_AREA (DYN_CALL_STACK_ARGS * 8)
+#define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 
 #define MONO_ARCH_LLVM_SUPPORTED 1
 #define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
@@ -473,7 +442,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
-#define MONO_ARCH_HAVE_INIT_LMF_EXT 1
 
 #if defined(TARGET_OSX) || defined(__linux__)
 #define MONO_ARCH_HAVE_UNWIND_BACKTRACE 1
@@ -520,9 +488,6 @@ mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint6
 
 gpointer
 mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg);
-
-guint64
-mono_amd64_get_original_ip (void);
 
 GSList*
 mono_amd64_get_exception_trampolines (gboolean aot);
@@ -595,6 +560,12 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 
 guchar
 mono_arch_unwindinfo_get_code_count (GSList *unwind_ops);
+
+PUNWIND_INFO
+mono_arch_unwindinfo_alloc_unwind_info (GSList *unwind_ops);
+
+void
+mono_arch_unwindinfo_free_unwind_info (PUNWIND_INFO unwind_info);
 
 guint
 mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg);
