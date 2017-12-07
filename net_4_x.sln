@@ -303,11 +303,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Context-n
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Profiler.Log-net_4_x", "mcs/class/Mono.Profiler.Log/Mono.Profiler.Log-net_4_x.csproj", "{58A188CE-DED8-48B0-98B7-065A260D21DF}"
 EndProject
-<<<<<<< HEAD
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe-net_4_x", "mcs/class/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe-net_4_x.csproj", "{FBBC6F48-0030-4C01-925E-EBB84F60E6E6}"
 =======
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Runtime.CompilerServices.Unsafe-net_4_x", "mcs/class/System.Runtime.CompilerServices.Unsafe/System.Runtime.CompilerServices.Unsafe-net_4_x.csproj", "{6C50BF24-90AB-4654-B295-16A1C717643C}"
->>>>>>> mono/master
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "legacy_Mono.Cecil-net_4_x", "mcs/class/legacy/Mono.Cecil/legacy_Mono.Cecil-net_4_x.csproj", "{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}"
 EndProject

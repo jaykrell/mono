@@ -721,9 +721,9 @@ mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
 	MonoError error;
 	g_assert (domain);
 	g_assert (name || tb);
-	MonoReflectionAssembly * const ret = name ?
-		? mono_try_resolve_type_name (domain, name, &error)
-		: mono_try_resolve_type_builder (domain, (MonoReflectionTypeBuilder *)tb, &error);
+	MonoReflectionAssembly * const ret =
+		name ? mono_try_resolve_type_name (domain, name, &error)
+		     : mono_try_resolve_type_builder (domain, (MonoReflectionTypeBuilder *)tb, &error);
 	mono_error_cleanup (&error);
 	return ret;
 }

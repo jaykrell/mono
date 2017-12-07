@@ -482,10 +482,7 @@ common_sources = \
 	lldb.c	\
 	memory-access.c	\
 	mini-profiler.c	\
-<<<<<<< HEAD
-=======
 	interp-stubs.c \
->>>>>>> mono/master
 	aot-runtime.h	\
 	mini-runtime.h
 
