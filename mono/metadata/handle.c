@@ -555,10 +555,10 @@ mono_handle_stack_is_empty (HandleStack *stack)
 	return (stack->top == stack->bottom && stack->top->size == 0);
 }
 
-MonoUnwrappedString
+mono_unwrapped_string_t
 mono_unwrap_string_handle (MonoStringHandle s)
 {
-	MonoUnwrappedString self = { 0 };
+	mono_unwrapped_string_t self = { 0 };
 	if (!MONO_HANDLE_IS_NULL(s)) {
 		self.chars = mono_string_handle_pin_chars (s, &self.privat.gchandle);
 		self.length = mono_string_handle_length (s);
@@ -566,10 +566,10 @@ mono_unwrap_string_handle (MonoStringHandle s)
 	return self;
 }
 
-MonoUnwrappedString
+mono_unwrapped_string_t
 mono_unwrap_string (MonoString *s)
 {
-	MonoUnwrappedString self = { 0 };
+	mono_unwrapped_string_t self = { 0 };
 	if (s) {
 		self.chars = mono_string_chars (s);
 		self.length = s->length;
@@ -578,7 +578,7 @@ mono_unwrap_string (MonoString *s)
 }
 
 void
-mono_unwrapped_string_cleanup (MonoUnwrappedString* self)
+mono_unwrapped_string_cleanup (mono_unwrapped_string_t* self)
 {
 	mono_gchandle_free (self->privat.gchandle);
 	self->privat.gchandle = 0;

@@ -541,6 +541,9 @@ mono_error_set_exception_handle (MonoError *oerror, MonoExceptionHandle exc)
 void
 mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 {
+	if (!oerror)
+		return;
+
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
@@ -552,6 +555,9 @@ mono_error_set_out_of_memory (MonoError *oerror, const char *msg_format, ...)
 void
 mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg_format, ...)
 {
+	if (!oerror)
+		return;
+
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
@@ -564,6 +570,9 @@ mono_error_set_argument (MonoError *oerror, const char *argument, const char *ms
 void
 mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...)
 {
+	if (!oerror)
+		return;
+
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
@@ -576,6 +585,9 @@ mono_error_set_argument_null (MonoError *oerror, const char *argument, const cha
 void
 mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...)
 {
+	if (!oerror)
+		return;
+
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
 
@@ -593,10 +605,7 @@ mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char
 static MonoString*
 string_new_cleanup (MonoDomain *domain, const char *text)
 {
-	MonoError ignored_err;
-	MonoString *result = mono_string_new_checked (domain, text, &ignored_err);
-	mono_error_cleanup (&ignored_err);
-	return result;
+	return mono_string_new_checked (domain, text, NULL);
 }
 
 static MonoString*

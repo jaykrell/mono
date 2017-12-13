@@ -273,7 +273,8 @@ fun:create_thread
 fun:mono_thread_clr_state
 fun:mono_thread_create_internal
 fun:mono_thread_detach_internal
-fun:mono_thread_set_name_internal
+fun:mono_thread_set_name_cstr_internal
+fun:mono_thread_set_name_utf_internal
 fun:remove_and_abort_threads
 fun:request_thread_abort
 

@@ -91,7 +91,8 @@ string_to_utf8_image_raw (MonoImage *image, MonoString *s_raw, MonoError *error)
 	/* FIXME all callers to string_to_utf8_image_raw should use handles */
 	HANDLE_FUNCTION_ENTER ();
 	char* result = NULL;
-	error_init (error);
+	if (error) // Error is optional to aid sharing code.
+		error_init (error);
 	MONO_HANDLE_DCL (MonoString, s);
 	result = mono_string_to_utf8_image (image, s, error);
 	HANDLE_FUNCTION_RETURN_VAL (result);

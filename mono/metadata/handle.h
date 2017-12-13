@@ -548,49 +548,51 @@ void
 mono_context_set_handle (MonoAppContextHandle new_context);
 
 /*
-MonoUnwrappedString is a common representation
+mono_unwrapped_string_t is a common representation
 for both a MonoString* and a MonoStringHandle.
+
+This would be much simpler if we are using C++ -- constructor, destructor, overload, etc.
 
 Usage patterns:
 1.     MonoStringHandle s;
-       MonoUnwrappedString us = { 0 };
-       ... conditional branch ...
+       mono_unwrapped_string_t us = { 0 };
+       ...
        us = mono_unwrap_string_handle (s);
        us.length;
        us.chars;
        mono_unwrapped_string_cleanup (&us); // ok without mono_unwrap_string_handle
 
 2.     MonoStringHandle s;
-       MonoUnwrappedString us = mono_unwrap_string_handle (s);
+       mono_unwrapped_string_t us = mono_unwrap_string_handle (s);
        us.length;
        us.chars;
        mono_unwrapped_string_cleanup (&us);
 
 3.     MonoString* s;
-       MonoUnwrappedString us = mono_unwrap_string (s);
+       mono_unwrapped_string_t us = mono_unwrap_string (s);
        us.length;
        us.chars;
-       mono_unwrapped_string_cleanup (&us);
+       mono_unwrapped_string_cleanup (&us); // optional
 
 4.     MonoString* s;
-       MonoUnwrappedString us = { 0 ];
-       ... conditional branch ...
+       mono_unwrapped_string_t us = { 0 ];
+       ...
        us = mono_unwrap_string (s);
        us.length;
        us.chars;
-       mono_unwrapped_string_cleanup (&us); // ok without mono_unwrap_string
+       mono_unwrapped_string_cleanup (&us); // optional, ok without mono_unwrap_string_handle
 */
-typedef struct MonoUnwrappedString {
+typedef struct mono_unwrapped_string_t {
 	const gunichar2 *chars;
-	size_t length;
+	int length; // FIXME? size_t
 	struct {
 		guint gchandle;
 	} privat; // "private" but keep it legal C++
-} MonoUnwrappedString;
+} mono_unwrapped_string_t;
 
-MonoUnwrappedString mono_unwrap_string_handle (MonoStringHandle s);
-MonoUnwrappedString mono_unwrap_string (MonoString* s);
-void mono_unwrapped_string_cleanup (MonoUnwrappedString* self);
+mono_unwrapped_string_t mono_unwrap_string_handle (MonoStringHandle s);
+mono_unwrapped_string_t mono_unwrap_string (MonoString* s);
+void mono_unwrapped_string_cleanup (mono_unwrapped_string_t* self);
 
 G_END_DECLS
 

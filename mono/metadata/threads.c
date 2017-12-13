@@ -39,6 +39,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-tls.h>
+#include <mono/utils/mono-util.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-error-internals.h>
@@ -1640,8 +1641,8 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThread *this_obj
 	return str;
 }
 
-void
-mono_thread_set_name_internal (MonoInternalThread *this_obj, int length, const char* utf8, const gunichar2 *utf16, gboolean permanent, gboolean reset, MonoError *error)
+static void 
+mono_thread_set_name_utf_internal (MonoInternalThread *this_obj, int length, const char* utf8, const gunichar2 *utf16, gboolean permanent, gboolean reset, MonoError *error)
 {
 	error_init (error);
 
@@ -1656,20 +1657,13 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, int length, const c
 	MonoNativeThreadId tid = 0;
 	gboolean unlock = FALSE;
 
-	if (length > 0) {
-		if (utf16) {
-			dup16 = (gunichar2*)g_memdup (utf16, length * sizeof (gunichar2));
-		} else {
-			dup16 = g_utf8_to_utf16 (utf8, length, NULL, NULL, &gerror);
-			if (gerror) {
-				mono_error_set_execution_engine (error, "String conversion error: %s", gerror->message);
-				goto exit;
-			}
-		}
-	}
+	error_init (error);
+
+	// If length is set, then utf8 or utf16 or both must be set.
+	// In practise, utf8 xor utf16 is set, but both are ok/better.
+	g_assert (!length || utf8 || utf16);
 
 	LOCK_THREAD (this_obj);
-	unlock = TRUE;
 
 	if (reset) {
 		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
@@ -1677,16 +1671,16 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, int length, const c
 		UNLOCK_THREAD (this_obj);
 		unlock = FALSE;
 		mono_error_set_invalid_operation (error, "Thread.Name can only be set once.");
-		goto exit;
+		return;
 	}
 
-	old_name = this_obj->name;
-	this_obj->name = NULL;
+	g_free (this_obj->name);
+	this_obj->name = 0;
 	this_obj->name_len = 0;
 
 	if (length > 0) {
-		this_obj->name = dup16;
-		dup16 = NULL;
+		this_obj->name = utf16 ? (gunichar2*)g_memdup (utf16, length * sizeof (gunichar2))
+							   : g_utf8_to_utf16 (utf8, length, NULL, NULL, NULL);
 		this_obj->name_len = length;
 		if (permanent)
 			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
@@ -1699,16 +1693,17 @@ mono_thread_set_name_internal (MonoInternalThread *this_obj, int length, const c
 	unlock = FALSE;
 
 	if (this_obj->name && tid) {
-		const char *profiler_name = 0;
+		const char *tname = 0;
 		if (utf8)
-			profiler_name = utf8;
+			tname = utf8;
 		else {
-			dup8 = mono_utf16_to_utf8 (utf16, length, error);
-			goto_if_nok (error, exit);
-			profiler_name = dup8;
+			tname = mono_utf16_to_utf8 (utf16, length, error);
+			return_if_nok (error);
 		}
-		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, profiler_name));
-		mono_native_thread_set_name (tid, profiler_name);
+		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
+		mono_native_thread_set_name (tid, tname);
+		if (!utf8)
+			mono_free (MONO_CONST_CAST(char*)(tname));
 	}
 exit:
 	if (unlock)
@@ -1719,17 +1714,29 @@ exit:
 	g_clear_error (&gerror);
 }
 
-void 
-ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThreadHandle thread, MonoStringHandle name_handle, MonoError *error)
+void
+mono_thread_set_name_cstr_internal (MonoInternalThread *thread, const char* name, gboolean permanent, gboolean reset, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
+	mono_thread_set_name_utf_internal (thread, strlen(name), name, NULL, permanent, reset, error);
+}
 
-	// MonoInternalThread is always pinned.
-	MonoUnwrappedString name = mono_unwrap_string_handle (name_handle);
+void 
+ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThreadHandle thread_handle, MonoStringHandle name_handle)
+{
+	MonoError error;
+	error_init (&error);
 
-	mono_thread_set_name_internal (MONO_HANDLE_RAW (thread), name.length, NULL, name.chars, TRUE, FALSE, error);
+	g_assert (!MONO_HANDLE_IS_NULL(thread_handle));
+	guint const thread_gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, thread_handle), TRUE);
+
+	mono_unwrapped_string_t name = mono_unwrap_string_handle (name_handle);
+
+	mono_thread_set_name_utf_internal (MONO_HANDLE_RAW (thread_handle), name.length, NULL, name.chars, TRUE, FALSE, &error);
 
 	mono_unwrapped_string_cleanup (&name);
+	mono_gchandle_free (thread_gchandle);
+
+	mono_error_set_pending_exception (&error);
 }
 
 /*
