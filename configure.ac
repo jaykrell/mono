@@ -4714,6 +4714,7 @@ mono/benchmark/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
 mono/eglib/Makefile
+mono/eglib/test/Makefile
 mono/eglib/eglib-config.h
 m4/Makefile
 ikvm-native/Makefile
