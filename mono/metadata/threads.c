@@ -1602,9 +1602,6 @@ void
 mono_thread_set_name_handle_internal (MonoInternalThread *this_obj, MonoStringHandle name, gboolean permanent, gboolean reset, MonoError *error)
 {
 	MonoNativeThreadId tid = 0;
-    uint32_t gchandle = 0;
-    gunichar2 * chars = 0;
-    int length = 0;
 
 	LOCK_THREAD (this_obj);
 
@@ -1625,8 +1622,9 @@ mono_thread_set_name_handle_internal (MonoInternalThread *this_obj, MonoStringHa
 
 	if (!MONO_HANDLE_IS_NULL(name)) {
 
-        chars = mono_string_handle_pin_chars (name, &gchandle);
-        length = mono_string_handle_length (name);
+		uint32_t gchandle = 0;
+		gunichar2 *chars = mono_string_handle_pin_chars (name, &gchandle);
+		int length = mono_string_handle_length (name);
 
 		this_obj->name = g_memdup (chars, length * sizeof (gunichar2));
 		this_obj->name_len = length;
@@ -1645,7 +1643,7 @@ mono_thread_set_name_handle_internal (MonoInternalThread *this_obj, MonoStringHa
 	UNLOCK_THREAD (this_obj);
 
 	if (this_obj->name && tid) {
-		char *tname = mono_string_to_utf8_checked (name, error);
+		char *tname = mono_string_handle_to_utf8 (name, error);
 		return_if_nok (error);
 		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
 		mono_native_thread_set_name (tid, tname);

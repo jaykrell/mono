@@ -61,7 +61,7 @@ static void
 free_main_args (void);
 
 static char *
-mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error);
+mono_string_handle_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoStringHandle s, gboolean checked, MonoError *error);
 
 static void
 array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size);
@@ -6990,16 +6990,18 @@ mono_string_to_utf8 (MonoString *s)
 	return result;
 }
 
+
 /**
- * mono_string_to_utf8_checked:
- * \param s a \c System.String
- * \param error a \c MonoError.
+ * mono_string_utf8_internal:
+ * \param chars
+ * \param length
+  * \param error a \c MonoError.
  * Converts a \c MonoString to its UTF-8 representation. May fail; check 
  * \p error to determine whether the conversion was successful.
  * The resulting buffer should be freed with \c mono_free().
  */
-char *
-mono_string_to_utf8_checked (MonoString *s, MonoError *error)
+static char *
+mono_ucs2_to_utf8_internal (gunichar2 *chars, int length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7007,24 +7009,27 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error)
 	char *as;
 	GError *gerror = NULL;
 
-	error_init (error);
+	if (error)
+		error_init (error);
 
 	if (s == NULL)
 		return NULL;
 
-	if (!s->length)
+	if (!length)
 		return g_strdup ("");
 
-	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, &gerror);
-	if (gerror) {
+	as = g_utf16_to_utf8 (chars, length, NULL, &written, error ? &gerror : NULL);
+	if (error && gerror) {
 		mono_error_set_argument (error, "string", "%s", gerror->message);
 		g_error_free (gerror);
 		return NULL;
 	}
-	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
-	if (s->length > written) {
+	/* g_utf16_to_utf8  may not be able to complete the conversion (e.g. NULL values were found, #335488)
+	 * NOTE: This zero-padding is lost in the memorypool and image paths that sometimes follow.
+	 */
+	if (length > written) {
 		/* allocate the total length and copy the part of the string that has been converted */
-		char *as2 = (char *)g_malloc0 (s->length);
+		char *as2 = (char *)g_malloc0 (length);
 		memcpy (as2, as, written);
 		g_free (as);
 		as = as2;
@@ -7033,10 +7038,70 @@ mono_string_to_utf8_checked (MonoString *s, MonoError *error)
 	return as;
 }
 
+/**
+ * mono_string_to_utf8_checked:
+ * \param s a \c System.String
+ * \param error a \c MonoError.
+ * Converts a \c MonoString to its UTF-8 representation. May fail; check
+ * \p error to determine whether the conversion was successful.
+ * The resulting buffer should be freed with \c mono_free().
+ */
+char *
+mono_string_to_utf8_checked (MonoString *s, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	gunichar2 *chars = 0;
+	int length = 0;
+
+	if (s) {
+		chars = mono_string_chars (s);
+		length = s->length;
+	}
+
+	return mono_ucs2_to_utf8_internal (chars, length, error);
+}
+
+/**
+ * mono_string_handle_to_utf8:
+ * \param s a \c System.String
+ * \param error a \c MonoError.
+ * Converts a \c MonoString to its UTF-8 representation. May fail; check 
+ * \p error to determine whether the conversion was successful.
+ * The resulting buffer should be freed with \c mono_free().
+ */
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error)
 {
-	return mono_string_to_utf8_checked (MONO_HANDLE_RAW (s), error);
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	uint32_t gchandle = 0;
+	gunichar2 *chars = 0;
+	int length = 0;
+
+	if (!MONO_HANDLE_IS_NULL(s)) {
+		chars = mono_string_handle_pin_chars (s, &gchandle);
+		length = mono_string_handle_length (s);
+	}
+
+	char *result = mono_ucs2_to_utf8_internal (chars, length, error);
+
+	mono_gchandle_free (gchandle);
+	
+	return result;
+}
+
+/**
+ * mono_string_handle_to_utf8_ignore:
+ * \param s a MonoString
+ * Converts a \c MonoString to its UTF-8 representation. Will ignore
+ * invalid surrogate pairs.
+ * The resulting buffer should be freed with \c mono_free().
+ */
+char *
+mono_string_handle_to_utf8_ignore (MonoStringHandle s)
+{
+	return mono_string_handle_to_utf8 (s, NULL);
 }
 
 /**
@@ -7051,27 +7116,7 @@ mono_string_to_utf8_ignore (MonoString *s)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	long written = 0;
-	char *as;
-
-	if (s == NULL)
-		return NULL;
-
-	if (!s->length)
-		return g_strdup ("");
-
-	as = g_utf16_to_utf8 (mono_string_chars (s), s->length, NULL, &written, NULL);
-
-	/* g_utf16_to_utf8  may not be able to complete the convertion (e.g. NULL values were found, #335488) */
-	if (s->length > written) {
-		/* allocate the total length and copy the part of the string that has been converted */
-		char *as2 = (char *)g_malloc0 (s->length);
-		memcpy (as2, as, written);
-		g_free (as);
-		as = as2;
-	}
-
-	return as;
+	return mono_string_to_utf8_checked (s, NULL);
 }
 
 /**
@@ -7080,11 +7125,11 @@ mono_string_to_utf8_ignore (MonoString *s)
  * Same as \c mono_string_to_utf8_ignore, but allocate the string from the image mempool.
  */
 char *
-mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s)
+mono_string_handle_to_utf8_image_ignore (MonoImage *image, MonoStringHandle s)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (NULL, image, s, TRUE, NULL);
+	return mono_string_handle_to_utf8_internal (NULL, image, s, FALSE, NULL);
 }
 
 /**
@@ -7093,11 +7138,11 @@ mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s)
  * Same as \c mono_string_to_utf8_ignore, but allocate the string from a mempool.
  */
 char *
-mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s)
+mono_string_handle_to_utf8_mp_ignore (MonoMemPool *mp, MonoStringHandle s)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (mp, NULL, s, TRUE, NULL);
+	return mono_string_handle_to_utf8_internal (mp, NULL, s, FALSE, NULL);
 }
 
 
@@ -7247,7 +7292,7 @@ mono_string_from_utf32_checked (mono_unichar4 *data, MonoError *error)
 }
 
 static char *
-mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, gboolean ignore_error, MonoError *error)
+mono_string_handle_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoStringHandle s, gboolean checked, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7255,16 +7300,20 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 	char *mp_s;
 	int len;
 
-	if (ignore_error) {
-		r = mono_string_to_utf8_ignore (s);
-	} else {
+	if (checked) {
 		r = mono_string_to_utf8_checked (s, error);
 		if (!mono_error_ok (error))
 			return NULL;
+	} else {
+		r = mono_string_to_utf8_checked (s, NULL);
 	}
 
 	if (!mp && !image)
 		return r;
+		
+	// NOTE: mono_string_to_utf8_checked will pad this out
+	// to a minimum length with zeros, but conversion
+	// with an image or memorypool will not.
 
 	len = strlen (r) + 1;
 	if (mp)
@@ -7280,29 +7329,27 @@ mono_string_to_utf8_internal (MonoMemPool *mp, MonoImage *image, MonoString *s, 
 }
 
 /**
- * mono_string_to_utf8_image:
+ * mono_string_handle_to_utf8_image:
  * \param s a \c System.String
  * Same as \c mono_string_to_utf8, but allocate the string from the image mempool.
  */
 char *
-mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error)
+mono_string_handle_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	return mono_string_to_utf8_internal (NULL, image, MONO_HANDLE_RAW (s), FALSE, error); /* FIXME pin the string */
+	return mono_string_handle_to_utf8_internal (NULL, image, s, TRUE, error);
 }
 
 /**
- * mono_string_to_utf8_mp:
+ * mono_string_handle_to_utf8_mp:
  * \param s a \c System.String
  * Same as \c mono_string_to_utf8, but allocate the string from a mempool.
  */
 char *
-mono_string_to_utf8_mp (MonoMemPool *mp, MonoString *s, MonoError *error)
+mono_string_handle_to_utf8_mp (MonoMemPool *mp, MonoStringHandle s, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	return mono_string_to_utf8_internal (mp, NULL, s, FALSE, error);
+	return mono_string_handle_to_utf8_internal (mp, NULL, s, TRUE, error);
 }
 
 

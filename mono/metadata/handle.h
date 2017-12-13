@@ -469,7 +469,7 @@ TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoAppContext);
 
 char *
-mono_string_to_utf8_handle_checked (MonoStringHandle string_obj, MonoError *error);
+mono_string_handle_to_utf8 (MonoStringHandle string_obj, MonoError *error);
 
 /* Unfortunately MonoThreadHandle is already a typedef used for something unrelated.  So
  * the coop handle for MonoThread* is MonoThreadObjectHandle.
