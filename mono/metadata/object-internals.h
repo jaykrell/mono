@@ -1543,7 +1543,7 @@ char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
 char *
-mono_string_to_utf8_mp	(MonoMemPool *mp, MonoString *s, MonoError *error);
+mono_string_to_utf8_mp	(MonoMemPool *mp, MonoStringHandle s, MonoError *error);
 
 char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
@@ -1778,10 +1778,10 @@ MonoString*
 mono_object_try_to_string (MonoObject *obj, MonoObject **exc, MonoError *error);
 
 char *
-mono_string_to_utf8_ignore (MonoString *s);
+mono_string_to_utf8_handle_ignore (MonoStringHandle *s);
 
 char *
-mono_string_to_utf8_image_ignore (MonoImage *image, MonoString *s);
+mono_string_to_utf8_image_handle_ignore (MonoImage *image, MonoStringHandle s);
 
 char *
 mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s);

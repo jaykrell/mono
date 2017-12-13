@@ -163,6 +163,10 @@ mono_string_to_utf8	    (MonoString *string_obj);
 MONO_API char *
 mono_string_to_utf8_checked (MonoString *string_obj, MonoError *error);
 
+// in handle.h
+//char *
+//mono_string_to_utf8_handle_checked (MonoStringHandle string_obj, MonoError *error);
+
 MONO_API mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
 
