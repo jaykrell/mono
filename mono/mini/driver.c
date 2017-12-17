@@ -1499,6 +1499,8 @@ mini_debug_usage (void)
 static const char info[] =
 #ifdef HAVE_KW_THREAD
 	"\tTLS:           __thread\n"
+#elif defined(HAVE_DECLSPEC_THREAD)
+	"\tTLS:           __declspec(thread)\n"
 #else
 	"\tTLS:           normal\n"
 #endif /* HAVE_KW_THREAD */

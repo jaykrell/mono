@@ -176,7 +176,24 @@ typedef struct {
 
 // Do not use these TLS macros directly unless you know what you're doing.
 
-#ifdef HOST_WIN32
+#if defined(HAVE_KW_THREAD) || defined(HAVE_DECLSPEC_THREAD)
+
+#define PROF_TLS_SET(VAL) (profiler_tls = (VAL))
+#define PROF_TLS_GET() (profiler_tls)
+#define PROF_TLS_INIT()
+#define PROF_TLS_FREE()
+
+#ifdef HAVE_DECLSPEC_THREAD
+
+static __declspec(thread) MonoProfilerThread *profiler_tls;
+
+#else
+
+static __thread MonoProfilerThread *profiler_tls;
+
+#endif
+
+#elif defined(HOST_WIN32)
 
 #define PROF_TLS_SET(VAL) (TlsSetValue (profiler_tls, (VAL)))
 #define PROF_TLS_GET() ((MonoProfilerThread *) TlsGetValue (profiler_tls))
@@ -184,15 +201,6 @@ typedef struct {
 #define PROF_TLS_FREE() (TlsFree (profiler_tls))
 
 static DWORD profiler_tls;
-
-#elif HAVE_KW_THREAD
-
-#define PROF_TLS_SET(VAL) (profiler_tls = (VAL))
-#define PROF_TLS_GET() (profiler_tls)
-#define PROF_TLS_INIT()
-#define PROF_TLS_FREE()
-
-static __thread MonoProfilerThread *profiler_tls;
 
 #else
 

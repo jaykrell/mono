@@ -283,8 +283,12 @@
 /* Define to 1 if you have the `kqueue' function. */
 /* #undef HAVE_KQUEUE */
 
-/* Have __thread keyword */
+/* Have __thread keyword -- or __declspec(thread) */
+/* Note that __declspec(thread) largely requires Windows Vista or newer. */
 /* #undef HAVE_KW_THREAD */
+#ifdef _MSC_VER
+#define HAVE_DECLSPEC_THREAD
+#endif
 
 /* Have large file support */
 /* #undef HAVE_LARGE_FILE_SUPPORT */
