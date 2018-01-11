@@ -129,6 +129,13 @@ else
 
 case "$host" in
 	*-mingw*|*-*-cygwin*)
+		case "$host" in
+			x86_64*)
+			# Disable Boehm on Window/AMD64.
+			support_boehm=no
+			with_gc=sgen
+			;;
+		esac
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
 		AC_DEFINE(HOST_NO_SYMLINKS,1,[This platform does not support symlinks])
 		host_win32=yes
@@ -3593,12 +3600,16 @@ if test "x$host" != "x$target"; then
 		TARGET=ARM64
 		;;
 	*)
+		# FIXME support more build/host/target combinations i.e. for AOT
+		AC_MSG_WARN([*** Sometimes people confuse build/host/target, try --host=$target])
 		AC_MSG_ERROR([Cross compiling is not supported for target $target])
+		;;
 	esac
 fi
 
 AC_DEFINE(TARGET_$TARGET, 1, [...])
 
+# PowerPC64 is also PowerPC.
 case "$TARGET" in
 POWERPC64)
 	AC_DEFINE(TARGET_POWERPC, 1, [...])
@@ -3607,10 +3618,12 @@ esac
 
 AC_DEFINE(HOST_$HOST, 1, [...])
 
+# PowerPC64 is also PowerPC.
 case "$HOST" in
 POWERPC64)
 	AC_DEFINE(HOST_POWERPC, 1, [...])
 esac
+
 
 fi
 
@@ -4468,6 +4481,7 @@ AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(ARM64, test x$TARGET = xARM64)
 AM_CONDITIONAL(S390X, test x$TARGET = xS390X)
 AM_CONDITIONAL(WASM, test x$TARGET = xWASM)
+
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
 AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
