@@ -3607,24 +3607,75 @@ if test "x$host" != "x$target"; then
 	esac
 fi
 
-AC_DEFINE(TARGET_$TARGET, 1, [...])
-
-# PowerPC64 is also PowerPC.
 case "$TARGET" in
+X86)
+	AC_DEFINE(TARGET_X86, 1, [...])
+	;;
+AMD64)
+	AC_DEFINE(TARGET_AMD64, 1, [...])
+	;;
+ARM)
+	AC_DEFINE(TARGET_ARM, 1, [...])
+	;;
+ARM64)
+	AC_DEFINE(TARGET_ARM64, 1, [...])
+	;;
+POWERPC)
+	AC_DEFINE(TARGET_POWERPC, 1, [...])
+	;;
 POWERPC64)
 	AC_DEFINE(TARGET_POWERPC, 1, [...])
+	AC_DEFINE(TARGET_POWERPC64, 1, [...])
+	;;
+S390X)
+	AC_DEFINE(TARGET_S390X, 1, [...])
+	;;
+MIPS)
+	AC_DEFINE(TARGET_MIPS, 1, [...])
+	;;
+SPARC)
+	AC_DEFINE(TARGET_SPARC, 1, [...])
+	;;
+SPARC64)
+	AC_DEFINE(TARGET_SPARC64, 1, [...])
 	;;
 esac
 
-AC_DEFINE(HOST_$HOST, 1, [...])
-
-# PowerPC64 is also PowerPC.
 case "$HOST" in
+X86)
+	AC_DEFINE(HOST_X86, 1, [...])
+	;;
+AMD64)
+	AC_DEFINE(HOST_AMD64, 1, [...])
+	;;
+ARM)
+	AC_DEFINE(HOST_ARM, 1, [...])
+	;;
+ARM64)
+	AC_DEFINE(HOST_ARM64, 1, [...])
+	;;
+POWERPC)
+	AC_DEFINE(HOST_POWERPC, 1, [...])
+	;;
 POWERPC64)
 	AC_DEFINE(HOST_POWERPC, 1, [...])
+	AC_DEFINE(HOST_POWERPC64, 1, [...])
+	;;
+S390X)
+	AC_DEFINE(HOST_S390X, 1, [...])
+	;;
+MIPS)
+	AC_DEFINE(HOST_MIPS, 1, [...])
+	;;
+SPARC)
+	AC_DEFINE(HOST_SPARC, 1, [...])
+	;;
+SPARC64)
+	AC_DEFINE(HOST_SPARC64, 1, [...])
+	;;
 esac
 
-
+#WASM hack
 fi
 
 
@@ -4481,7 +4532,6 @@ AM_CONDITIONAL(ARM, test x$TARGET = xARM)
 AM_CONDITIONAL(ARM64, test x$TARGET = xARM64)
 AM_CONDITIONAL(S390X, test x$TARGET = xS390X)
 AM_CONDITIONAL(WASM, test x$TARGET = xWASM)
-
 AM_CONDITIONAL(HOST_X86, test x$HOST = xX86)
 AM_CONDITIONAL(HOST_AMD64, test x$HOST = xAMD64)
 AM_CONDITIONAL(HOST_ARM, test x$HOST = xARM)
