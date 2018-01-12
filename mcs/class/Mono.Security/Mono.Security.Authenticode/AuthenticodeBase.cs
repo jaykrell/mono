@@ -200,18 +200,52 @@ namespace Mono.Security.Authenticode {
 		// <0: internal: grow buffer and retry (mitigate historical design problem)
 		{
 /*
-PE file is structured partly as follows:
+portable executable (PE) file is structured partly as follows:
+
+typedef uint16_t WORD;
+typedef uint32_t DWORD;
+
 64 bytes {
   2 byte MZ
   ...
   4 byte offset to NT headers
 }
-NT headers {
-  DWORD                 Signature;  	 PE\0\0
-  IMAGE_FILE_HEADER     FileHeader;      20 bytes on all architectures
-  IMAGE_OPTIONAL_HEADER OptionalHeader;	 starts with 2 byte magic, and eventually varies 32/64
+NT headers {                            offset size
+  DWORD                 Signature;           0 4     PE\0\0
+  IMAGE_FILE_HEADER     FileHeader;          4 20
+  IMAGE_OPTIONAL_HEADER OptionalHeader;     24 varies
 }
 The "optional" header is not actually optional.
+
+ IMAGE_FILE_HEADER {          offset size
+  WORD  Machine;		   0 2 x86, amd64, etc.
+  WORD  NumberOfSections;          2 2 typically a small number like 5
+  DWORD TimeDateStamp;             4 4 Unix time or a hash
+  DWORD PointerToSymbolTable;      8 4 usually zero esp. in executables
+  DWORD NumberOfSymbols;          12 4 usually zero esp. in executables
+  WORD  SizeOfOptionalHeader;     16 2 very important
+  WORD  Characteristics;          18 2 flags
+                                  20
+}
+
+IMAGE_SECTION_HEADER {			offset size
+  BYTE  Name[IMAGE_SIZEOF_SHORT_NAME];       0 8 .text .data .rdata, .reloc etc.
+  union {
+    DWORD PhysicalAddress;                   8 4 unused
+    DWORD VirtualSize;                       8 4 0 or memory-relative
+  } Misc;
+  DWORD VirtualAddress;                     12 4 (RVA memory-relative)
+  DWORD SizeOfRawData;                      16 4 (file-relative)
+  DWORD PointerToRawData;                   20 4 (file-relative)
+  DWORD PointerToRelocations;               24 4 (object only)
+  DWORD PointerToLinenumbers;               28 4 (object only)
+  WORD  NumberOfRelocations;                32 2 (object only)
+  WORD  NumberOfLinenumbers;                34 2 (unused/object only)
+  DWORD Characteristics;                    36 4 flags, page protection etc.
+                                            40
+SizeOfRawData is less than VirtualSize to mean uninitialized tail (zeroed)
+SizeOfRawData is zero for pure uninitialized data
+}
 */
 			// locals in ProcessFirstBlockHelper
 			peOffset = MsdosHeaderSize; // minimum, will typically increase
@@ -318,7 +352,7 @@ The "optional" header is not actually optional.
 			coffSymbolTableOffset = BitConverterLE.ToInt32 (fileblock, peOffset + 12);
 
 			// FIXME validation and testing of coffSymbolTableOffset != 0
-			// I don't see why this code is ever here.
+			// I don't see why this code is even here.
 
 			return 0;
 		}
