@@ -44,14 +44,6 @@ To make a smaller change, the code now grows the block size to accomodate
 the headers, and then resets it back to the original 4K.
 
 2. It is likely that 4K is too small to be performant on modern systems.
-
-3. The handling of coffSymbolTableOffset is seems bogus and incorrect.
-It should be removed.
-
-4. The code ignores this part of the specification:
-	"The area past the last section (defined by highest offset) is not hashed."
-It is concievable the author thought coffSymbolTableOffset is related
-to this, but it is not.
 */
 
 namespace Mono.Security.Authenticode {
@@ -69,136 +61,6 @@ namespace Mono.Security.Authenticode {
 		Commercial,
 		Maximum
 	}
-
-#if INSIDE_CORLIB
-	internal
-#else
-	public
-#endif
-	class AuthenticodeBase {
-
-		public const string spcIndirectDataContext = "1.3.6.1.4.1.311.2.1.4";
-
-		private byte[] fileblock;
-		private FileStream fs;
-		private int blockNo;
-		private int blockLength;
-		private int peOffset;
-		private int dirSecurityOffset;
-		private int dirSecuritySize;
-		private int coffSymbolTableOffset;
-
-		void ResetBlockSize ()
-		{
-			fileblock = new byte [4096];
-		}
-
-		bool IncreaseBlockSize ()
-		{
-			// FIXME
-			// Given the design, don't consume too much
-			// memory for rare files. There is a design
-			// that accomodates them better, but 4K will usually work here.
-			if (BlockSize > (64 * 1024 * 1024))
-				return false;
-			fileblock = new byte [BlockSize * 2];
-			return true;
-		}
-
-		internal int BlockSize => fileblock.Length;
-
-		public AuthenticodeBase ()
-		{
-			ResetBlockSize ();
-		}
-
-		internal int PEOffset {
-			get {
-				if (blockNo < 1)
-					ReadFirstBlock ();
-				return peOffset;
-			}
-		}
-
-		internal int CoffSymbolTableOffset {
-			get {
-				if (blockNo < 1)
-					ReadFirstBlock ();
-				return coffSymbolTableOffset;
-			}
-		}
-
-		internal int SecurityOffset {
-			get {
-				if (blockNo < 1)
-					ReadFirstBlock ();
-				return dirSecurityOffset;
-			}
-		}
-
-		internal void Open (string filename)
-		{
-			if (fs != null)
-				Close ();
-			fs = new FileStream (filename, FileMode.Open, FileAccess.Read, FileShare.Read);
-			blockNo = 0;
-		}
-
-		internal void Close ()
-		{
-			if (fs != null) {
-				fs.Close ();
-				fs = null;
-			}
-		}
-
-		internal void ReadFirstBlock ()
-		{
-			int error = ProcessFirstBlock ();
-			if (error != 0) {
-				string msg = Locale.GetText ("Cannot sign non PE files, e.g. .CAB or .MSI files (error {0}).", 
-					error);
-				throw new NotSupportedException (msg);
-			}
-		}
-
-		internal int ProcessFirstBlock ()
-		// Wrapper around ProcessFirstBlockHelper to void
-		// indenting it.
-		{
-			while (true)
-			{
-				int error = ProcessFirstBlockHelper();
-				if (error != -1)
-					return error;
-				if (!IncreaseBlockSize())
-					return -1;
-			}
-		}
-
-		// constants in ProcessFirstBlockHelper
-		const int MsdosHeaderSize = 64;
-		const int PESignatureSize = 4;
-		const int FileHeaderSize = 20;
-		const int OptionalHeader = PESignatureSize + FileHeaderSize; // not optional
-		const int IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b;
-		const int IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b;
-		const uint IMAGE_DIRECTORY_ENTRY_SECURITY = 4;
-
-		// FIXME locals in ProcessFirstBlockHelper, captured by reference in MinSize
-		int offset_NumberOfRvaAndSizes = 92; // or 108
-		int offset_SecurityDirectory = 128; // or 144
-
-		int MinSize() // FIXME lambda in ProcessFirstBlockHelper with reference capture
-		{
-			return peOffset + OptionalHeader + offset_SecurityDirectory + 8;
-		}
-
-		internal int ProcessFirstBlockHelper ()
-		// 0: success; some historical values are preserved
-		// >0: error (historical)
-		// <0: internal: grow buffer and retry (mitigate historical design problem)
-		{
 /*
 portable executable (PE) file is structured partly as follows:
 
@@ -247,10 +109,185 @@ SizeOfRawData is less than VirtualSize to mean uninitialized tail (zeroed)
 SizeOfRawData is zero for pure uninitialized data
 }
 */
+
+internal class PeHeader
+{
+	internal byte[] bytes;
+
+	internal PeHeader(int size)
+	{
+		bytes = new byte[size];
+	}
+
+	internal int get2(int offset)
+	{
+		return bytes[offset] | (bytes[offset] << 8);
+	}
+
+	internal int get4(int offset)
+	{
+		return get2(offset) | (get2(offset + 2) << 16);
+	}
+
+	internal void copy(byte[] source, int offset)
+	{
+		for (int i = 0; i < bytes.Length; ++i)
+			bytes[i] = source[offset + i];
+	}
+}
+
+// FIXME not used
+internal class DosHeader : PeHeader
+{
+	internal DosHeader() : base(size) { }
+
+	internal const int size = 64;
+	internal int e_magic => get2(0);
+	internal int e_lfanew => get4(60);
+}
+
+class FileHeader : PeHeader
+{
+	internal FileHeader() : base(size) { }
+	internal const int size = 20;
+	internal int SizeOfOptionalHeader => get2(16);
+	internal int NumberOfSections => get2(2);
+}
+
+internal class SectionHeader : PeHeader
+{
+	SectionHeader() : base(size) { }
+
+	internal const int size = 40;
+	internal int VirtualSize => get4(8);
+	internal int SizeOfRawData => get4(16);
+	internal int PointerToRawData => get4(20);
+};
+
+#if INSIDE_CORLIB
+	internal
+#else
+	public
+#endif
+	class AuthenticodeBase {
+
+		public const string spcIndirectDataContext = "1.3.6.1.4.1.311.2.1.4";
+
+		private byte[] fileblock;
+		private FileStream fs;
+		private int blockNo;
+		private int blockLength;
+		private int peOffset;
+
+		bool IncreaseBlockSize ()
+		{
+			// FIXME
+			// Given the design, don't consume too much
+			// memory for rare files. There is a design
+			// that accomodates them better, but 4K will usually work here.
+			if (BlockSize > (64 * 1024 * 1024))
+				return false;
+			fileblock = new byte [BlockSize * 2];
+			return true;
+		}
+
+		internal int BlockSize => fileblock.Length;
+
+		public AuthenticodeBase ()
+		{
+			fileblock = new byte [4096];
+		}
+
+		internal int PEOffset {
+			get {
+				if (blockNo < 1)
+					ReadFirstBlock ();
+				return peOffset;
+			}
+		}
+
+		internal int SecurityOffset {
+			get {
+			if (blockNo < 1)
+				ReadFirstBlock ();
+				return dirSecurityOffset;
+			}
+		}
+
+		internal void Open (string filename)
+		{
+			if (fs != null)
+				Close ();
+			fs = new FileStream (filename, FileMode.Open, FileAccess.Read, FileShare.Read);
+			blockNo = 0;
+		}
+
+		internal void Close ()
+		{
+			if (fs != null) {
+				fs.Close ();
+				fs = null;
+			}
+		}
+
+		internal void ReadFirstBlock ()
+		{
+			int error = ProcessFirstBlock ();
+			if (error != 0) {
+				string msg = Locale.GetText ("Cannot sign non PE files, e.g. .CAB or .MSI files (error {0}).", 
+					error);
+				throw new NotSupportedException (msg);
+			}
+		}
+
+		internal int ProcessFirstBlock ()
+		// Wrapper around ProcessFirstBlockHelper to void
+		// indenting it.
+		{
+			while (true)
+			{
+				int error = ProcessFirstBlockHelper();
+				if (error != -1)
+					return error;
+				if (!IncreaseBlockSize())
+					return -1;
+			}
+		}
+
+		// constants in ProcessFirstBlockHelper
+		internal const int MsdosHeaderSize = 64;
+		internal const int PESignatureSize = 4;
+		internal const int FileHeaderSize = 20;
+		internal const int OptionalHeader = PESignatureSize + FileHeaderSize; // not optional
+		internal const uint IMAGE_NT_OPTIONAL_HDR32_MAGIC = 0x10b;
+		internal const uint IMAGE_NT_OPTIONAL_HDR64_MAGIC = 0x20b;
+		internal const int IMAGE_DIRECTORY_ENTRY_SECURITY = 4;
+
+		// FIXME locals in ProcessFirstBlockHelper, captured by reference in MinSize
+		internal int offset_NumberOfRvaAndSizes = 92; // or 108 for PE32+
+		internal int offset_SecurityDirectory = 128; // or 144 for PE32+
+		internal int numberOfSections = 0; // usually changed later
+		internal int sizeOfOptionalHeader = 0; // changed later
+		internal int endOfSections = 0; // usually changed later
+
+		int MinSize() // FIXME lambda in ProcessFirstBlockHelper with reference capture
+		{
+			return peOffset + OptionalHeader
+				+ offset_SecurityDirectory + 8
+				+ numberOfSections * SectionHeader.size
+				+ sizeOfOptionalHeader;
+
+		}
+
+		internal int ProcessFirstBlockHelper ()
+		// 0: success; some historical values are preserved
+		// >0: error (historical)
+		// <0: internal: grow buffer and retry (mitigate historical design problem)
+		{
 			// locals in ProcessFirstBlockHelper
 			peOffset = MsdosHeaderSize; // minimum, will typically increase
-			offset_NumberOfRvaAndSizes = 92; // or 108
-			offset_SecurityDirectory = 128; // or 144
+			offset_NumberOfRvaAndSizes = 92; // or 108 for 64bit
+			offset_SecurityDirectory = 128; // or 144 for 64bit
 
 			//System.Console.WriteLine("ProcessFirstBlock 1");
 			if (fs == null)
@@ -338,39 +375,59 @@ SizeOfRawData is zero for pure uninitialized data
 			if (BitConverterLE.ToUInt32 (fileblock, peOffset) != 0x4550)
 				return 5;
 
-			// 2.2. Locate IMAGE_DIRECTORY_ENTRY_SECURITY (offset and size)
-			dirSecurityOffset = BitConverterLE.ToInt32 (fileblock, peOffset + OptionalHeader + offset_SecurityDirectory);
-			dirSecuritySize = BitConverterLE.ToInt32 (fileblock, peOffset + OptionalHeader + offset_SecurityDirectory + 4);
+			// Now read the section headers, find the last, and
+			// laster trim file size at its end.
 
-			if (dirSecurityOffset + dirSecuritySize > fs.Length) {
-				System.Console.WriteLine($"ProcessFirstBlock13 securityDirectotyOutOfRange fs.Length:0x{fs.Length:X} dirSecurityOffset:{dirSecurityOffset} dirSecuritySize:{dirSecuritySize}");
-				return -13;
+			var file_header = new FileHeader();
+			file_header.copy (fileblock, peOffset + PESignatureSize);
+			numberOfSections = file_header.NumberOfSections;
+			sizeOfOptionalHeader = file_header.SizeOfOptionalHeader;
+
+			if (numberOfSections == 0)
+			{
+				// No sections is unusual and nearly useless,
+				// but valid, you can still sign the headers.
+
+				// It is not clear how much to hash in the absence
+				// of sections -- optional header, entire file?
+
+				endOfSections = fs.Length;
+			}
+			else
+			{
+				// File big enough?
+				if (fs.Length < MinSize()) {
+					System.Console.WriteLine($"ProcessFirstBlock14 smallFile:0x{fs.Length:X} MinSize:0x{MinSize():X}");
+					return -14;
+				}
+
+				// Buffer big enough? If not, grow it and retry.
+				if (BlockSize < MinSize()) {
+					System.Console.WriteLine($"ProcessFirstBlock15 smallBuffer BlockSize:0x{BlockSize:X} MinSize:0x{MinSize():X}");
+					return -1;
+				}
+
+				// Successful read big enough? (How to get coverage?)
+				if (blockLength < MinSize()) {
+					System.Console.WriteLine($"ProcessFirstBlock16 smallRead:0x{blockLength:X} MinSize:0x{MinSize():X}");
+					return -16;
+				}
+
+				var section = new SectionHeader();
+				for (int i = 0; i < numberOfSections; ++i)
+				{
+					section.copy (fileblock, sizeOfOptionalHeader + i * section.size);
+					endOfSections = uint.Max (endOfSections, section.SizeOfRawData + section.PointerToRawData);
+				}
 			}
 
-			// COFF symbol tables are deprecated - we'll strip them if we see them!
-			// (otherwise the signature won't work on MS and we don't want to support COFF for that)
-			coffSymbolTableOffset = BitConverterLE.ToInt32 (fileblock, peOffset + 12);
+			// If the file fits in the first block, truncate
+			// the first block appropriately.
 
-			// FIXME validation and testing of coffSymbolTableOffset != 0
-			// I don't see why this code is even here.
+			if (endOfSections > blockLength)
+				blockLength = endOfSections;
 
 			return 0;
-		}
-
-		internal byte[] GetSecurityEntry () 
-		{
-			if (blockNo < 1)
-				ReadFirstBlock ();
-
-			if (dirSecuritySize > 8) {
-				// remove header from size (not ASN.1 based)
-				byte[] secEntry = new byte [dirSecuritySize - 8];
-				// position after header and read entry
-				fs.Position = dirSecurityOffset + 8;
-				fs.Read (secEntry, 0, secEntry.Length);
-				return secEntry;
-			}
-			return null;
 		}
 
 		internal byte[] GetHash (HashAlgorithm hash)
@@ -379,46 +436,16 @@ SizeOfRawData is zero for pure uninitialized data
 				ReadFirstBlock ();
 			fs.Position = blockLength;
 
-			// hash the rest of the file
-			long n;
-			int addsize = 0;
-			// minus any authenticode signature (with 8 bytes header)
-			if (dirSecurityOffset > 0) {
-				// FIXME This assumes if the signature
-				// starts in the first block, that it does
-				// not span blocks. Typically the signature
-				// is at the end.
-				if (dirSecurityOffset < blockLength) {
-					blockLength = dirSecurityOffset;
-					n = 0;
-				} else {
-					n = dirSecurityOffset - blockLength;
-				}
-			} else if (coffSymbolTableOffset > 0) {
-				// FIXME This is messed up but mitigated.
-				fileblock[PEOffset + 12] = 0;
-				fileblock[PEOffset + 13] = 0;
-				fileblock[PEOffset + 14] = 0;
-				fileblock[PEOffset + 15] = 0;
-				fileblock[PEOffset + 16] = 0;
-				fileblock[PEOffset + 17] = 0;
-				fileblock[PEOffset + 18] = 0;
-				fileblock[PEOffset + 19] = 0;
+			// Hash the rest of the file, up to the last section.
+			// It is not clear how much to hash in the absence
+			// of sections -- optional header, entire file?
 
-				// FIXME This is also incorrect but rarely/never occurs.
-				if (coffSymbolTableOffset < blockLength) {
-					blockLength = coffSymbolTableOffset;
-					n = 0;
-				} else {
-					n = coffSymbolTableOffset - blockLength;
-				}
-			} else {
-				addsize = (int) (fs.Length & 7);
-				if (addsize > 0)
-					addsize = 8 - addsize;
-				
-				n = fs.Length - blockLength;
-			}
+			long n = endOfSections - blockLength;
+
+			// Pad out to a multiple of 8
+			int addsize = (n & 7);
+			if (addsize > 0)
+				addsize = 8 - addsize;
 
 			// Skip the checksum and the security directory.
 			int pe = peOffset + OptionalHeader + 64;
@@ -430,40 +457,21 @@ SizeOfRawData is zero for pure uninitialized data
 			pe = peOffset + OptionalHeader + offset_SecurityDirectory;
 			pe += 8;
 
-			// everything is present so start the hashing
-			if (n == 0) {
-				// hash the (only) block
-				hash.TransformFinalBlock (fileblock, pe, blockLength - pe);
-			}
-			else {
-				// hash the last part of the first (already in memory) block
-				hash.TransformBlock (fileblock, pe, blockLength - pe, fileblock, pe);
+			// hash the last part of the first (already in memory) block
+			hash.TransformBlock (fileblock, pe, blockLength - pe, fileblock, pe);
 
-				ResetBlockSize ();
-
-				// hash by blocks of 4096 bytes
-				long blocks = (n >> 12);
-				int remainder = (int)(n - (blocks << 12));
-				if (remainder == 0) {
-					blocks--;
-					remainder = 4096;
-				}
-				// blocks
-				while (blocks-- > 0) {
-					fs.Read (fileblock, 0, fileblock.Length);
-					hash.TransformBlock (fileblock, 0, fileblock.Length, fileblock, 0);
-				}
-				// remainder
-				if (fs.Read (fileblock, 0, remainder) != remainder)
+			while (n > 0) {
+				int m = (n > fileblock.Length) ? fileblock.Length : (int)n;
+				if (fs.Read (fileblock, 0, m) != m)
 					return null;
-
-				if (addsize > 0) {
-					hash.TransformBlock (fileblock, 0, remainder, fileblock, 0);
-					hash.TransformFinalBlock (new byte [addsize], 0, addsize);
-				} else {
-					hash.TransformFinalBlock (fileblock, 0, remainder);
-				}
+				hash.TransformBlock (fileblock, 0, m, fileblock, 0);
+				n -= m;
 			}
+
+			if (addsize > 0)
+				hash.TransformBlock (new byte [addsize], 0, addsize, fileblock, 0);
+
+			hash.TransformFinalBlock (new byte [0], 0, 0);
 			return hash.Hash;
 		}
 
