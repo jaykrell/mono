@@ -31,10 +31,6 @@
 #endif
 #ifdef HOST_WIN32
 #  include <io.h>
-#else
-#  ifndef BUILDVER_INCLUDED
-#    include "buildver-boehm.h"
-#  endif
 #endif
 
 /*
@@ -356,6 +352,40 @@ doclose:
 	return status;
 }
 
+// non-Win32 date command e.g. Sat Jan 20 03:19:50 PST 2018
+// non-standard but widely implemented __TIMESTAMP__, same format but missing timezone "Sat Jan 20 03:24:30 2018"
+// 	of this file, not of build time
+// standard __TIME__ "03:24:33"
+// standard __DATE__ "Jan 20 2018"
+#ifdef __TIMESTAMP__
+const static char build_date[] = __TIMESTAMP__; // missing timezone
+#else
+const static char build_date[] = // missing day of week and timezone
+{
+	__DATE__[0], // month
+	__DATE__[1], // month
+	__DATE__[2], // month
+	__DATE__[3], // space
+	__DATE__[4], // date
+	__DATE__[5], // date
+	__DATE__[6], // space
+	__TIME__[0], // hour
+	__TIME__[1], // hour
+	__TIME__[2], // colon
+	__TIME__[3], // minute
+	__TIME__[4], // minute
+	__TIME__[5], // colon
+	__TIME__[6], // second
+	__TIME__[7], // second
+	__DATE__[6], // space (again)
+	__DATE__[7], // year
+	__DATE__[8], // year
+	__DATE__[9], // year
+	__DATE__[10], // year
+	0
+};
+#endif
+
 #ifdef HOST_WIN32
 
 #include <shellapi.h>
@@ -370,6 +400,7 @@ main (void)
 	int i;
 	DWORD count;
 	
+	mono_build_date = build_date;
 	argvw = CommandLineToArgvW (GetCommandLine (), &argc);
 	argv = g_new0 (gchar*, argc + 1);
 	for (i = 0; i < argc; i++)

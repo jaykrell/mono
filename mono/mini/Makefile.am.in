@@ -183,33 +183,40 @@ mono_boehm_CFLAGS = $(AM_CFLAGS)
 AM_CPPFLAGS = $(LIBGC_CPPFLAGS)
 
 mono_sgen_SOURCES = \
-	main-sgen.c
+	main.c
 
 mono_SOURCES = \
-	main-sgen.c
+	main.c
 
 mono_sgen_CFLAGS = $(AM_CFLAGS)
 
 # We build this after libmono was built so it contains the date when the final
 # link was done
+# Getting the timestamp into the static library requires either splitting
+# the static library into libmono-without-timestamp and libmono, or
+# updating it after it is built, so only the mono executables have the timestamp.
+# Automake conditionals do not easily support additive values, so there is repitition here.
 if SUPPORT_BOEHM
 if DISABLE_EXECUTABLES
-buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime.la
+main.c: libmini-static.la \
+		  $(monodir)/mono/metadata/libmonoruntime.la \
+		  $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
 else
-buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
+main.c: libmini-static.la \
+		  $(monodir)/mono/metadata/libmonoruntime-static.la \
+		  $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
 endif
-	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
-mono_boehm-main.$(OBJEXT): buildver-boehm.h
-endif
-
+else
 if DISABLE_EXECUTABLES
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
+main.c: libmini-static.la \
+		  $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
 else
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
+main.c: libmini-static.la \
+		  $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
 endif
-	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
-mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
-main-sgen.$(OBJEXT): buildver-sgen.h
+endif
+	@echo touch main.c
+	@touch main.c
 
 if DTRACE_G_REQUIRED
 LIBMONO_DTRACE_OBJECT = .libs/mono-dtrace.$(OBJEXT)
