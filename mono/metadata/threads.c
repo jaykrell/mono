@@ -1740,30 +1740,53 @@ ves_icall_System_Threading_Thread_SetPriority (MonoThreadObjectHandle this_obj, 
 
 /* If the array is already in the requested domain, we just return it,
    otherwise we return a copy in that domain. */
-static MonoArray*
-byte_array_to_domain (MonoArray *arr, MonoDomain *domain, MonoError *error)
+static MonoArrayHandle
+byte_array_to_domain (MonoArrayHandle arr, MonoDomain *domain, MonoError *error)
 {
-	MonoArray *copy;
+	HANDLE_FUNCTION_ENTER ()
 
-	error_init (error);
 	if (!arr)
-		return NULL;
+		return MONO_HANDLE_NEW (MonoArray, NULL);
 
 	if (mono_object_domain (arr) == domain)
 		return arr;
 
-	copy = mono_array_new_checked (domain, mono_defaults.byte_class, arr->max_length, error);
-	memmove (mono_array_addr (copy, guint8, 0), mono_array_addr (arr, guint8, 0), arr->max_length);
-	return copy;
+	size_t const size = mono_array_handle_length (arr);
+
+	// Represent source and destination array for repeating the same operations over each.
+	struct {
+		MonoArrayHandle handle;
+		gpointer p;
+		uint32_t gchandle;
+	} arrays [] = {
+		{ arr }, // source
+		{ mono_array_new_handle (domain, mono_defaults.byte_class, size, error) }, // dest
+	};
+	goto_if_nok (error, exit);
+
+	// Pin arrays.
+	for (guint i = 0; i <= 1; ++i)
+		arrays [i].p = mono_array_handle_pin_with_size (arrays [i].handle, size, 0, &arrays [i].gchandle);
+
+	// Copy array contents.
+	memmove (arrays [1].p, arrays [0].p, size);
+exit:
+	// Unpin arrays.
+	for (guint i = 0; i <= 1; ++i)
+		mono_gchandle_free (arrays [i].gchandle);
+	HANDLE_FUNCTION_RETURN_REF (MonoArray, arrays [i].handle)
 }
 
-MonoArray*
-ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArray *arr)
+MonoArrayHandle
+ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArrayHandle arr, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoArray *result = byte_array_to_domain (arr, mono_get_root_domain (), error);
-	mono_error_set_pending_exception (error);
-	return result;
+	return byte_array_to_domain (arr, mono_get_root_domain (), error);
+}
+
+MonoArrayHandle
+ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArrayHandle arr, MonoError *error)
+{
+	return byte_array_to_domain (arr, mono_domain_get (), error);
 }
 
 MonoArray*
