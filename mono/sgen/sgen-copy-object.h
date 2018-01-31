@@ -9,6 +9,10 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Defines
  *
@@ -142,3 +146,7 @@ copy_object_no_checks_par (GCObject *obj, SgenGrayQueue *queue)
 #undef COLLECTOR_PARALLEL_ALLOC_FOR_PROMOTION
 #undef collector_pin_object
 #undef COPY_OR_MARK_PARALLEL
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

@@ -15,6 +15,10 @@
 
 #include <mono/sgen/sgen-conf.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * ######################################################################
  * ########  GC descriptors
@@ -318,5 +322,8 @@ sgen_gc_descr_has_references (SgenDescriptor desc)
 		}	\
 	} while (0)
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

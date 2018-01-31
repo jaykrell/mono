@@ -11,6 +11,10 @@
 
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* hash tables */
 
 typedef struct _SgenHashTableEntry SgenHashTableEntry;
@@ -75,6 +79,10 @@ void sgen_init_hash_table (void);
 			}						\
 		}							\
 	} while (0)
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
 

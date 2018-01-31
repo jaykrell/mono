@@ -12,6 +12,10 @@
 
 #include "mono/sgen/sgen-protocol.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This gray queue has to be as optimized as possible, because it is in the core of
  * the mark/copy phase of the garbage collector. The memory access has then to be as
@@ -208,5 +212,9 @@ GRAY_OBJECT_DEQUEUE (SgenGrayQueue *queue, GCObject** obj, SgenDescriptor *desc,
 	}
 #endif
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

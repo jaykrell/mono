@@ -9,6 +9,10 @@
 #ifndef __MONO_SGENQSORT_H__
 #define __MONO_SGENQSORT_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Copied from non-inline implementation in sgen-qsort.c */
 #define DEF_QSORT_INLINE(name, type, compare) \
 static inline void \
@@ -73,5 +77,9 @@ qsort_##name (type array[], size_t count) \
 	type swap_tmp; \
 	qsort_rec_##name (array, 0, (ssize_t)count - 1, &pivot_tmp, &swap_tmp); \
 }
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

@@ -16,6 +16,10 @@
 #include <config.h>
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 gdouble
 ves_icall_System_Math_Floor (gdouble x);
 
@@ -78,5 +82,9 @@ ves_icall_System_Math_SplitFractionDouble (gdouble *v);
 
 gdouble
 ves_icall_System_Math_Ceiling (gdouble v);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

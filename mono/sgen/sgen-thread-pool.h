@@ -13,6 +13,10 @@
 #include "mono/sgen/sgen-pointer-queue.h"
 #include "mono/utils/mono-threads.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define SGEN_THREADPOOL_MAX_NUM_THREADS 8
 #define SGEN_THREADPOOL_MAX_NUM_CONTEXTS 3
 
@@ -66,5 +70,9 @@ void sgen_thread_pool_idle_wait (int context_id, SgenThreadPoolContinueIdleWaitF
 void sgen_thread_pool_wait_for_all_jobs (int context_id);
 
 int sgen_thread_pool_is_thread_pool_thread (MonoNativeThreadId thread);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

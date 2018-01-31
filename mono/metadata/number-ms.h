@@ -61,7 +61,15 @@ typedef struct  {
 	guint16 *allDigits;
 } MonoNumber;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 gint
 mono_double_from_number (gpointer from, MonoDouble *target);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

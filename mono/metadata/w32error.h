@@ -8,6 +8,10 @@
 #include <config.h>
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if !defined(HOST_WIN32)
 
 #define ERROR_SUCCESS              0
@@ -89,5 +93,9 @@ mono_w32error_set_last (guint32 error);
 
 guint32
 mono_w32error_unix_to_win32 (guint32 error);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _MONO_METADATA_W32ERROR_H_ */

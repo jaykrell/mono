@@ -8,6 +8,10 @@
 #include <config.h>
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 const char*
 mono_config_get_assemblies_dir (void);
 
@@ -19,5 +23,9 @@ mono_config_get_bin_dir (void);
 
 const char*
 mono_config_get_reloc_lib_dir (void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

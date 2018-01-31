@@ -371,8 +371,16 @@ static inline gint64 mono_atomic_load_i64(volatile gint64 *src)
 
 #else
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Implement 64-bit cas by hand or emulate it. */
 extern gint64 mono_atomic_cas_i64(volatile gint64 *dest, gint64 exch, gint64 comp);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 /* Implement all other 64-bit atomics in terms of a specialized CAS
  * in this case, since chances are that the other 64-bit atomic

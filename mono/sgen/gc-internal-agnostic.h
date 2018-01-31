@@ -22,6 +22,10 @@
 #include "mono/sgen/sgen-conf.h"
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* h indicates whether to hide or just tag.
  * (-!!h ^ p) is used instead of (h ? ~p : p) to avoid multiple mentions of p.
  */
@@ -119,5 +123,9 @@ FILE *mono_gc_get_logfile (void);
 void mono_gc_params_set (const char* options);
 /* equivalent to options set via MONO_GC_DEBUG */
 void mono_gc_debug_set (const char* options);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
