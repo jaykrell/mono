@@ -956,6 +956,20 @@ AC_SUBST(JEMALLOC_LDFLAGS)
 AC_SUBST(JEMALLOC_AUTOCONF_FLAGS)
 fi
 
+AC_ARG_ENABLE(cplusplus, [  --enable-cplusplus   compile some code as C++])
+
+# C++11 helps with coop handles but we could do without it.
+# -fno-exceptions reduces/removes C++ runtime dependency on some platforms (Linux).
+# FIXME -fno-exceptions should be redundant with some undetermined source code changes.
+# i.e. most functions do not reference C++ runtime. Fix any that do.
+if test "x$enable_cplusplus" = "xyes"; then
+	CPLUSPLUS_ADD_CFLAGS=' -xc++ -std=gnu++98 -fno-exceptions -fno-rtti '
+	# These give warnings and should be removed. They are C-only.
+	CPLUSPLUS_REMOVE_CFLAGS=' -std=gnu99 -Wmissing-prototypes -Wstrict-prototypes -Wnested-externs '
+fi
+AC_SUBST(CPLUSPLUS_ADD_CFLAGS)
+AC_SUBST(CPLUSPLUS_REMOVE_CFLAGS)
+
 #
 # Set the build profiles and options before things which use them
 #
