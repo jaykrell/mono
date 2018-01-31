@@ -98,6 +98,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
+#include <mono/metadata/environment-internal.h>
 
 #include "decimal-ms.h"
 #include "number-ms.h"
@@ -105,8 +106,6 @@
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_UTSNAME_H)
 #include <sys/utsname.h>
 #endif
-
-extern MonoStringHandle ves_icall_System_Environment_GetOSVersionString (MonoError *error);
 
 ICALL_EXPORT MonoReflectionAssemblyHandle ves_icall_System_Reflection_Assembly_GetCallingAssembly (MonoError *error);
 
