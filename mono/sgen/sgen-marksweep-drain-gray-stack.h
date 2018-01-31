@@ -7,6 +7,10 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * COPY_OR_MARK_FUNCTION_NAME must be defined to be the function name of the copy/mark
  * function.
@@ -356,3 +360,7 @@ DRAIN_GRAY_STACK_FUNCTION_NAME (SgenGrayQueue *queue)
 #undef SCAN_VTYPE_FUNCTION_NAME
 #undef SCAN_PTR_FIELD_FUNCTION_NAME
 #undef DRAIN_GRAY_STACK_FUNCTION_NAME
+
+#ifdef __cplusplus
+} // extern "C"
+#endif

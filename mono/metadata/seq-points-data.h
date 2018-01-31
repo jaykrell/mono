@@ -9,6 +9,10 @@
 
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
 #define MONO_SEQ_POINT_FLAG_EXIT_IL 2
 
@@ -115,5 +119,9 @@ mono_seq_point_data_get (SeqPointData *data, guint32 methodToken, guint32 method
 
 gboolean
 mono_seq_point_data_get_il_offset (char *path, guint32 methodToken, guint32 methodIndex, guint32 native_offset, guint32 *il_offset);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __MONO_SEQ_POINTS_DATA_H__ */

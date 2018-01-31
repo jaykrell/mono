@@ -37,6 +37,10 @@
 
 #include <mono/utils/mono-compiler.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
 	MONO_HINT_UNSPECIFIED		= 0,
 	MONO_HINT_IPV4				= 1,
@@ -103,5 +107,8 @@ int mono_networking_get_ipv6_protocol (void);
 void mono_networking_init (void);
 void mono_networking_shutdown (void);
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif

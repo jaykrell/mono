@@ -11,6 +11,8 @@
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-error.h>
 
+MONO_BEGIN_DECLS
+
 MonoException *
 mono_get_exception_type_initialization_checked (const gchar *type_name, MonoException *inner, MonoError *error);
 
@@ -40,5 +42,7 @@ typedef int (*MonoGetSeqPointFunc) (MonoDomain *domain, MonoMethod *method, gint
 
 void
 mono_install_get_seq_point (MonoGetSeqPointFunc func);
+
+MONO_END_DECLS
 
 #endif

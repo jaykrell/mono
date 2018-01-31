@@ -10,6 +10,10 @@
 
 #include "mono-os-mutex.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef MONO_INFINITE_WAIT
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 #endif
@@ -52,5 +56,9 @@ mono_os_event_wait_one (MonoOSEvent *event, guint32 timeout, gboolean alertable)
 
 MonoOSEventWaitRet
 mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* _MONO_UTILS_OS_EVENT_H_ */

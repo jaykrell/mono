@@ -6,6 +6,10 @@
 #ifndef _MONO_METADATA_BLOB_H_
 #define _MONO_METADATA_BLOB_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Encoding for type signatures used in the Metadata
  */
@@ -114,5 +118,8 @@ typedef enum {
 
 } MonoMetaTableEnum;
 
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
+#endif

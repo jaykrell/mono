@@ -7,6 +7,10 @@
 #ifndef __MONO_SGEN_LAYOUT_STATS_H__
 #define __MONO_SGEN_LAYOUT_STATS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef SGEN_OBJECT_LAYOUT_STATISTICS
 
 #define SGEN_OBJECT_LAYOUT_BITMAP_BITS	16
@@ -46,6 +50,10 @@ void sgen_object_layout_dump (FILE *out);
 #define SGEN_OBJECT_LAYOUT_STATISTICS_MARK_BITMAP(o,p)
 #define SGEN_OBJECT_LAYOUT_STATISTICS_COMMIT_BITMAP
 
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif

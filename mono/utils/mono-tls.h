@@ -49,6 +49,10 @@ typedef enum {
 #define MonoNativeTlsKey pthread_key_t
 #define mono_native_tls_get_value pthread_getspecific
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline int
 mono_native_tls_alloc (MonoNativeTlsKey *key, void *destructor)
 {
@@ -67,7 +71,15 @@ mono_native_tls_set_value (MonoNativeTlsKey key, gpointer value)
 	return !pthread_setspecific (key, value);
 }
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #endif /* HOST_WIN32 */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void mono_tls_init_gc_keys (void);
 void mono_tls_init_runtime_keys (void);
@@ -87,5 +99,9 @@ void mono_tls_set_jit_tls (gpointer value);
 void mono_tls_set_domain (gpointer value);
 void mono_tls_set_sgen_thread_info (gpointer value);
 void mono_tls_set_lmf_addr (gpointer value);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* __MONO_TLS_H__ */

@@ -15,6 +15,9 @@
 
 #include <glib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef TARGET_WASM
 
@@ -30,12 +33,20 @@ static inline void mono_memory_write_barrier (void)
 {
 }
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
 #elif _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #include <intrin.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline void mono_memory_barrier (void)
 {
@@ -78,6 +89,10 @@ static inline void mono_memory_write_barrier (void)
 }
 #else
 #error "Don't know how to do memory barriers!"
+#endif
+
+#ifdef __cplusplus
+} // extern "C"
 #endif
 
 #endif	/* _MONO_UTILS_MONO_MEMBAR_H_ */

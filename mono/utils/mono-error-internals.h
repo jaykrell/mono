@@ -8,6 +8,8 @@
 #include "mono/utils/mono-compiler.h"
 #include "mono/metadata/class-internals.h"
 
+MONO_BEGIN_DECLS
+
 /*Keep in sync with MonoError*/
 typedef struct {
 	unsigned short error_code;
@@ -233,5 +235,7 @@ mono_error_set_from_boxed (MonoError *error, const MonoErrorBoxed *from);
 
 const char*
 mono_error_get_exception_name (MonoError *oerror);
+
+MONO_END_DECLS
 
 #endif

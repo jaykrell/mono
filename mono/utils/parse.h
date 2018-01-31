@@ -11,6 +11,14 @@
 #include <glib.h>
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 gboolean mono_gc_parse_environment_string_extract_number (const char *str, size_t *out);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif
