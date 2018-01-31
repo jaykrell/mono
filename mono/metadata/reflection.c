@@ -1913,7 +1913,7 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 		mono_class_init (parent);
 
 		while ((klass = mono_class_get_nested_types (parent, &iter))) {
-			char *lastp;
+			const char *lastp;
 			char *nested_name, *nested_nspace;
 			gboolean match = TRUE;
 
