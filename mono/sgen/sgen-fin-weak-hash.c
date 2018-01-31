@@ -421,7 +421,7 @@ static gint64 stat_entry_invalidated = 0;
 #endif
 
 static int
-add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entries, GCObject *obj, void *user_data)
+add_stage_entry (int num_entries, volatile gint32 *next_entry, StageEntry *entries, GCObject *obj, SGenFinalizationProc user_data)
 {
 	gint32 index, new_next_entry, old_next_entry;
 	gint32 previous_state;
@@ -548,7 +548,7 @@ sgen_process_fin_stage_entries (void)
 }
 
 void
-sgen_object_register_for_finalization (GCObject *obj, void *user_data)
+sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc user_data)
 {
 	while (add_stage_entry (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry, fin_stage_entries, obj, user_data) == -1) {
 		if (try_lock_stage_for_processing (NUM_FIN_STAGE_ENTRIES, &next_fin_stage_entry)) {

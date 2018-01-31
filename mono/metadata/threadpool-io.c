@@ -313,7 +313,7 @@ selector_thread_interrupt (gpointer unused)
 	selector_thread_wakeup ();
 }
 
-static gsize WINAPI
+static gulong WINAPI
 selector_thread (gpointer data)
 {
 	ERROR_DECL (error);

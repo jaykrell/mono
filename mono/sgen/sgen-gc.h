@@ -706,7 +706,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_object_copy) (GCObject* obj, GCObject *src);
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
-	void (*wbarrier_range_copy) (gpointer dest, gpointer src, int count);
+	void (*wbarrier_range_copy) (gpointer dest, gconstpointer src, int count);
 
 	void (*start_scan_remsets) (void);
 
@@ -727,7 +727,7 @@ void mono_gc_wbarrier_generic_nostore (gpointer ptr);
 void mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value);
 void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
 
-void sgen_wbarrier_range_copy (gpointer _dest, gpointer _src, int size);
+void sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size);
 
 static inline SgenDescriptor
 sgen_obj_get_descriptor (GCObject *obj)
@@ -831,7 +831,10 @@ void sgen_null_link_in_range (int generation, ScanCopyContext ctx, gboolean trac
 void sgen_process_fin_stage_entries (void)
 	MONO_PERMIT (need (sgen_gc_locked));
 gboolean sgen_have_pending_finalizers (void);
-void sgen_object_register_for_finalization (GCObject *obj, void *user_data)
+
+typedef void (*SGenFinalizationProc)(void*, void*); // same as MonoFinalizationProc, GC_finalization_proc
+
+void sgen_object_register_for_finalization (GCObject *obj, SGenFinalizationProc user_data)
 	MONO_PERMIT (need (sgen_lock_gc));
 
 void sgen_finalize_if (SgenObjectPredicateFunc predicate, void *user_data)
