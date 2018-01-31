@@ -1236,7 +1236,7 @@ gc_roots (MonoProfiler *prof, uint64_t num, const mono_byte *const *addresses, M
 }
 
 static void
-gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoGCRootSource source, const void *key, const char *name)
+gc_root_register (MonoProfiler *prof, const void *start, size_t size, MonoGCRootSource source, const void *key, const char *name)
 {
 	// We don't write raw domain/context pointers in metadata events.
 	switch (source) {
@@ -1273,7 +1273,7 @@ gc_root_register (MonoProfiler *prof, const mono_byte *start, size_t size, MonoG
 }
 
 static void
-gc_root_deregister (MonoProfiler *prof, const mono_byte *start)
+gc_root_deregister (MonoProfiler *prof, const void *start) // aka gc_root_unregister
 {
 	ENTER_LOG (&heap_roots_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -4139,7 +4139,7 @@ handle_dumper_queue_entry (void)
 				g_assert (domain && "What happened to the domain pointer?");
 				g_assert (address && "What happened to the instruction pointer?");
 
-				MonoJitInfo *ji = mono_jit_info_table_find (domain, (char *) address);
+				MonoJitInfo *ji = mono_jit_info_table_find (domain, address);
 
 				if (ji)
 					sample->frames [i].method = mono_jit_info_get_method (ji);
