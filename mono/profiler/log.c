@@ -3828,7 +3828,7 @@ add_to_fd_set (fd_set *set, int fd, int *max_fd)
 		*max_fd = fd;
 }
 
-static void *
+static mono_native_thread_return_t __stdcall
 helper_thread (void *arg)
 {
 	mono_threads_attach_tools_thread ();
@@ -3925,7 +3925,7 @@ helper_thread (void *arg)
 
 	mono_thread_info_detach ();
 
-	return NULL;
+	return 0;
 }
 
 static void
@@ -4078,7 +4078,7 @@ handle_writer_queue_entry (void)
 	return FALSE;
 }
 
-static void *
+static mono_native_thread_return_t __stdcall
 writer_thread (void *arg)
 {
 	mono_threads_attach_tools_thread ();
@@ -4101,7 +4101,7 @@ writer_thread (void *arg)
 
 	mono_thread_info_detach ();
 
-	return NULL;
+	return 0;
 }
 
 static void
@@ -4185,7 +4185,7 @@ handle_dumper_queue_entry (void)
 	return FALSE;
 }
 
-static void *
+static mono_native_thread_return_t __stdcall
 dumper_thread (void *arg)
 {
 	mono_threads_attach_tools_thread ();
@@ -4212,7 +4212,7 @@ dumper_thread (void *arg)
 
 	mono_thread_info_detach ();
 
-	return NULL;
+	return 0;
 }
 
 static void

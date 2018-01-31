@@ -146,7 +146,7 @@ operator|(MonoThreadCreateFlags a, MonoThreadCreateFlags b)
 #endif // __cplusplus
 
 MonoInternalThread*
-mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+mono_thread_create_internal (MonoDomain *domain, MonoThreadStart func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 

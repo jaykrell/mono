@@ -264,6 +264,10 @@ register_icall_no_wrapper (gpointer func, const char *name, const char *sigstr)
 	mono_register_jit_icall (func, name, sig, TRUE);
 }
 
+// Cast the first parameter to gpointer; macros do not recurse.
+#define register_icall(func, name, sigstr, no_wrapper) (register_icall ((gpointer)(func), (name), (sigstr), (no_wrapper)))
+#define register_icall_no_wrapper(func, name, sigstr) (register_icall_no_wrapper ((gpointer)(func), (name), (sigstr)))
+
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)
 {
@@ -1562,7 +1566,7 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 		mono_mb_emit_icall (mb, ves_icall_string_new_wrapper);
 		mono_mb_emit_byte (mb, CEE_STIND_REF);		
 		break;
-	case MONO_MARSHAL_CONV_STR_LPWSTR:
+	case MONO_MARSHAL_CONV_STR_LPWSTR:	
 		mono_mb_emit_ldloc (mb, 1);
 		mono_mb_emit_ldloc (mb, 0);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
@@ -1670,13 +1674,14 @@ emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv 
 static gpointer
 conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 {
+#define return return (gpointer)
 	int dummy;
 	if (!ind_store_type)
 		ind_store_type = &dummy;
 	*ind_store_type = CEE_STIND_I;
 	switch (conv) {
 	case MONO_MARSHAL_CONV_STR_LPWSTR:
-		return mono_marshal_string_to_utf16;		
+		return mono_marshal_string_to_utf16;
 	case MONO_MARSHAL_CONV_LPWSTR_STR:
 		*ind_store_type = CEE_STIND_REF;
 		return ves_icall_mono_string_from_utf16;
@@ -1751,6 +1756,7 @@ conv_to_icall (MonoMarshalConv conv, int *ind_store_type)
 		g_assert_not_reached ();
 	}
 
+#undef return
 	return NULL;
 }
 
@@ -2437,13 +2443,13 @@ emit_thread_interrupt_checkpoint (MonoMethodBuilder *mb)
 	if (strstr (mb->name, "mono_thread_interruption_checkpoint"))
 		return;
 	
-	emit_thread_interrupt_checkpoint_call (mb, mono_thread_interruption_checkpoint);
+	emit_thread_interrupt_checkpoint_call (mb, (gpointer)mono_thread_interruption_checkpoint);
 }
 
 static void
 emit_thread_force_interrupt_checkpoint (MonoMethodBuilder *mb)
 {
-	emit_thread_interrupt_checkpoint_call (mb, mono_thread_force_interruption_checkpoint_noraise);
+	emit_thread_interrupt_checkpoint_call (mb, (gpointer)mono_thread_force_interruption_checkpoint_noraise);
 }
 
 void
