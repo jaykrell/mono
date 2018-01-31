@@ -96,7 +96,7 @@ typedef union {
 
 static const SPLIT64    ten_to_eighteen = { 1000000000000000000ULL };
 
-const MonoDouble_double ds2to64 = { .s = { .sign = 0, .exp = MONO_DOUBLE_BIAS + 65, .mantHi = 0, .mantLo = 0 } };
+const MonoDouble_double ds2to64 = { MONO_INIT_DOUBLE (0, MONO_DOUBLE_BIAS + 65, 0, 0) };
 
 //
 // Data tables
