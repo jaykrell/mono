@@ -305,7 +305,7 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 		}
 		if (strncmp (kind, "assembly:", strlen ("assembly:")) == 0){
 			char *aname = kind + strlen ("assembly:");
-			MonoBundledAssembly mba = { aname, mapaddress + offset - baseline, item_size }, *ptr;
+			MonoBundledAssembly mba = { aname, mapaddress + offset - baseline, (guint)item_size }, *ptr;
 			ptr = g_new (MonoBundledAssembly, 1);
 			memcpy (ptr, &mba, sizeof (MonoBundledAssembly));
 			g_array_append_val  (assemblies, ptr);
