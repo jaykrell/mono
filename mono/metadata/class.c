@@ -6324,7 +6324,7 @@ mono_ptr_class_get (MonoType *type)
 
 	el_class = mono_class_from_mono_type (type);
 	image = el_class->image;
-	image_set  = class_kind_may_contain_generic_instances (el_class->class_kind) ? mono_metadata_get_image_set_for_class (el_class) : NULL;
+	image_set = class_kind_may_contain_generic_instances ((MonoTypeKind)el_class->class_kind) ? mono_metadata_get_image_set_for_class (el_class) : NULL;
 
 	if (image_set) {
 		mono_image_set_lock (image_set);
@@ -6616,7 +6616,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 		bounded = FALSE;
 
 	image = eclass->image;
-	image_set = class_kind_may_contain_generic_instances (eclass->class_kind) ? mono_metadata_get_image_set_for_class (eclass) : NULL;
+	image_set = class_kind_may_contain_generic_instances ((MonoTypeKind)eclass->class_kind) ? mono_metadata_get_image_set_for_class (eclass) : NULL;
 
 	/* Check cache */
 	cached = NULL;
