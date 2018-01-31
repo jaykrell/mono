@@ -102,6 +102,22 @@ typedef enum {
 	MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE = 1 << 6,
 } MonoProfilerCallInstrumentationFlags;
 
+#ifdef __cplusplus
+
+extern "C++" {
+
+// FIXME use a macro to generate all enum operators.
+inline MonoProfilerCallInstrumentationFlags&
+operator|=(MonoProfilerCallInstrumentationFlags& a, int b)
+{
+	a = (MonoProfilerCallInstrumentationFlags)((int)a | b);
+	return a;
+}
+
+}
+
+#endif
+
 typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);
 
 MONO_API void mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb);
