@@ -5769,9 +5769,11 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	/*
 	 * Compute the field and method lists
 	 */
-	int first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
+	int first_field_idx;
+	first_field_idx = cols [MONO_TYPEDEF_FIELD_LIST] - 1;
 	mono_class_set_first_field_idx (klass, first_field_idx);
-	int first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
+	int first_method_idx;
+	first_method_idx = cols [MONO_TYPEDEF_METHOD_LIST] - 1;
 	mono_class_set_first_method_idx (klass, first_method_idx);
 
 	if (tt->rows > tidx){		
