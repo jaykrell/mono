@@ -2675,7 +2675,7 @@ mono_class_setup_properties (MonoClass *klass)
 		}
 	}
 
-	info = mono_class_alloc0 (klass, sizeof (MonoClassPropertyInfo));
+	info = (MonoClassPropertyInfo*)mono_class_alloc0 (klass, sizeof (MonoClassPropertyInfo));
 	info->first = first;
 	info->count = count;
 	info->properties = properties;
@@ -2828,7 +2828,7 @@ mono_class_setup_events (MonoClass *klass)
 		}
 	}
 
-	info = mono_class_alloc0 (klass, sizeof (MonoClassEventInfo));
+	info = (MonoClassEventInfo*)mono_class_alloc0 (klass, sizeof (MonoClassEventInfo));
 	info->events = events;
 	info->first = first;
 	info->count = count;
@@ -4863,7 +4863,7 @@ setup_generic_array_ifaces (MonoClass *klass, MonoClass *iface, MonoMethod **met
 
 		inflated = mono_class_inflate_generic_method_checked (m, &tmp_context, error);
 		mono_error_assert_ok (error);
-		helper = g_hash_table_lookup (cache, inflated);
+		helper = (MonoMethod*)g_hash_table_lookup (cache, inflated);
 		if (!helper) {
 			helper = mono_marshal_get_generic_array_helper (klass, generic_array_method_info [i].name, inflated);
 			g_hash_table_insert (cache, inflated, helper);
@@ -5136,7 +5136,7 @@ mono_class_init (MonoClass *klass)
 	goto leave;
 
 leave:
-	init_list = mono_native_tls_get_value (init_pending_tls_id);
+	init_list = (GSList*)mono_native_tls_get_value (init_pending_tls_id);
 	init_list = g_slist_remove (init_list, klass);
 	mono_native_tls_set_value (init_pending_tls_id, init_list);
 
@@ -5606,12 +5606,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	nspace = mono_metadata_string_heap (image, cols [MONO_TYPEDEF_NAMESPACE]);
 
 	if (mono_metadata_has_generic_params (image, type_token)) {
-		klass = mono_image_alloc0 (image, sizeof (MonoClassGtd));
+		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassGtd));
 		klass->class_kind = MONO_CLASS_GTD;
 		UnlockedAdd (&classes_size, sizeof (MonoClassGtd));
 		++class_gtd_count;
 	} else {
-		klass = mono_image_alloc0 (image, sizeof (MonoClassDef));
+		klass = (MonoClass*)mono_image_alloc0 (image, sizeof (MonoClassDef));
 		klass->class_kind = MONO_CLASS_DEF;
 		UnlockedAdd (&classes_size, sizeof (MonoClassDef));
 		++class_def_count;
