@@ -929,14 +929,14 @@ test_thread_func (gpointer void_arg)
 					guint pos = (*data)->start + random () % (*data)->length;
 					MonoJitInfo *ji;
 
-					ji = mono_jit_info_table_find (domain, (char*)(gulong) pos);
+					ji = mono_jit_info_table_find (domain, (char*)(uintptr_t)pos);
 
 					g_assert (ji->cas_inited);
 					g_assert ((*data)->ji == ji);
 				}
 			} else {
 				int pos = random () % MAX_ADDR;
-				char *addr = (char*)(gulong) pos;
+				char *addr = (char*)(uintptr_t)pos;
 				MonoJitInfo *ji;
 
 				ji = mono_jit_info_table_find (domain, addr);
