@@ -21,6 +21,8 @@
 #include <mono/utils/w32api.h>
 #include "image.h"
 
+MONO_BEGIN_DECLS
+
 #define STATUS_SUCCESS 0x00000000L
 #define STATUS_INVALID_IMAGE_FORMAT 0xC000007BL
 
