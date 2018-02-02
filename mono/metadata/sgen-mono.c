@@ -2065,11 +2065,11 @@ report_handle_stack_root (gpointer *ptr, gpointer user_data)
 static void
 report_handle_stack_roots (GCRootReport *report, SgenThreadInfo *info, gboolean precise)
 {
-	ReportHandleStackRoot ud = {
-		.precise = precise,
-		.report = report,
-		.info = info,
-	};
+	ReportHandleStackRoot ud;
+	memset (&ud, 0, sizeof (ud));
+	ud.precise = precise;
+	ud.report = report;
+	ud.info = info;
 
 	mono_handle_stack_scan ((HandleStack *) info->client_info.info.handle_stack, report_handle_stack_root, &ud, ud.precise, FALSE);
 }

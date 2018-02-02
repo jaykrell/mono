@@ -1791,7 +1791,10 @@ mono_decimal_from_float (float input_f, MonoDecimal* result)
 	SPLIT64     sdlLo;
 	SPLIT64     sdlHi;
 	int         lmax, cur;  // temps used during scale reduction
-	MonoSingle_float input = { .f = input_f };
+	MonoSingle_float input;
+
+	memset (&input, 0, sizeof (input));
+	input.f = input_f;
 
 	// The most we can scale by is 10^28, which is just slightly more
 	// than 2^93.  So a float with an exponent of -94 could just
@@ -1933,7 +1936,10 @@ mono_decimal_from_double (double input_d, MonoDecimal *result)
 	int         lmax, cur;  // temps used during scale reduction
 	uint32_t       pwr_cur;
 	uint32_t       quo;
-	MonoDouble_double input = { .d = input_d };
+	MonoDouble_double input;
+
+	memset (&input, 0, sizeof (input));
+	input.d = input_d;
 	
 	// The most we can scale by is 10^28, which is just slightly more
 	// than 2^93.  So a float with an exponent of -94 could just
