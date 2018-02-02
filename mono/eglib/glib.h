@@ -1,5 +1,11 @@
 #ifndef __GLIB_H
 #define __GLIB_H
+
+// Ask stdint.h for the full C99 features even for C++98 CentOS 6 g++ 4.4.
+#define __STDC_LIMIT_MACROS 1
+#define __STDC_CONSTANT_MACROS 1
+#define __STDC_FORMAT_MACROS 1
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
