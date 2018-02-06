@@ -156,6 +156,7 @@ create_exception_two_strings (MonoClass *klass, MonoString *a1, MonoString *a2, 
 	args [0] = a1;
 	args [1] = a2;
 
+	g_assert (method);
 	mono_runtime_invoke_checked (method, o, args, error);
 	return_val_if_nok (error, NULL);
 
@@ -789,6 +790,51 @@ MonoException *
 mono_get_exception_out_of_memory (void)
 {
 	return mono_exception_from_name (mono_get_corlib (), "System", "OutOfMemoryException");
+}
+
+MonoException*
+mono_cache_exception (MonoException** cache, MonoDomain* domain, const char* name_space,
+	const char* name, const char* ignoreable_arg, MonoError* error)
+// Some exceptions are cached (per-domain), so they are likely available under low memory
+// or in a signal handler, or as a simple approach to avoid creating them under a lock.
+// This is a helper function for creating and getting them.
+{
+	error_init (error);
+
+	// First try the cache.
+	MonoException* exc = *cache;
+	if (exc)
+		return exc;
+
+	// Otherwise try to create a new one which can fail.
+	MonoString* arg = NULL;
+	if (ignoreable_arg)
+		mono_string_new_checked (domain, ignoreable_arg, error);
+	// This string does not mean much so ignore error.
+	exc = mono_exception_from_name_two_strings_checked (mono_get_corlib (), name_space, name, arg, NULL, error);
+	// If there is race and we fail and the other succeeds, keep theirs.
+	if (!exc)
+		return *cache;
+	*cache = exc;
+	return exc;
+}
+
+/**
+ * mono_cache_domain_exception_out_of_memory:
+ * \returns an instance of the \c System.OutOfMemoryException
+ * Typically the instance is cached per-domain, but will be created if needed and possible.
+ */
+MonoException*
+mono_cache_domain_exception_out_of_memory (MonoDomain* domain, MonoError* error)
+{
+	return mono_cache_exception (&domain->out_of_memory_ex, domain, "System", "OutOfMemoryException", "Out of memory", error);
+}
+
+MonoException*
+mono_cache_domain_exception_thread_abort (MonoDomain* domain, MonoError* error)
+{
+	return mono_cache_exception (&domain->thread_abort_ex, domain, "System.Threading", "ThreadAbortException", NULL, error
+);
 }
 
 /**

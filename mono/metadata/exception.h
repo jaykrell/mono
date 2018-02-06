@@ -55,6 +55,7 @@ mono_get_exception_null_reference      (void);
 MONO_API MonoException *
 mono_get_exception_execution_engine    (const char *msg);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_thread_abort        (void);
 
@@ -136,6 +137,7 @@ mono_get_exception_bad_image_format2 (const char *msg, MonoString *fname);
 MONO_API MonoException *
 mono_get_exception_stack_overflow (void);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoException *
 mono_get_exception_out_of_memory (void);
 

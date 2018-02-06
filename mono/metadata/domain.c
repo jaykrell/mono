@@ -49,6 +49,7 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/coree.h>
+#include <mono/metadata/exception-internals.h>
 
 //#define DEBUG_DOMAIN_UNLOAD 1
 
@@ -930,11 +931,18 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 
 	if (migrate_exception) {
 		thread = mono_thread_internal_current ();
+
+		// FIXME race?
 		if (!thread->abort_exc)
 			return;
 
 		g_assert (thread->abort_exc->object.vtable->domain != domain);
-		MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
+
+		ERROR_DECL (error);
+		MonoException* thread_abort_exception = mono_cache_domain_exception_thread_abort (domain, error);
+		mono_error_assert_ok (error);
+		MONO_OBJECT_SETREF (thread, abort_exc, thread_abort_exception);
+
 		g_assert (thread->abort_exc->object.vtable->domain == domain);
 	}
 }

@@ -35,6 +35,14 @@ mono_exception_from_name_four_strings_checked (MonoImage *image, const char *nam
 				      const char *name, MonoString *a1, MonoString *a2, MonoString *a3, MonoString *a4,
 				      MonoError *error);
 
+MonoException*
+mono_cache_exception (MonoException** cache, MonoDomain*, const char* name_space, const char* name, const char* ignoreable_arg, MonoError* error);
+
+MonoException*
+mono_cache_domain_exception_out_of_memory (MonoDomain*, MonoError*);
+
+MonoException*
+mono_cache_domain_exception_thread_abort (MonoDomain*, MonoError*);
 
 typedef int (*MonoGetSeqPointFunc) (MonoDomain *domain, MonoMethod *method, gint32 native_offset);
 

@@ -177,7 +177,6 @@ create_domain_objects (MonoDomain *domain)
 {
 	ERROR_DECL (error);
 	MonoDomain *old_domain = mono_domain_get ();
-	MonoString *arg;
 	MonoVTable *string_vt;
 	MonoClassField *string_empty_fld;
 
@@ -204,23 +203,25 @@ create_domain_objects (MonoDomain *domain)
 	/*
 	 * Create an instance early since we can't do it when there is no memory.
 	 */
-	arg = mono_string_new_checked (domain, "Out of memory", error);
-	mono_error_assert_ok (error);
-	domain->out_of_memory_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "OutOfMemoryException", arg, NULL, error);
+	g_assert (!domain->out_of_memory_ex);
+	mono_cache_domain_exception_out_of_memory (domain, error);
 	mono_error_assert_ok (error);
 
 	/* 
 	 * These two are needed because the signal handlers might be executing on
 	 * an alternate stack, and Boehm GC can't handle that.
 	 */
-	arg = mono_string_new_checked (domain, "A null value was found where an object instance was required", error);
+
+	g_assert (!domain->null_reference_ex);
+	mono_cache_exception (&domain->null_reference_ex, domain, "System", "NullReferenceException", "A null value was found where an object instance was required", error);
 	mono_error_assert_ok (error);
-	domain->null_reference_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "NullReferenceException", arg, NULL, error);
+
+	g_assert (!domain->stack_overflow_ex);
+	mono_cache_exception (&domain->stack_overflow_ex, domain, "System", "StackOverflowException", "The requested operation caused a stack overflow.", error);
 	mono_error_assert_ok (error);
-	arg = mono_string_new_checked (domain, "The requested operation caused a stack overflow.", error);
-	mono_error_assert_ok (error);
-	domain->stack_overflow_ex = mono_exception_from_name_two_strings_checked (mono_defaults.corlib, "System", "StackOverflowException", arg, NULL, error);
-	mono_error_assert_ok (error);
+
+	// Too early for mono_cache_domain_exception_thread_abort here.
+	g_assert (!domain->thread_abort_ex);
 
 	/*The ephemeron tombstone i*/
 	domain->ephemeron_tombstone = mono_object_new_checked (domain, mono_defaults.object_class, error);

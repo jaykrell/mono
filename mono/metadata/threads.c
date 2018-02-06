@@ -54,6 +54,7 @@
 #include <mono/metadata/w32error.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
+#include <mono/metadata/exception-internals.h>
 
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
@@ -1448,6 +1449,12 @@ ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj,
 		ves_icall_System_Threading_Thread_ConstructInternalThread (this_obj);
 	internal = this_obj->internal_thread;
 
+	// Create thread abort exception early to avoid race conditions.
+	// create_domain_objects is too early and fails.
+	MonoDomain *domain = mono_domain_get ();
+	g_assert (domain);
+	mono_cache_domain_exception_thread_abort (domain, error);
+
 	LOCK_THREAD (internal);
 
 	if ((internal->state & ThreadState_Unstarted) == 0) {
@@ -2349,6 +2356,8 @@ mono_thread_current_check_pending_interrupt (void)
 static gboolean
 request_thread_abort (MonoInternalThread *thread, MonoObject *state, gboolean appdomain_unload)
 {
+	// mono_cache_domain_exception_thread_abort is often too early here, so defer a little.
+
 	LOCK_THREAD (thread);
 	
 	if (thread->state & (ThreadState_AbortRequested | ThreadState_Stopped))
@@ -2361,6 +2370,31 @@ request_thread_abort (MonoInternalThread *thread, MonoObject *state, gboolean ap
 		thread->state |= ThreadState_Aborted;
 		UNLOCK_THREAD (thread);
 		return FALSE;
+	}
+
+	// Drop lock, create exception, try again.
+
+	MonoDomain* domain = mono_domain_get ();
+	if (!domain->thread_abort_ex) {
+		UNLOCK_THREAD (thread);
+
+		ERROR_DECL (error);
+		mono_cache_domain_exception_thread_abort (domain, error);
+		mono_error_assert_ok (error);
+
+		LOCK_THREAD (thread);
+	
+		if (thread->state & (ThreadState_AbortRequested | ThreadState_Stopped))
+		{
+			UNLOCK_THREAD (thread);
+			return FALSE;
+		}
+
+		if ((thread->state & ThreadState_Unstarted) != 0) {
+			thread->state |= ThreadState_Aborted;
+			UNLOCK_THREAD (thread);
+			return FALSE;
+		}
 	}
 
 	thread->state |= ThreadState_AbortRequested;
@@ -2432,25 +2466,26 @@ ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj)
 
 	if (was_aborting && !is_domain_abort)
 		thread->state &= ~ThreadState_AbortRequested;
-	UNLOCK_THREAD (thread);
 
 	if (!was_aborting) {
+		UNLOCK_THREAD (thread);
 		const char *msg = "Unable to reset abort because no abort was requested";
 		mono_set_pending_exception (mono_get_exception_thread_state (msg));
 		return;
 	} else if (is_domain_abort) {
 		/* Silently ignore abort resets in unloading appdomains */
+		UNLOCK_THREAD (thread);
 		return;
 	}
 
 	mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 	thread->abort_exc = NULL;
-	if (thread->abort_state_handle) {
-		mono_gchandle_free (thread->abort_state_handle);
-		/* This is actually not necessary - the handle
-		   only counts if the exception is set */
-		thread->abort_state_handle = 0;
-	}
+	/* This is actually not necessary - the handle
+	   only counts if the exception is set */
+	guint32 abort_state_handle = thread->abort_state_handle;
+	thread->abort_state_handle = 0;
+	UNLOCK_THREAD (thread);
+	mono_gchandle_free (abort_state_handle);
 }
 
 void
@@ -4537,15 +4572,10 @@ mono_thread_execute_interruption (void)
 		UNLOCK_THREAD (thread);
 		return exc;
 	} else if (thread->state & (ThreadState_AbortRequested)) {
+		MonoDomain* domain = mono_domain_get ();
+		g_assert (domain->thread_abort_ex);
+		MONO_OBJECT_SETREF (thread, abort_exc, domain->thread_abort_ex);
 		UNLOCK_THREAD (thread);
-		g_assert (sys_thread->pending_exception == NULL);
-		if (thread->abort_exc == NULL) {
-			/* 
-			 * This might be racy, but it has to be called outside the lock
-			 * since it calls managed code.
-			 */
-			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
-		}
 		return thread->abort_exc;
 	} else if (thread->state & (ThreadState_SuspendRequested)) {
 		/* calls UNLOCK_THREAD (thread) */
