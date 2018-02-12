@@ -241,7 +241,7 @@ mono_class_set_field_count (MonoClass *klass, guint32 count)
 MonoMarshalType*
 mono_class_get_marshal_info (MonoClass *klass)
 {
-	return mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_MARSHAL_INFO);
+	return (MonoMarshalType*)mono_property_bag_get (m_class_get_infrequent_data (klass), PROP_MARSHAL_INFO);
 }
 
 void
