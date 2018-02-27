@@ -86,7 +86,10 @@ void ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThread *this
 MonoBoolean
 ves_icall_System_Threading_Thread_Thread_internal (MonoThread *this_obj, MonoObject *start);
 void ves_icall_System_Threading_InternalThread_Thread_free_internal(MonoInternalThread *this_obj);
-void ves_icall_System_Threading_Thread_Sleep_internal(gint32 ms);
+
+void
+ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
+
 gboolean ves_icall_System_Threading_Thread_Join_internal(MonoThread *this_obj, int ms);
 gint32 ves_icall_System_Threading_Thread_GetDomainID (void);
 gboolean ves_icall_System_Threading_Thread_Yield (void);
@@ -138,7 +141,9 @@ gint64 ves_icall_System_Threading_Interlocked_Increment_Long(gint64 *location);
 gint32 ves_icall_System_Threading_Interlocked_Decrement_Int(gint32 *location);
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
 
-void ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject *state);
+void
+ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle, MonoObjectHandle state, MonoError *error);
+
 void ves_icall_System_Threading_Thread_ResetAbort (MonoThread *this_obj);
 MonoObject* ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThread *thread);
 void ves_icall_System_Threading_Thread_Suspend (MonoThread *this_obj);
@@ -244,6 +249,9 @@ mono_thread_interruption_checkpoint_bool (void);
 
 void
 mono_thread_interruption_checkpoint_void (void);
+
+MonoExceptionHandle
+mono_thread_interruption_checkpoint_handle (void);
 
 MonoException* mono_thread_force_interruption_checkpoint_noraise (void);
 gint32* mono_thread_interruption_request_flag (void);
