@@ -4690,6 +4690,18 @@ mono_thread_interruption_checkpoint (void)
 	return mono_thread_interruption_checkpoint_request (FALSE);
 }
 
+gboolean
+mono_thread_interruption_checkpoint_bool (void)
+{
+	return mono_thread_interruption_checkpoint () != NULL;
+}
+
+void
+mono_thread_interruption_checkpoint_void (void)
+{
+	mono_thread_interruption_checkpoint ();
+}
+
 /*
  * Performs the interruption of the current thread, if one has been requested.
  * Return the exception which needs to be thrown, if any.
