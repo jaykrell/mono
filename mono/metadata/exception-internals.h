@@ -57,9 +57,6 @@ MonoException *
 mono_corlib_exception_new_with_args (const char *name_space, const char *name, const char *arg_0, const char *arg_1, MonoError *error);
 
 MonoExceptionHandle
-mono_exception_new_thread_state (const char *msg, MonoError *error);
-
-MonoExceptionHandle
 mono_exception_new_thread_abort (MonoError *error);
 
 MonoExceptionHandle
