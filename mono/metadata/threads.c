@@ -4854,7 +4854,7 @@ mono_set_pending_exception_handle (MonoExceptionHandle exc)
 
 	MONO_OBJECT_SETREF (thread, pending_exception, MONO_HANDLE_RAW (exc));
 
-	mono_thread_request_interruption (FALSE);
+	mono_thread_request_interruption_native ();
 }
 
 /**
