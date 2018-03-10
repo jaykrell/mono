@@ -1373,14 +1373,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			return NULL;
 		break;
 	case MONO_PATCH_INFO_METHOD:
-		if (patch_info->data.method == method) {
-			target = code;
-		} else {
-			/* get the trampoline to the method from the domain */
-			target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
-			if (!mono_error_ok (error))
-				return NULL;
-		}
+		/* get the trampoline to the method from the domain */
+		target = mono_create_jit_trampoline (domain, patch_info->data.method, error);
+		if (!mono_error_ok (error))
+			return NULL;
 		break;
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT: {
 		gpointer code_slot;
