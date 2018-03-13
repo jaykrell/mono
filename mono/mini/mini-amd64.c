@@ -3693,6 +3693,41 @@ emit_get_last_error (guint8* code, int dreg)
 #define bb_is_loop_start(bb) ((bb)->loop_body_start && (bb)->nesting)
 
 #ifndef DISABLE_JIT
+
+static guint8*
+amd64_handle_varargs (MonoCompile *cfg, guint8 *code, MonoCallInst *call)
+{
+#ifndef TARGET_WIN32
+	/*
+	 * The AMD64 ABI forces callers to know about varargs.
+	 */
+	guint32 nregs = 0;
+	if (call->signature->call_convention == MONO_CALL_VARARG && call->signature->pinvoke) {
+		// deliberatly nothing -- but nreg = 0 and do not return
+	} else if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE && cfg->method->klass->image != mono_defaults.corlib) {
+		/*
+		 * Since the unmanaged calling convention doesn't contain a
+		 * 'vararg' entry, we have to treat every pinvoke call as a
+		 * potential vararg call.
+		 */
+		for (guint32 i = 0; i < AMD64_XMM_NREG; ++i)
+			nregs += (call->used_fregs & (1 << i)) != 0;
+	} else {
+		return code;
+	}
+	MonoInst *ins = (MonoInst*)call;
+	if (ins->sreg1 == AMD64_RAX) {
+		amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
+		ins->sreg1 = AMD64_R11;
+	}
+	if (nregs)
+		amd64_mov_reg_imm (code, AMD64_RAX, nregs);
+	else
+		amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
+#endif
+	return code;
+}
+
 void
 mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 {
@@ -4672,27 +4707,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL2:
 		case OP_VOIDCALL:
 			call = (MonoCallInst*)ins;
-			/*
-			 * The AMD64 ABI forces callers to know about varargs.
-			 */
-			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke))
-				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-			else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
-				/* 
-				 * Since the unmanaged calling convention doesn't contain a 
-				 * 'vararg' entry, we have to treat every pinvoke call as a
-				 * potential vararg call.
-				 */
-				guint32 nregs, i;
-				nregs = 0;
-				for (i = 0; i < AMD64_XMM_NREG; ++i)
-					if (call->used_fregs & (1 << i))
-						nregs ++;
-				if (!nregs)
-					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				else
-					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
-			}
+
+			g_assert (ins->sreg1 == -1);
+			code = amd64_handle_varargs (cfg, code, call);
 
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
@@ -4716,35 +4733,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = AMD64_R11;
 			}
 
-			/*
-			 * The AMD64 ABI forces callers to know about varargs.
-			 */
-			if ((call->signature->call_convention == MONO_CALL_VARARG) && (call->signature->pinvoke)) {
-				if (ins->sreg1 == AMD64_RAX) {
-					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-					ins->sreg1 = AMD64_R11;
-				}
-				amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-			} else if ((cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) && (cfg->method->klass->image != mono_defaults.corlib)) {
-				/* 
-				 * Since the unmanaged calling convention doesn't contain a 
-				 * 'vararg' entry, we have to treat every pinvoke call as a
-				 * potential vararg call.
-				 */
-				guint32 nregs, i;
-				nregs = 0;
-				for (i = 0; i < AMD64_XMM_NREG; ++i)
-					if (call->used_fregs & (1 << i))
-						nregs ++;
-				if (ins->sreg1 == AMD64_RAX) {
-					amd64_mov_reg_reg (code, AMD64_R11, AMD64_RAX, 8);
-					ins->sreg1 = AMD64_R11;
-				}
-				if (!nregs)
-					amd64_alu_reg_reg (code, X86_XOR, AMD64_RAX, AMD64_RAX);
-				else
-					amd64_mov_reg_imm (code, AMD64_RAX, nregs);
-			}
+			code = amd64_handle_varargs (cfg, code, call);
 
 			amd64_call_reg (code, ins->sreg1);
 			ins->flags |= MONO_INST_GC_CALLSITE;
