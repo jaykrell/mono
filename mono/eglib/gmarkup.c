@@ -92,8 +92,7 @@ g_markup_parse_context_free (GMarkupParseContext *context)
 	if (context->user_data_dnotify != NULL)
 		(context->user_data_dnotify) (context->user_data);
 	
-	if (context->text != NULL)
-		g_string_free (context->text, TRUE);
+	g_string_free (context->text, TRUE);
 	for (l = context->level; l; l = l->next)
 		g_free (l->data);
 	g_slist_free (context->level);
@@ -271,8 +270,7 @@ destroy_parse_state (GMarkupParseContext *context)
 		g_free (p->data);
 	
 	g_slist_free (context->level);
-	if (context->text != NULL)
-		g_string_free (context->text, TRUE);
+	g_string_free (context->text, TRUE);
 	context->text = NULL;
 	context->level = NULL;
 }

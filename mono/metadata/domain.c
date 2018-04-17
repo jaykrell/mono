@@ -1085,14 +1085,11 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 			unregister_vtable_reflection_type ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	}
 
-	if (domain->type_hash) {
-		mono_g_hash_table_destroy (domain->type_hash);
-		domain->type_hash = NULL;
-	}
-	if (domain->type_init_exception_hash) {
-		mono_g_hash_table_destroy (domain->type_init_exception_hash);
-		domain->type_init_exception_hash = NULL;
-	}
+	mono_g_hash_table_destroy (domain->type_hash);
+	domain->type_hash = NULL;
+
+	mono_g_hash_table_destroy (domain->type_init_exception_hash);
+	domain->type_init_exception_hash = NULL;
 
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
@@ -1172,8 +1169,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	 * this will free them.
 	 */
 	mono_thread_hazardous_try_free_all ();
-	if (domain->aot_modules)
-		mono_jit_info_table_free (domain->aot_modules);
+	mono_jit_info_table_free (domain->aot_modules);
 	g_assert (domain->num_jit_info_table_duplicates == 0);
 	mono_jit_info_table_free (domain->jit_info_table);
 	domain->jit_info_table = NULL;
@@ -1203,18 +1199,15 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 	g_hash_table_destroy (domain->finalizable_objects_hash);
 	domain->finalizable_objects_hash = NULL;
-	if (domain->generic_virtual_cases) {
-		g_hash_table_destroy (domain->generic_virtual_cases);
-		domain->generic_virtual_cases = NULL;
-	}
-	if (domain->ftnptrs_hash) {
-		g_hash_table_destroy (domain->ftnptrs_hash);
-		domain->ftnptrs_hash = NULL;
-	}
-	if (domain->method_to_dyn_method) {
-		g_hash_table_destroy (domain->method_to_dyn_method);
-		domain->method_to_dyn_method = NULL;
-	}
+
+	g_hash_table_destroy (domain->generic_virtual_cases);
+	domain->generic_virtual_cases = NULL;
+
+	g_hash_table_destroy (domain->ftnptrs_hash);
+	domain->ftnptrs_hash = NULL;
+
+	g_hash_table_destroy (domain->method_to_dyn_method);
+	domain->method_to_dyn_method = NULL;
 
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
 	mono_os_mutex_destroy (&domain->assemblies_lock);

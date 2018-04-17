@@ -77,8 +77,9 @@ gchar *
 g_string_free (GString *string, gboolean free_segment)
 {
 	gchar *data;
-	
-	g_return_val_if_fail (string != NULL, NULL);
+
+	if (!string)
+		return NULL;
 
 	data = string->str;
 	g_free(string);

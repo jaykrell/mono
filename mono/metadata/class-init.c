@@ -3128,8 +3128,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		override_map = NULL;
 	}
 
-	if (override_class_map)
-		g_hash_table_destroy (override_class_map);
+	g_hash_table_destroy (override_class_map);
 
 	if (conflict_map) {
 		handle_dim_conflicts (vtable, klass, conflict_map);
@@ -3241,10 +3240,8 @@ fail:
 	mono_error_cleanup (error);
 	g_free (name);
 	g_free (vtable);
-	if (override_map)
-		g_hash_table_destroy (override_map);
-	if (virt_methods)
-		g_slist_free (virt_methods);
+	g_hash_table_destroy (override_map);
+	g_slist_free (virt_methods);
 	}
 }
 
@@ -5444,8 +5441,7 @@ mono_classes_cleanup (void)
 	mono_native_tls_free (setup_fields_tls_id);
 	mono_native_tls_free (init_pending_tls_id);
 
-	if (global_interface_bitset)
-		mono_bitset_free (global_interface_bitset);
+	mono_bitset_free (global_interface_bitset);
 	global_interface_bitset = NULL;
 	mono_os_mutex_destroy (&classes_mutex);
 }

@@ -72,8 +72,9 @@ mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
  * made with \c mono_bitset_mem_new.
  */
 void
-mono_bitset_free (MonoBitSet *set) {
-	if (!(set->flags & MONO_BITSET_DONT_FREE))
+mono_bitset_free (MonoBitSet *set)
+{
+	if (set && !(set->flags & MONO_BITSET_DONT_FREE))
 		g_free (set);
 }
 

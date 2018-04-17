@@ -91,6 +91,9 @@ mono_jit_info_table_new (MonoDomain *domain)
 static void
 jit_info_table_free (MonoJitInfoTable *table, gboolean duplicate)
 {
+	if (!table)
+		return;
+
 	int i;
 	int num_chunks = table->num_chunks;
 	MonoDomain *domain = table->domain;
