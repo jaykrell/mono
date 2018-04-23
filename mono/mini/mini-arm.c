@@ -307,6 +307,26 @@ emit_call_reg (guint8 *code, int reg)
 }
 
 static guint8*
+emit_tailcall_reg_step1 (guint8 *code, int reg)
+{
+	if (reg != ARMREG_IP)
+		ARM_MOV_REG_REG (code, ARMREG_IP, reg);
+	return code;
+}
+
+static guint8*
+emit_tailcall_reg_step2 (guint8 *code)
+{
+	if (v5_supported)
+		ARM_BX_REG (code, ARMREG_IP);
+	else if (thumb_supported)
+		ARM_BX (code, ARMREG_IP);
+	else
+		ARM_MOV_REG_REG (code, ARMREG_PC, ARMREG_IP);
+	return code;
+}
+
+static guint8*
 emit_call_seq (MonoCompile *cfg, guint8 *code)
 {
 	if (cfg->method->dynamic) {
@@ -5072,8 +5092,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				}
 			}
 			break;
-		case OP_TAILCALL: {
+		case OP_TAILCALL:
+		case OP_TAILCALL_REG: {
 			MonoCallInst *call = (MonoCallInst*)ins;
+			int offset = 0;
 
 			/*
 			 * The stack looks like the following:
@@ -5084,6 +5106,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * Need to copy the arguments from the callee argument area to
 			 * the caller argument area, and pop the frame.
 			 */
+
+			if (ins->opcode == OP_TAILCALL_REG) {
+				code = emit_tailcall_reg_step1 (ins->sreg1);
+				ARM_PUSH (code, ARMREG_IP);
+				offset = 4; // will it fit?
+			}
+
 			if (call->stack_usage) {
 				int i, prev_sp_offset = 0;
 
@@ -5100,11 +5129,14 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				code = emit_big_add (code, ARMREG_IP, cfg->frame_reg, cfg->stack_usage + prev_sp_offset);
 
 				/* Copy arguments on the stack to our argument area */
-				for (i = 0; i < call->stack_usage; i += sizeof (mgreg_t)) {
+				for (i = offset; i < call->stack_usage + offset; i += sizeof (mgreg_t)) {
 					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i);
 					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i);
 				}
 			}
+
+			if (ins->opcode == OP_TAILCALL_REG)
+				ARM_POP (code, ARMREG_IP);
 
 			/*
 			 * Keep in sync with mono_arch_emit_epilog
@@ -5118,6 +5150,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ARM_POP (code, (1 << ARMREG_R7) | (1 << ARMREG_LR));
 			} else {
 				ARM_POP (code, cfg->used_int_regs | (1 << ARMREG_LR));
+			}
+
+			if (ins->opcode == OP_TAILCALL_REG) {
+				code = emit_tailcall_reg_step2 (code);
+				break;
 			}
 
 			mono_add_patch_info (cfg, (guint8*) code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
