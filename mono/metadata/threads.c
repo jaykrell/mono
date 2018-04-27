@@ -2555,9 +2555,10 @@ ves_icall_System_Threading_Thread_ResetAbort (MonoThreadObjectHandle this_obj, M
 	if (!was_aborting) {
 		mono_error_set_exception_thread_state (error, "Unable to reset abort because no abort was requested");
 		return;
-	}
-	if (is_domain_abort) // Silently ignore abort resets in unloading appdomains
+	} else if (is_domain_abort) {
+		/* Silently ignore abort resets in unloading appdomains */
 		return;
+	}
 
 	mono_get_eh_callbacks ()->mono_clear_abort_threshold ();
 	thread->abort_exc = NULL;
@@ -2708,19 +2709,15 @@ ves_icall_System_Threading_Thread_Resume (MonoThreadObjectHandle thread_handle, 
 {
 	// Internal threads are pinned so shallow coop/handle.
 	MonoInternalThread * const internal_thread = thread_handle_to_internal_ptr (thread_handle);
-	gboolean exception = FALSE;
 
 	if (!internal_thread) {
-		exception = TRUE;
+		mono_error_set_exception_thread_not_started_or_dead (error);
 	} else {
 		LOCK_THREAD (internal_thread);
 		if (!mono_thread_resume (internal_thread))
-			exception = TRUE;
+			mono_error_set_exception_thread_not_started_or_dead (error); // FIXME move out of lock?
 		UNLOCK_THREAD (internal_thread);
 	}
-
-	if (exception)
-		mono_error_set_exception_thread_not_started_or_dead (error);
 }
 
 static gboolean
