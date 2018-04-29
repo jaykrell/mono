@@ -559,7 +559,7 @@ mono_context_set_handle (MonoAppContextHandle new_context);
 static inline guint32
 mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle)
 {
-	return mono_gchandle_new_weakref (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)));
+	return mono_gchandle_new_weakref (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), FALSE);
 }
 
 G_END_DECLS
