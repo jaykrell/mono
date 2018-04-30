@@ -5738,7 +5738,8 @@ ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (char *appBundleID, char *appSignature, char *appVersion, char *merpGUIPath)
+ves_icall_Mono_Runtime_EnableMicrosoftTelemetry (const char *appBundleID, const char *appSignature,
+	const char *appVersion, const char *merpGUIPath, MonoError *error)
 {
 #ifdef TARGET_OSX
 	mono_merp_enable (appBundleID, appSignature, appVersion, merpGUIPath);
