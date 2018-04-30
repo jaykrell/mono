@@ -33,22 +33,22 @@ unsafe struct A<T>
     }
 
     [MethodImpl (NoInlining)]
-    public int f1 (int counter, long initial_stack, long current_stack)
+    public int Method1 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
 	if (counter > 0)
-	    return f2 (counter - 1, initial_stack, (long)&local);
+	    return Method2 (counter - 1, initial_stack, (long)&local);
 	return check ((long)&local, current_stack);
     }
 
     [MethodImpl (NoInlining)]
-    public int f2 (int counter, long initial_stack, long current_stack)
+    public int Method2 (int counter, long initial_stack, long current_stack)
     {
 	int local;
 	object a = new T[101];
 	if (counter > 0)
-	    return f1 (counter - 1, initial_stack, (long)&local);
+	    return Method1 (counter - 1, initial_stack, (long)&local);
 	return check ((long)&local, current_stack);
     }
 }
@@ -59,7 +59,7 @@ unsafe class B
     public static void Main()
     {
 	int stack;
-	Environment.Exit(new A<int>().f1 (100, (long)&stack, 0));
+	Environment.Exit(new A<int>().Method1 (100, (long)&stack, 0));
     }
 }
 */
@@ -89,7 +89,7 @@ IL_0006:
 	ret
 }
 
-.method instance int32 f1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method instance int32 Method1 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 	.locals init (int32 V_0)
 
@@ -105,7 +105,7 @@ IL_0006:
 	ldloca.s V_0
 	conv.u
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f2 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<!T>::Method2 (int32, int64, int64)
 	ret
 
 IL_001b:
@@ -117,7 +117,7 @@ IL_001b:
 	ret
 }
 
-.method instance int32 f2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
+.method instance int32 Method2 (int32 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 	.locals init (int32 V_0)
 	ldarg.1
@@ -132,7 +132,7 @@ IL_001b:
 	ldloca.s V_0
 	conv.u
 	conv.u8
-	tail. call instance int32 valuetype A`1<!T>::f1 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<!T>::Method1 (int32, int64, int64)
 	ret
 
 IL_001b:
@@ -163,7 +163,7 @@ IL_001b:
 	conv.u8
 	ldc.i4.0
 	conv.i8
-	tail. call instance int32 valuetype A`1<int32>::f1 (int32, int64, int64)
+	tail. call instance int32 valuetype A`1<int32>::Method1 (int32, int64, int64)
 	ret
 }
 
