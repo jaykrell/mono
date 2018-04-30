@@ -12,8 +12,7 @@ http://www.mono-project.com/docs/advanced/runtime/docs/generic-sharing/
    of value types need to be passed a pointer to the caller’s class’s VTable in the MONO_ARCH_RGCTX_REG register.
 3. Generic methods need to be passed a pointer to the MRGCTX in the MONO_ARCH_RGCTX_REG register
 
-Test case 2b.
-This passes on desktop but not Mono, despite seeming like it is implemented.
+Test case 2b, with a small type.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -23,9 +22,9 @@ unsafe struct A<T>
 {
     void f3 ()
     {
-        a = b = c = d = e = f = g = h = 1;
+        a = 1;
     }
-    public int a, b, c, d, e, f, g, h;
+    public int a;
 
     [MethodImpl (NoInlining)]
     static int check (long stack1, long stack2)
@@ -72,6 +71,7 @@ unsafe class B
 .class A`1<T>
 
 // Remove this change the test a lot and make it pass.
+// It is ok in this case because the ValueType is small.
 extends [mscorlib]System.ValueType
 
 {
