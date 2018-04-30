@@ -5727,7 +5727,7 @@ ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, gboolea
 }
 
 ICALL_EXPORT void
-ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (void)
+ves_icall_Mono_Runtime_DisableMicrosoftTelemetry (MonoError *error)
 {
 #ifdef TARGET_OSX
 	mono_merp_disable ();
