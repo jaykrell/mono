@@ -216,7 +216,7 @@ IsMemberOf (gid_t user, struct group *g)
 
 #ifndef HOST_WIN32
 gpointer
-mono_security_principal_windows_identity_get_current_token ()
+mono_security_principal_windows_identity_get_current_token (void)
 {
 	return GINT_TO_POINTER (geteuid ());
 }
@@ -501,10 +501,10 @@ ves_icall_System_Security_Principal_WindowsPrincipal_IsMemberOfGroupName (gpoint
 
 #ifndef HOST_WIN32
 static gboolean
-IsProtected (MonoString *path, gint32 protection) 
+IsProtected (const gunichar2 *path, gint32 protection)
 {
 	gboolean result = FALSE;
-	gchar *utf8_name = mono_unicode_to_external (mono_string_chars (path));
+	gchar *utf8_name = mono_unicode_to_external (path);
 	if (utf8_name) {
 		struct stat st;
 		if (stat (utf8_name, &st) == 0) {
@@ -517,10 +517,10 @@ IsProtected (MonoString *path, gint32 protection)
 
 
 static gboolean
-Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
+Protect (const gunichar2 *path, gint32 file_mode, gint32 add_dir_mode)
 {
 	gboolean result = FALSE;
-	gchar *utf8_name = mono_unicode_to_external (mono_string_chars (path));
+	gchar *utf8_name = mono_unicode_to_external (path);
 	if (utf8_name) {
 		struct stat st;
 		if (stat (utf8_name, &st) == 0) {
@@ -535,14 +535,14 @@ Protect (MonoString *path, gint32 file_mode, gint32 add_dir_mode)
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *path, MonoError *error)
 {
 	/* we assume some kind of security is applicable outside Windows */
 	return TRUE;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
@@ -552,7 +552,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (Mono
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
@@ -562,7 +562,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoStr
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
@@ -572,7 +572,7 @@ ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoStri
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 	

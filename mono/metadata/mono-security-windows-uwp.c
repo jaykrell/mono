@@ -14,7 +14,7 @@
 #include "mono/metadata/mono-security-windows-internals.h"
 
 gpointer
-mono_security_principal_windows_identity_get_current_token ()
+mono_security_principal_windows_identity_get_current_token (void)
 {
 	g_unsupported_api ("OpenThreadToken, OpenProcessToken");
 

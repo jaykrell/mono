@@ -269,13 +269,13 @@ static PSID
 GetCurrentUserSid (void)
 {
 	PSID sid = NULL;
-	guint32 size = 0;
+	DWORD size = 0;
 	gpointer token = mono_security_principal_windows_identity_get_current_token ();
 
-	GetTokenInformation (token, TokenUser, NULL, size, (PDWORD)&size);
+	GetTokenInformation (token, TokenUser, NULL, size, &size);
 	if (size > 0) {
 		TOKEN_USER *tu = g_malloc0 (size);
-		if (GetTokenInformation (token, TokenUser, tu, size, (PDWORD)&size)) {
+		if (GetTokenInformation (token, TokenUser, tu, size, &size)) {
 			DWORD length = GetLengthSid (tu->User.Sid);
 			sid = (PSID) g_malloc0 (length);
 			if (!CopySid (length, sid, tu->User.Sid)) {
@@ -303,7 +303,7 @@ GetRightsFromSid (PSID sid, PACL acl)
 }
 
 gboolean
-mono_security_win_is_machine_protected (gunichar2 *path)
+mono_security_win_is_machine_protected (const gunichar2 *path)
 {
 	gboolean success = FALSE;
 	PACL pDACL = NULL;
@@ -327,14 +327,13 @@ mono_security_win_is_machine_protected (gunichar2 *path)
 	/* Note: we don't need to check our own access -
 	we'll know soon enough when reading the file */
 
-	if (pSD)
-		LocalFree (pSD);
+	LocalFree (pSD);
 
 	return success;
 }
 
 gboolean
-mono_security_win_is_user_protected (gunichar2 *path)
+mono_security_win_is_user_protected (const gunichar2 *path)
 {
 	gboolean success = FALSE;
 	PACL pDACL = NULL;
@@ -359,14 +358,13 @@ mono_security_win_is_user_protected (gunichar2 *path)
 	/* Note: we don't need to check our own access -
 	we'll know soon enough when reading the file */
 
-	if (pSecurityDescriptor)
-		LocalFree (pSecurityDescriptor);
+	LocalFree (pSecurityDescriptor);
 
 	return success;
 }
 
 gboolean
-mono_security_win_protect_machine (gunichar2 *path)
+mono_security_win_protect_machine (const gunichar2 *path)
 {
 	PSID pEveryoneSid = GetEveryoneSid ();
 	PSID pAdminsSid = GetAdministratorsSid ();
@@ -401,8 +399,7 @@ mono_security_win_protect_machine (gunichar2 *path)
 				DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
 				NULL, NULL, pDACL, NULL);
 		}
-		if (pDACL)
-			LocalFree (pDACL);
+		LocalFree (pDACL);
 	}
 
 	if (pEveryoneSid)
@@ -413,7 +410,7 @@ mono_security_win_protect_machine (gunichar2 *path)
 }
 
 gboolean
-mono_security_win_protect_user (gunichar2 *path)
+mono_security_win_protect_user (const gunichar2 *path)
 {
 	DWORD retval = -1;
 
@@ -440,8 +437,7 @@ mono_security_win_protect_user (gunichar2 *path)
 				NULL, NULL, pDACL, NULL);
 		}
 
-		if (pDACL)
-			LocalFree (pDACL);
+		LocalFree (pDACL);
 		g_free (pCurrentSid); /* g_malloc0 */
 	}
 
@@ -450,53 +446,53 @@ mono_security_win_protect_user (gunichar2 *path)
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (MonoString *root)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_CanSecure (const gunichar2 *root, MonoError *error)
 {
-	gint32 flags;
+	DWORD flags = 0;
 
 	/* ACL are nice... unless you have FAT or other uncivilized filesystem */
-	if (!GetVolumeInformation (mono_string_chars (root), NULL, 0, NULL, NULL, (LPDWORD)&flags, NULL, 0))
+	if (!GetVolumeInformation (root, NULL, 0, NULL, NULL, &flags, NULL, 0))
 		return FALSE;
 	return ((flags & FS_PERSISTENT_ACLS) == FS_PERSISTENT_ACLS);
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsMachineProtected (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
 	/* no one, but the owner, should have write access to the directory */
-	ret = mono_security_win_is_machine_protected (mono_string_chars (path));
+	ret = mono_security_win_is_machine_protected (path);
 	return (MonoBoolean)ret;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_IsUserProtected (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
 	/* no one, but the user, should have access to the directory */
-	ret = mono_security_win_is_user_protected (mono_string_chars (path));
+	ret = mono_security_win_is_user_protected (path);
 	return (MonoBoolean)ret;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectMachine (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
 	/* read/write to owner, read to everyone else */
-	ret = mono_security_win_protect_machine (mono_string_chars (path));
+	ret = mono_security_win_protect_machine (path);
 	return (MonoBoolean)ret;
 }
 
 MonoBoolean
-ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (MonoString *path)
+ves_icall_Mono_Security_Cryptography_KeyPairPersistence_ProtectUser (const gunichar2 *path, MonoError *error)
 {
 	gboolean ret = FALSE;
 
 	/* read/write to user, no access to everyone else */
-	ret = mono_security_win_protect_user (mono_string_chars (path));
+	ret = mono_security_win_protect_user (path);
 	return (MonoBoolean)ret;
 }
 #endif /* HOST_WIN32 */
