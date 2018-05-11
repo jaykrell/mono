@@ -12656,8 +12656,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				/*
 				 * Optimize the common case of ldvirtftn+delegate creation
 				 */
-				if ((sp > stack_start) && (ip + 6 + 5 < end) && ip_in_bb (cfg, cfg->cbb, ip + 6) && (ip [6] == CEE_NEWOBJ) && (ip > header->code && ip [-1] == CEE_DUP)) {
-					MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (ip + 7), NULL, generic_context);
+				// FIXME Looking backward a byte does not guaranteeably get previous opcode.
+				if ((sp > stack_start) && (next_ip + 5 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ) && (ip > header->code && ip [-1] == CEE_DUP)) {
+					MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
 					if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
 						MonoInst *target_ins, *handle_ins;
 						MonoMethod *invoke;
@@ -12678,7 +12679,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* FIXME: SGEN support */
 						if (invoke_context_used == 0 || cfg->llvm_only) {
 							if (cfg->verbose_level > 3)
-								g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, ip + 6, NULL));
+								g_print ("converting (in B%d: stack: %d) %s", cfg->cbb->block_num, (int)(sp - stack_start), mono_disasm_code_one (NULL, method, next_ip, NULL));
 							if ((handle_ins = handle_delegate_ctor (cfg, ctor_method->klass, target_ins, cmethod, context_used, is_virtual))) {
 								sp -= 2;
 								*sp = handle_ins;
@@ -12711,7 +12712,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				n = read16 (ip + 2);
 				CHECK_ARG (n);
-				if (is_addressable_valuetype_load (cfg, ip + 4, cfg->arg_types[n])) {
+				if (is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types[n])) {
 					EMIT_NEW_ARGLOADA (cfg, ins, n);
 				} else {
 					EMIT_NEW_ARGLOAD (cfg, ins, n);
@@ -12740,7 +12741,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_STACK_OVF (1);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
-				if (is_addressable_valuetype_load (cfg, ip + 4, header->locals[n])) {
+				if (is_addressable_valuetype_load (cfg, next_ip, header->locals[n])) {
 					EMIT_NEW_LOCLOADA (cfg, ins, n);
 				} else {
 					EMIT_NEW_LOCLOAD (cfg, ins, n);
