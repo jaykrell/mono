@@ -1535,7 +1535,7 @@ TestDriver.dll:
 	$(MCS) -target:library -out:$@ $(srcdir)/../mini/TestDriver.cs $(srcdir)/../mini/TestHelpers.cs
 
 runtest: compile-tests
-	@failed=0; \
+	failed=0; \
 	passed=0; \
 	failed_tests="";\
 	if [ "x$$V" = "x1" ]; then dump_action="dump-output"; else dump_action="no-dump"; fi; \
