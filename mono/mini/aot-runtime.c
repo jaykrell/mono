@@ -3062,6 +3062,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			ei->try_len = decode_value (p, &p);
 			ei->handler_offset = decode_value (p, &p);
 			ei->handler_len = decode_value (p, &p);
+			g_assert (!ei->handler_offset == !ei->handler_len);
 
 			/* Read the list of nesting clauses */
 			while (TRUE) {
@@ -3128,6 +3129,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			ei->try_start = code + decode_value (p, &p);
 			ei->try_end = code + decode_value (p, &p);
 			ei->handler_start = code + decode_value (p, &p);
+			g_assert (!ei->handler_offset == !ei->handler_len);
 		}
 
 		jinfo->unwind_info = unwind_info;

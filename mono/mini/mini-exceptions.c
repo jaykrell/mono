@@ -2057,6 +2057,7 @@ interp_exit_finally_abort_blocks (MonoJitInfo *ji, int start_clause, int end_cla
 	int i;
 	for (i = start_clause; i < end_clause; i++) {
 		MonoJitExceptionInfo *ei = &ji->clauses [i];
+		g_assert (!ei->handler_start == !ei->data.handler_end);
 		if (ei->flags == MONO_EXCEPTION_CLAUSE_FINALLY &&
 				ip >= ei->handler_start &&
 				ip < ei->data.handler_end) {
@@ -2411,6 +2412,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							 */
 							g_assert (ji == mini_jit_info_table_find (domain, (char *)MONO_CONTEXT_GET_IP (&jit_tls->handler_block_context), NULL));
 
+							g_assert (!ei->handler_start == !ei->data.handler_end);
 							if (!is_address_protected (ji, jit_tls->handler_block, ei->handler_start)) {
 								is_outside = TRUE;
 							}
@@ -2456,6 +2458,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (MONO_CONTEXT_GET_IP (ctx) != 0)
 							mono_arch_undo_ip_adjustment (ctx);
 					} else {
+						g_assert (!ei->handler_start == !ei->data.handler_end);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 					}
 					mono_set_lmf (lmf);
@@ -2512,15 +2515,18 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.first_filter_idx = first_filter_idx;
 						jit_tls->resume_state.filter_idx = filter_idx;
 						mini_set_abort_threshold (&frame);
+						g_assert (!ei->handler_start == !ei->data.handler_end);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return 0;
 					} else {
 						mini_set_abort_threshold (&frame);
 						if (in_interp) {
+							g_assert (!ei->handler_start == !ei->data.handler_end);
 							gboolean has_ex = mini_get_interp_callbacks ()->run_finally (&frame, i, ei->handler_start);
 							if (has_ex)
 								return 0;
 						} else {
+							g_assert (!ei->handler_start == !ei->data.handler_end);
 							call_filter (ctx, ei->handler_start);
 						}
 					}
@@ -2578,6 +2584,7 @@ mono_debugger_run_finally (MonoContext *start_ctx)
 
 		if (is_address_protected (ji, ei, MONO_CONTEXT_GET_IP (&ctx)) &&
 		    (ei->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+			g_assert (!ei->handler_start == !ei->data.handler_end);
 			call_filter (&ctx, ei->handler_start);
 		}
 	}
@@ -3242,6 +3249,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 			continue;
 		/*If ip points to the first instruction it means the handler block didn't start
 		 so we can leave its execution to the EH machinery*/
+		g_assert (!ei->handler_start == !ei->data.handler_end);
 		if (ei->handler_start <= ip && ip < ei->data.handler_end) {
 			pdata->ji = ji;
 			pdata->ei = ei;
@@ -3267,6 +3275,7 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 		clause = &ji->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 			continue;
+		g_assert (!clause->handler_start == !clause->data.handler_end);
 		if (clause->handler_start <= ip && clause->data.handler_end > ip)
 			break;
 	}
