@@ -2525,7 +2525,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							if (has_ex)
 								return 0;
 						} else {
-							g_assert (!ei->handler_start == !ei->data.handler_end);
 							call_filter (ctx, ei->handler_start);
 						}
 					}
