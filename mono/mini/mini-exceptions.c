@@ -3247,7 +3247,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 			continue;
 		/*If ip points to the first instruction it means the handler block didn't start
 		 so we can leave its execution to the EH machinery*/
-		g_assert (!ei->handler_start == !ei->data.handler_end);
+		//g_assert (!ei->handler_start == !ei->data.handler_end);
 		if (ei->handler_start <= ip && ip < ei->data.handler_end) {
 			pdata->ji = ji;
 			pdata->ei = ei;
