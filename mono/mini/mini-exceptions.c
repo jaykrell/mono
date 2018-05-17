@@ -2515,7 +2515,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						jit_tls->resume_state.first_filter_idx = first_filter_idx;
 						jit_tls->resume_state.filter_idx = filter_idx;
 						mini_set_abort_threshold (&frame);
-						g_assert (!ei->handler_start == !ei->data.handler_end);
 						MONO_CONTEXT_SET_IP (ctx, ei->handler_start);
 						return 0;
 					} else {
