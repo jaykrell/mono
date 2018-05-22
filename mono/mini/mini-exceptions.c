@@ -515,6 +515,8 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	MonoJitInfo *ji;
 	MonoMethod *method = NULL;
 
+	g_print ("%s %d\n", __func__, __LINE__);
+
 	if (trace)
 		*trace = NULL;
 
@@ -557,12 +559,16 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 
 		if (trace)
 			*trace = mono_debug_print_stack_frame (method, offset, domain);
+		else
+			 mono_debug_print_stack_frame (method, offset, domain);
 	} else {
+		char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
 		if (trace) {
-			char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
 			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
-			g_free (fname);
+		} else {
+			g_print ("%s %s", __func__, fname);
 		}
+		g_free (fname);
 	}
 
 	return ji;
@@ -598,14 +604,20 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	MonoMethod *method = NULL;
 	gboolean async = mono_thread_info_is_async_context ();
 
+	g_print ("%s %d\n", __func__, __LINE__);
+
 	if (trace)
 		*trace = NULL;
 
 	/* Avoid costly table lookup during stack overflow */
-	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size)))
+	if (prev_ji && (ip > prev_ji->code_start && ((guint8*)ip < ((guint8*)prev_ji->code_start) + prev_ji->code_size))) {
 		ji = prev_ji;
-	else
+		g_print ("%s %d prev\n", __func__, __LINE__);
+	}
+	else {
 		ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
+		g_print ("%s %d ji=%p\n", __func__, __LINE__, ji);
+	}
 
 	if (!target_domain)
 		target_domain = domain;
@@ -614,8 +626,10 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		memset (save_locations, 0, MONO_MAX_IREGS * sizeof (mgreg_t*));
 
 	err = arch_unwind_frame (target_domain, jit_tls, ji, ctx, new_ctx, lmf, save_locations, frame);
-	if (!err)
+	if (!err) {
+		g_print ("%s %d arch_unwind_frame %d\n", __func__, __LINE__, err);
 		return FALSE;
+	}
 
 	if (frame->type != FRAME_TYPE_INTERP_TO_MANAGED && *lmf && ((*lmf) != jit_tls->first_lmf) && ((gpointer)MONO_CONTEXT_GET_SP (new_ctx) >= (gpointer)(*lmf))) {
 		/*
@@ -625,8 +639,10 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		*lmf = (MonoLMF *)(((gsize)(*lmf)->previous_lmf) & ~(SIZEOF_VOID_P -1));
 	}
 
-	if (frame->ji && !frame->ji->is_trampoline && !frame->ji->async)
+	if (frame->ji && !frame->ji->is_trampoline && !frame->ji->async) {
 		method = jinfo_get_method (frame->ji);
+		g_print ("%s %d arch_unwind_frame method=%s\n", __func__, __LINE__, method ? method->name : "<null>");
+	}
 
 	if (frame->type == FRAME_TYPE_MANAGED && method) {
 		if (!method->wrapper_type || method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD)
@@ -670,10 +686,17 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		if (trace)
 			*trace = mono_debug_print_stack_frame (method, frame->native_offset, domain);
+		else {
+			mono_debug_print_stack_frame (method, frame->native_offset, domain);
+		}
 	} else {
 		if (trace && frame->method) {
 			char *fname = mono_method_full_name (frame->method, TRUE);
-			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
+			*trace = g_strdup_printf ("in (unmanaged) %s\n", fname);
+			g_free (fname);
+		} else if (frame->method) {
+			char *fname = mono_method_full_name (frame->method, TRUE);
+			g_print ("in (unmanaged) %s\n", fname);
 			g_free (fname);
 		}
 	}
