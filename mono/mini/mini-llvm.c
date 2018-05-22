@@ -6583,6 +6583,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			break;
 		case OP_THROW:
 		case OP_RETHROW: {
+			// Inlining breaks Mono's exception dispatch.
+			// For example MonoTests.System.XmlSerialization.XmlSerializerTests.TestSerializeZeroFlagEnum_InvalidValue.
+			mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
 			gboolean rethrow = (ins->opcode == OP_RETHROW);
 			if (ctx->llvm_only) {
 				emit_llvmonly_throw (ctx, bb, rethrow, lhs);

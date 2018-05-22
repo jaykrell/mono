@@ -10548,8 +10548,10 @@ field_access_end:
 			link_bblock (cfg, cfg->cbb, end_bblock);
 			start_new_bblock = 1;
 			/* This can complicate code generation for llvm since the return value might not be defined */
-			if (COMPILE_LLVM (cfg))
+			if (COMPILE_LLVM (cfg)) {
+				cfg->no_inline = TRUE;
 				INLINE_FAILURE ("throw");
+			}
 			break;
 		case CEE_ENDFINALLY:
 			if (!ip_in_finally_clause (cfg, ip - header->code))
@@ -11565,6 +11567,10 @@ mono_ldptr:
 			 */
 			break;
 		case MONO_CEE_RETHROW: {
+			if (COMPILE_LLVM (cfg)) {
+				cfg->no_inline = TRUE;
+				INLINE_FAILURE ("rethrow");
+			}
 			MonoInst *load;
 			int handler_offset = -1;
 
