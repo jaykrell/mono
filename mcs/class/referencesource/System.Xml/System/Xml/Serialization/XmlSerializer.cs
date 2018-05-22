@@ -324,6 +324,7 @@ namespace System.Xml.Serialization {
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Serialize6"]/*' />
         public void Serialize(XmlWriter xmlWriter, object o, XmlSerializerNamespaces namespaces, string encodingStyle, string id) {
             try {
+		Console.WriteLine("serialize try 1");
                 if (primitiveType != null) {
                     if (encodingStyle != null && encodingStyle.Length > 0) {
                         throw new InvalidOperationException(Res.GetString(Res.XmlInvalidEncodingNotEncoded1, encodingStyle));
@@ -334,9 +335,11 @@ namespace System.Xml.Serialization {
                     XmlSerializationWriter writer = CreateWriter();
                     writer.Init(xmlWriter, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id, tempAssembly);
                     try {
+			Console.WriteLine("serialize try 2");
                         Serialize(o, writer);
                     }
                     finally {
+			Console.WriteLine("serialize finally");
                         writer.Dispose();
                     }
                 }
@@ -344,16 +347,21 @@ namespace System.Xml.Serialization {
                     tempAssembly.InvokeWriter(mapping, xmlWriter, o, namespaces == null || namespaces.Count == 0 ? DefaultNamespaces : namespaces, encodingStyle, id);
             }
             catch (Exception e) {
+		Console.WriteLine("serialize catch 1");
                 if (e is ThreadAbortException || e is StackOverflowException || e is OutOfMemoryException) {
+		    Console.WriteLine("serialize catch 2 rethrow");
                     throw;
                 }
-                if (e is TargetInvocationException)
+                if (e is TargetInvocationException) {
+		    Console.WriteLine("serialize catch 3 inner");
                     e = e.InnerException;
+		}
+		Console.WriteLine("serialize catch 4 throw");
                 throw new InvalidOperationException(Res.GetString(Res.XmlGenError), e);
             }
             xmlWriter.Flush();
         }
-        
+
         /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlSerializer.Deserialize"]/*' />
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
