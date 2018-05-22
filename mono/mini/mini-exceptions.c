@@ -515,7 +515,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	MonoJitInfo *ji;
 	MonoMethod *method = NULL;
 
-	g_print ("%s %d\n", __func__, __LINE__);
+	//g_print ("%s %d\n", __func__, __LINE__);
 
 	if (trace)
 		*trace = NULL;
@@ -562,13 +562,16 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 		else
 			 mono_debug_print_stack_frame (method, offset, domain);
 	} else {
-		char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
 		if (trace) {
+            char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
 			*trace = g_strdup_printf ("in (unmanaged) %s", fname);
+            g_free (fname);
 		} else {
+            char *fname = mono_method_full_name (jinfo_get_method (res), TRUE);
+			g_strdup_printf ("in (unmanaged) %s", fname);
 			g_print ("%s %s", __func__, fname);
+            g_free (fname);
 		}
-		g_free (fname);
 	}
 
 	return ji;
@@ -590,6 +593,7 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  * If ASYNC true, this function will be async safe, but some fields of frame and frame->ji will
  * not be set.
  */
+gboolean mono_is_usermode_native_debugger_present(void);
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
@@ -642,6 +646,12 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (frame->ji && !frame->ji->is_trampoline && !frame->ji->async) {
 		method = jinfo_get_method (frame->ji);
 		g_print ("%s %d arch_unwind_frame method=%s\n", __func__, __LINE__, method ? method->name : "<null>");
+        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteRoot"))
+            G_BREAKPOINT();
+        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteObject"))
+            G_BREAKPOINT();
+        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteEnumElement"))
+            G_BREAKPOINT();
 	}
 
 	if (frame->type == FRAME_TYPE_MANAGED && method) {

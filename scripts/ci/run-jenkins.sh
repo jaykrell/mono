@@ -1,5 +1,9 @@
 #!/bin/bash -e
 
+
+EXTRA_CONF_FLAGS=-with-llvm=/i/monollvm60opt
+PATH=/i/monollvm60opt/bin:$PATH
+
 export MONO_REPO_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../../" && pwd )"
 export TESTCMD=${MONO_REPO_ROOT}/scripts/ci/run-step.sh
 
@@ -20,15 +24,15 @@ fi
 
 if [[ ${CI_TAGS} == *'win-'* ]]; then
     # Passing -ggdb3 on Cygwin breaks linking against libmonosgen-x.y.dll
-    export CFLAGS="$CFLAGS -g -O2"
+    export CFLAGS="$CFLAGS -g -O0"
 else
-    export CFLAGS="$CFLAGS -ggdb3 -O2"
+    export CFLAGS="$CFLAGS -g -O0"
 fi
 
 if [[ $CI_TAGS == *'collect-coverage'* ]]; then
     # Collect coverage for further use by lcov and similar tools.
     # Coverage must be collected with -O0 and debug information.
-    export CFLAGS="$CFLAGS -ggdb3 --coverage -O0"
+    export CFLAGS="$CFLAGS -g -O0"
 fi
 
 if [[ $CI_TAGS == *'retry-flaky-tests'* ]]; then
