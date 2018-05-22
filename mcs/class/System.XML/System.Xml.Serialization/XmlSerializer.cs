@@ -469,7 +469,10 @@ namespace System.Xml.Serialization
 		{
 			XmlSerializationWriter xsWriter;
 
+			Console.WriteLine("Serialize 100");
+
 			try {
+				Console.WriteLine("Serialize 200");
 				if (customSerializer)
 					xsWriter = CreateWriter ();
 				else
@@ -482,16 +485,22 @@ namespace System.Xml.Serialization
 				}
 
 				xsWriter.Initialize (xmlWriter, namespaces);
+				Console.WriteLine("Serialize 300");
 				Serialize (o, xsWriter);
 				xmlWriter.Flush ();
 			} catch (Exception ex) {
-				if (ex is TargetInvocationException)
+				Console.WriteLine("Serialize 400 catch");
+				if (ex is TargetInvocationException) {
+					Console.WriteLine("Serialize 500 is");
 					ex = ex.InnerException;
+				}
 
 				if (ex is InvalidOperationException || ex is InvalidCastException)
+					Console.WriteLine("Serialize 600 throw");
 					throw new InvalidOperationException ("There was an error generating" +
 						" the XML document.", ex);
 
+				Console.WriteLine("Serialize 700 rethrow");
 				throw;
 			}
 		}
