@@ -63,6 +63,7 @@ namespace System.Xml.Serialization
 
 		public void WriteRoot (object ob)
 		{
+			Console.WriteLine("WriteRoot => WriteStartDocument");
 			WriteStartDocument ();
 
 			if (_typeMap is XmlTypeMapping)
@@ -71,8 +72,10 @@ namespace System.Xml.Serialization
 				if (mp.TypeData.SchemaType == SchemaTypes.Class || mp.TypeData.SchemaType == SchemaTypes.Array) 
 					TopLevelElement ();
 
-				if (_format == SerializationFormat.Literal)
+				if (_format == SerializationFormat.Literal) {
+					Console.WriteLine("WriteRoot => WriteObject");
 					WriteObject (mp, ob, mp.ElementName, mp.Namespace, true, false, true);
+				}
 				else
 					WritePotentiallyReferencingElement (mp.ElementName, mp.Namespace, ob, mp.TypeData.Type, true, false);
 			}
