@@ -7369,6 +7369,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 {
 	GPtrArray* args;
 
+			opts->save_temps = TRUE;
+
 	args = mono_aot_split_options (aot_options ? aot_options : "");
 	for (int i = 0; i < args->len; ++i) {
 		const char *arg = (const char *)g_ptr_array_index (args, i);
