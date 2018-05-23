@@ -286,7 +286,7 @@ decode_sleb128 (guint8 *buf, guint8 **endbuf)
 	*endbuf = p;
 
 	if (mono_verbose_eh) {
-		g_print ("%s %d:%d\n",  __func__, size, res);
+		//g_print ("%s %d:%d\n",  __func__, size, res);
 	}
 
 	return res;
@@ -560,10 +560,12 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 		switch (op) {
 		case DW_CFA_advance_loc:
+			UNW_DEBUG (g_print ("DW_CFA_advance_loc %X\n", *p & 0x3f));
 			pos += *p & 0x3f;
 			p ++;
 			break;
 		case DW_CFA_offset:
+			UNW_DEBUG (g_print ("DW_CFA_offset %X\n", *p & 0x3f));
 			hwreg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
 			p ++;
 			reg_saved [hwreg] = TRUE;
@@ -577,12 +579,15 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			case DW_CFA_def_cfa:
 				cfa_reg = decode_uleb128 (p, &p);
 				cfa_offset = decode_uleb128 (p, &p);
+				UNW_DEBUG (g_print ("DW_CFA_def_cfa %X %X\n", cfa_reg, cfa_offset));
 				break;
 			case DW_CFA_def_cfa_offset:
 				cfa_offset = decode_uleb128 (p, &p);
+				UNW_DEBUG (g_print ("DW_CFA_def_cfa_offset %X\n", cfa_offset));
 				break;
 			case DW_CFA_def_cfa_register:
 				cfa_reg = decode_uleb128 (p, &p);
+				UNW_DEBUG (g_print ("DW_CFA_def_cfa_register %X\n", cfa_reg));
 				break;
 			case DW_CFA_offset_extended_sf:
 				reg = decode_uleb128 (p, &p);
@@ -592,6 +597,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
+				UNW_DEBUG (g_print ("DW_CFA_offset_extended_sf %X %X %X\n", reg, hwreg, offset));
 				break;
 			case DW_CFA_offset_extended:
 				reg = decode_uleb128 (p, &p);
@@ -601,20 +607,25 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
+				UNW_DEBUG (g_print ("DW_CFA_offset_extended %X %X %X\n", reg, hwreg, offset));
 				break;
 			case DW_CFA_same_value:
 				hwreg = mono_dwarf_reg_to_hw_reg (decode_uleb128 (p, &p));
 				locations [hwreg].loc_type = LOC_SAME;
+				UNW_DEBUG (g_print ("DW_CFA_same_value %X\n", hwreg));
 				break;
 			case DW_CFA_advance_loc1:
+				UNW_DEBUG (g_print ("DW_CFA_advance_loc1 %X", *p));
 				pos += *p;
 				p += 1;
 				break;
 			case DW_CFA_advance_loc2:
+				UNW_DEBUG (g_print ("DW_CFA_advance_loc2 %X\n", read16 (p)));
 				pos += read16 (p);
 				p += 2;
 				break;
 			case DW_CFA_advance_loc4:
+				UNW_DEBUG (g_print ("DW_CFA_advance_loc4 %X\n", read32 (p)));
 				pos += read32 (p);
 				p += 4;
 				break;
@@ -625,6 +636,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				state_stack [0].cfa_reg = cfa_reg;
 				state_stack [0].cfa_offset = cfa_offset;
 				state_stack_pos ++;
+				UNW_DEBUG (g_print ("DW_CFA_remember_state\n"));
 				break;
 			case DW_CFA_restore_state:
 				g_assert (state_stack_pos == 1);
@@ -633,10 +645,12 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				memcpy (&reg_saved, &state_stack [0].reg_saved, sizeof (reg_saved));
 				cfa_reg = state_stack [0].cfa_reg;
 				cfa_offset = state_stack [0].cfa_offset;
+				UNW_DEBUG (g_print ("DW_CFA_restore_state\n"));
 				break;
 			case DW_CFA_mono_advance_loc:
 				g_assert (mark_locations [0]);
 				pos = mark_locations [0] - start_ip;
+				UNW_DEBUG (g_print ("DW_CFA_mono_advance_loc\n"));
 				break;
 			default:
 				g_assert_not_reached ();
