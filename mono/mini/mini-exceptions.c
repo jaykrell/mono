@@ -577,6 +577,9 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
 	return ji;
 }
 
+gboolean mono_verbose_eh;
+gboolean mono_is_usermode_native_debugger_present(void);
+
 /*
  * mono_find_jit_info_ext:
  *
@@ -593,7 +596,6 @@ mono_find_jit_info (MonoDomain *domain, MonoJitTlsData *jit_tls, MonoJitInfo *re
  * If ASYNC true, this function will be async safe, but some fields of frame and frame->ji will
  * not be set.
  */
-gboolean mono_is_usermode_native_debugger_present(void);
 gboolean
 mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 						MonoJitInfo *prev_ji, MonoContext *ctx,
@@ -646,12 +648,16 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	if (frame->ji && !frame->ji->is_trampoline && !frame->ji->async) {
 		method = jinfo_get_method (frame->ji);
 		g_print ("%s %d arch_unwind_frame method=%s\n", __func__, __LINE__, method ? method->name : "<null>");
-        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteRoot"))
-            G_BREAKPOINT();
-        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteObject"))
-            G_BREAKPOINT();
-        if (mono_is_usermode_native_debugger_present () && method && !strcmp(method->name, "WriteEnumElement"))
-            G_BREAKPOINT();
+		if (mono_is_usermode_native_debugger_present () && method && (!strcmp(method->name, "WriteRoot")
+			|| !strcmp(method->name, "WriteObject")
+			|| !strcmp(method->name, "WriteEnumElement"))) {
+			//G_BREAKPOINT();
+		}
+		if (method && (!strcmp(method->name, "WriteRoot")
+			|| !strcmp(method->name, "WriteObject")
+			|| !strcmp(method->name, "WriteEnumElement"))) {
+			mono_verbose_eh = TRUE;
+		}
 	}
 
 	if (frame->type == FRAME_TYPE_MANAGED && method) {

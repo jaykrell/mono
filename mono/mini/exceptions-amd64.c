@@ -588,6 +588,8 @@ mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 }
 #endif /* !DISABLE_JIT */
 
+extern gboolean mono_verbose_eh;
+
 /*
  * mono_arch_unwind_frame:
  *
@@ -612,6 +614,9 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
+		if (mono_verbose_eh)
+			g_print ("%s ji\n", __func__);
+
 		mgreg_t regs [MONO_MAX_IREGS + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
@@ -636,16 +641,14 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (ji->has_arch_eh_info)
 			epilog = (guint8*)ji->code_start + ji->code_size - mono_jinfo_get_epilog_size (ji);
  
-		for (i = 0; i < AMD64_NREG; ++i)
-			regs [i] = new_ctx->gregs [i];
+		memcpy (regs, new_ctx->gregs, AMD64_NREG * sizeof (mgreg_t));
 
 		mono_unwind_frame (unwind_info, unwind_info_len, (guint8 *)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
 						   (guint8 *)ip, epilog ? &epilog : NULL, regs, MONO_MAX_IREGS + 1,
 						   save_locations, MONO_MAX_IREGS, &cfa);
 
-		for (i = 0; i < AMD64_NREG; ++i)
-			new_ctx->gregs [i] = regs [i];
+		memcpy (new_ctx->gregs, regs, AMD64_NREG * sizeof (mgreg_t));
  
 		/* The CFA becomes the new SP value */
 		new_ctx->gregs [AMD64_RSP] = (mgreg_t)cfa;
@@ -653,8 +656,15 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* Adjust IP */
 		new_ctx->gregs [AMD64_RIP] --;
 
+		if (mono_verbose_eh)
+			g_print ("%s rsp:%lX rip:%lX\n", __func__, cfa, new_ctx->gregs [AMD64_RIP]);
+
 		return TRUE;
 	} else if (*lmf) {
+
+		if (mono_verbose_eh)
+			g_print ("%s *lmf\n", __func__);
+
 		guint64 rip;
 
 		g_assert ((((guint64)(*lmf)->previous_lmf) & 2) == 0);

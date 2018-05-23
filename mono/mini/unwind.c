@@ -183,6 +183,9 @@ mono_dwarf_reg_to_hw_reg (int reg)
 	return map_dwarf_reg_to_hw_reg [reg];
 }
 
+extern gboolean mono_verbose_eh;
+gboolean mono_is_usermode_native_debugger_present(void);
+
 static G_GNUC_UNUSED void
 encode_uleb128 (guint32 value, guint8 *buf, guint8 **endbuf)
 {
@@ -236,10 +239,12 @@ decode_uleb128 (guint8 *buf, guint8 **endbuf)
 	guint8 *p = buf;
 	guint32 res = 0;
 	int shift = 0;
+	int size = 0;
 
 	while (TRUE) {
 		guint8 b = *p;
 		p ++;
+		size ++;
 
 		res = res | (((int)(b & 0x7f)) << shift);
 		if (!(b & 0x80))
@@ -248,6 +253,10 @@ decode_uleb128 (guint8 *buf, guint8 **endbuf)
 	}
 
 	*endbuf = p;
+
+	if (mono_verbose_eh) {
+		//g_print ("%s %d:%d\n",  __func__, size, res);
+	}
 
 	return res;
 }
@@ -258,10 +267,12 @@ decode_sleb128 (guint8 *buf, guint8 **endbuf)
 	guint8 *p = buf;
 	gint32 res = 0;
 	int shift = 0;
+	int size =  0;
 
 	while (TRUE) {
 		guint8 b = *p;
 		p ++;
+		size ++;
 
 		res = res | (((int)(b & 0x7f)) << shift);
 		shift += 7;
@@ -273,6 +284,10 @@ decode_sleb128 (guint8 *buf, guint8 **endbuf)
 	}
 
 	*endbuf = p;
+
+	if (mono_verbose_eh) {
+		g_print ("%s %d:%d\n",  __func__, size, res);
+	}
 
 	return res;
 }
@@ -481,8 +496,8 @@ mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len)
 	return mono_unwind_ops_encode_full (unwind_ops, out_len, TRUE);
 }
 
-#if 0
-#define UNW_DEBUG(stmt) do { stmt; } while (0)
+#if 1
+#define UNW_DEBUG(stmt) do { if (mono_verbose_eh) { stmt; } } while (0)
 #else
 #define UNW_DEBUG(stmt) do { } while (0)
 #endif
@@ -545,7 +560,6 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 
 		switch (op) {
 		case DW_CFA_advance_loc:
-			UNW_DEBUG (print_dwarf_state (cfa_reg, cfa_offset, pos, nregs, locations));
 			pos += *p & 0x3f;
 			p ++;
 			break;
@@ -632,6 +646,7 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 		default:
 			g_assert_not_reached ();
 		}
+		UNW_DEBUG (print_dwarf_state (cfa_reg, cfa_offset, pos, nregs, locations, reg_saved));
 	}
 
 	if (save_locations)
