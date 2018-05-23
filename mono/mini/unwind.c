@@ -507,11 +507,11 @@ print_dwarf_state (int cfa_reg, int cfa_offset, int ip, int nregs, Loc *location
 {
 	int i;
 
-	printf ("\t%x: cfa=r%d+%d ", ip, cfa_reg, cfa_offset);
+	printf ("\t%x: cfa=r%X+%X ", ip, cfa_reg, cfa_offset);
 
 	for (i = 0; i < nregs; ++i)
 		if (reg_saved [i] && locations [i].loc_type == LOC_OFFSET)
-			printf ("r%d@%d(cfa) ", i, locations [i].offset);
+			printf ("r%X@%X(cfa) ", i, locations [i].offset);
 	printf ("\n");
 }
 
@@ -557,6 +557,8 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 	state_stack_pos = 0;
 	while (pos <= ip - start_ip && p < unwind_info + unwind_info_len) {
 		int op = *p & 0xc0;
+
+		UNW_DEBUG (g_print ("ip - start_ip %X\n", ip - start_ip));
 
 		switch (op) {
 		case DW_CFA_advance_loc:
