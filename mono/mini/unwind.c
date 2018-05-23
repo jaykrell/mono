@@ -565,12 +565,12 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 			p ++;
 			break;
 		case DW_CFA_offset:
-			UNW_DEBUG (g_print ("DW_CFA_offset %X\n", *p & 0x3f));
 			hwreg = mono_dwarf_reg_to_hw_reg (*p & 0x3f);
 			p ++;
 			reg_saved [hwreg] = TRUE;
 			locations [hwreg].loc_type = LOC_OFFSET;
 			locations [hwreg].offset = decode_uleb128 (p, &p) * DWARF_DATA_ALIGN;
+			UNW_DEBUG (g_print ("DW_CFA_offset %X %X\n", hwreg, locations [hwreg].offset));
 			break;
 		case 0: {
 			int ext_op = *p;
