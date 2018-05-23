@@ -623,7 +623,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	else {
 		ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
 		g_print ("%s %d ji=%p\n", __func__, __LINE__, ji);
-		if (!ji)
+		if (!ji && mono_verbose_eh)
 		{
 			if (mono_is_usermode_native_debugger_present ()) {
 				G_BREAKPOINT();
