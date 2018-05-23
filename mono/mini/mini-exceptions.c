@@ -623,6 +623,13 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	else {
 		ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
 		g_print ("%s %d ji=%p\n", __func__, __LINE__, ji);
+		if (!ji)
+		{
+			if (mono_is_usermode_native_debugger_present ()) {
+				G_BREAKPOINT();
+				ji = mini_jit_info_table_find_ext (domain, ip, TRUE, &target_domain);
+			}
+		}
 	}
 
 	if (!target_domain)
@@ -651,7 +658,7 @@ mono_find_jit_info_ext (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		if (mono_is_usermode_native_debugger_present () && method && (!strcmp(method->name, "WriteRoot")
 			|| !strcmp(method->name, "WriteObject")
 			|| !strcmp(method->name, "WriteEnumElement"))) {
-			//G_BREAKPOINT();
+			G_BREAKPOINT();
 		}
 		if (method && (!strcmp(method->name, "WriteRoot")
 			|| !strcmp(method->name, "WriteObject")
