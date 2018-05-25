@@ -19,6 +19,7 @@
 #endif
 
 #include <mono/metadata/object.h>
+#include <mono/metadata/handle.h>
 
 G_BEGIN_DECLS
 
@@ -97,7 +98,7 @@ MonoArray*
 ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, gpointer process);
 
 void
-ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject *this_obj, MonoString *filename);
+ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObjectHandle self, const gunichar2 *filepath, MonoError *error);
 
 MonoBoolean
 ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStartInfo *proc_start_info, MonoW32ProcessInfo *process_handle);

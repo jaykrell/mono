@@ -13,8 +13,9 @@
 // process-windows-*.c. On platforms using classic WIN API the implementation is still keept in process.c and still declared
 // static and in some places even inlined.
 #if !G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+
 void
-mono_w32process_get_fileversion (MonoObject *filever, gunichar2 *filename, MonoError *error);
+mono_w32process_get_fileversion (MonoObjectHandle filever, const gunichar2 *filename, MonoError *error);
 
 void
 mono_process_init_startup_info (HANDLE stdin_handle, HANDLE stdout_handle,

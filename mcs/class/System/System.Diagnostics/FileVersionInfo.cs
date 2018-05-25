@@ -273,10 +273,11 @@ namespace System.Diagnostics {
 			}
 		}
 
+		// Native code needs both forms.
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		private extern void GetVersionInfo_internal(string fileName);
+		private extern unsafe void GetVersionInfo_internal (string filePath, char* filePath);
 		
-		public static FileVersionInfo GetVersionInfo (string fileName)
+		public static unsafe FileVersionInfo GetVersionInfo (string fileName)
 		{
 #if MONO_FEATURE_CAS
 			if (SecurityManager.SecurityEnabled) {
@@ -289,7 +290,9 @@ namespace System.Diagnostics {
 				throw new FileNotFoundException (fileName);
 
 			FileVersionInfo fvi = new FileVersionInfo ();
-			fvi.GetVersionInfo_internal (fileName);
+			fixed (char* fixed_fileName = fileName) {
+				fvi.GetVersionInfo_internal (fileName, fixed_fileName);
+			}
 			return fvi;
 		}
 

@@ -3022,7 +3022,7 @@ find_pe_file_resources (gpointer file_map, guint32 map_size, guint32 res_id, gui
 }
 
 static gpointer
-map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
+map_pe_file (const gunichar2 *filename, gint32 *map_size, void **handle)
 {
 	gchar *filename_ext = NULL;
 	gchar *located_filename = NULL;
@@ -3099,9 +3099,7 @@ error:
 static void
 unmap_pe_file (gpointer file_map, void *handle)
 {
-	gint res;
-
-	res = mono_file_unmap (file_map, handle);
+	gint res = mono_file_unmap (file_map, handle);
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: mono_file_unmap failed, error: \"%s\" (%d)", __func__, g_strerror (errno), errno);
 }
@@ -3526,7 +3524,7 @@ big_up (gconstpointer datablock, guint32 size)
 #endif
 
 gboolean
-mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
+mono_w32process_get_fileversion_info (const  gunichar2 *filename, gpointer *data)
 {
 	gpointer file_map;
 	gpointer versioninfo;

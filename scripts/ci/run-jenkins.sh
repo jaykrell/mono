@@ -18,12 +18,8 @@ if [[ ${CI_TAGS} == *'clang-sanitizer'* ]]; then
 	make_timeout=30m
 fi
 
-if [[ ${CI_TAGS} == *'win-'* ]]; then
-    # Passing -ggdb3 on Cygwin breaks linking against libmonosgen-x.y.dll
-    export CFLAGS="$CFLAGS -g -O2"
-else
-    export CFLAGS="$CFLAGS -ggdb3 -O2"
-fi
+EXTRA_CONF_FLAGS=-with-llvm=/i/monollvm60opt
+export CFLAGS="$CFLAGS -g -O0"
 
 if [[ $CI_TAGS == *'collect-coverage'* ]]; then
     # Collect coverage for further use by lcov and similar tools.
