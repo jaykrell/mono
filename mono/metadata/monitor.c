@@ -782,7 +782,7 @@ signal_monitor (gpointer mon_untyped)
 static inline gint32 
 mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_interruption, guint32 id)
 {
-	MONO_LOG ();
+	//MONO_LOG ();
 
 	LockWord lw;
 	MonoThreadsSync *mon;

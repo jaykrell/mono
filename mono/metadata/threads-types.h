@@ -382,6 +382,10 @@ typedef struct {
 
 gboolean
 mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
+
+gboolean
+mono_thread_self_aborting (void);
+
 #endif
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

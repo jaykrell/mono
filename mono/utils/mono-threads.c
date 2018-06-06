@@ -839,14 +839,14 @@ thread_info_key_dtor (void *arg)
 MonoThreadInfoFlags
 mono_thread_info_get_flags (MonoThreadInfo *info)
 {
-    MONO_LOG ();
+    //MONO_LOG ();
     return mono_atomic_load_i32 (&info->flags);
 }
 
 void
 mono_thread_info_set_flags (MonoThreadInfoFlags flags)
 {
-	MONO_LOG ();
+	//MONO_LOG ();
 	MonoThreadInfo *info = mono_thread_info_current ();
 	MonoThreadInfoFlags old = mono_atomic_load_i32 (&info->flags);
 
@@ -1217,18 +1217,20 @@ mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt
 
 	info = suspend_sync_nolock (id, interrupt_kernel);
 	THREADS_SUSPEND_DEBUG ("SUSPENDING tid %p (%s): info %p\n", (void*)id, interrupt_kernel ? "int" : "", info);
-	if (!info)
+	if (!info) {
+		MONO_LOG ("interrupt_kernel:%d done", interrupt_kernel);
 		goto done;
+	}
 
 	switch (result = callback (info, user_data)) {
 	case MonoResumeThread:
-		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): MonoResumeThread\n", (void*)id, interrupt_kernel ? "int" : "");
+		MONO_LOG ("CALLBACK tid %p (%s): MonoResumeThread", (void*)id, interrupt_kernel ? "int" : "");
 		mono_hazard_pointer_set (hp, 1, info);
 		mono_thread_info_core_resume (info);
 		mono_threads_wait_pending_operations ();
 		break;
 	case KeepSuspended:
-		THREADS_SUSPEND_DEBUG ("CALLBACK tid %p (%s): KeepSuspended\n", (void*)id, interrupt_kernel ? "int" : "");
+		MONO_LOG ("CALLBACK tid %p (%s): KeepSuspended", (void*)id, interrupt_kernel ? "int" : "");
 		g_assert (!mono_threads_are_safepoints_enabled ());
 		break;
 	default:

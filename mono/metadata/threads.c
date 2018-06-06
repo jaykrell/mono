@@ -781,6 +781,8 @@ mono_alloc_static_data (gpointer **static_data_ptr, guint32 offset, void *alloc_
 static gboolean
 mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean force_domain)
 {
+	MONO_LOG ();
+
 	MonoThreadInfo *info;
 	MonoInternalThread *internal;
 	MonoDomain *domain, *root_domain;
@@ -838,6 +840,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 
 	/* We don't need to duplicate thread->handle, because it is
 	 * only closed when the thread object is finalized by the GC. */
+	MONO_LOG ("=>mono_g_hash_table_insert %p %p", (gpointer)(gsize)(internal->tid), internal);
 	mono_g_hash_table_insert (threads, (gpointer)(gsize)(internal->tid), internal);
 
 	/* We have to do this here because mono_thread_start_cb
@@ -2522,10 +2525,17 @@ request_thread_abort (MonoInternalThread *thread, MonoObjectHandle *state, gbool
 
 	LOCK_THREAD (thread);
 	
-	if (thread->state & (ThreadState_AbortRequested | ThreadState_Stopped))
+	if (thread->state & ThreadState_AbortRequested)
 	{
 		UNLOCK_THREAD (thread);
-		MONO_LOG ("abort|stop tid:%p", thread->tid);
+		MONO_LOG ("abort tid:%p", thread->tid);
+		return FALSE;
+	}
+
+	if (thread->state & ThreadState_Stopped)
+	{
+		UNLOCK_THREAD (thread);
+		MONO_LOG ("stop tid:%p", thread->tid);
 		return FALSE;
 	}
 
@@ -2590,13 +2600,16 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle,
 void
 mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload)
 {
-	MONO_LOG ();
+	MONO_LOG ("1");
 
 	g_assert (thread != mono_thread_internal_current ());
 
-	if (!request_thread_abort (thread, NULL, appdomain_unload))
+	if (!request_thread_abort (thread, NULL, appdomain_unload)) {
+		MONO_LOG ("2");
 		return;
+	}
 	async_abort_internal (thread, TRUE);
+	MONO_LOG ("3");
 }
 
 void
@@ -3394,6 +3407,8 @@ struct wait_data
 static void
 wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_change)
 {
+	MONO_LOG ();
+
 	guint32 i;
 	MonoThreadInfoWaitRet ret;
 	
@@ -3403,15 +3418,22 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 	 * up if a thread changes to background mode. */
 
 	MONO_ENTER_GC_SAFE;
-	if (check_state_change)
+	if (check_state_change) {
+		MONO_LOG ("1");
 		ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, &background_change_event, FALSE, timeout, TRUE);
-	else
+		MONO_LOG ("1ret:%d", ret);
+	}
+	else {
+		MONO_LOG ("2 %d", wait->num);
 		ret = mono_thread_info_wait_multiple_handle (wait->handles, wait->num, NULL, TRUE, timeout, TRUE);
+		MONO_LOG ("2ret:%d", ret);
+	}
 	MONO_EXIT_GC_SAFE;
 
 	if (ret == MONO_THREAD_INFO_WAIT_RET_FAILED) {
 		/* See the comment in build_wait_tids() */
 		THREAD_DEBUG (g_message ("%s: Wait failed", __func__));
+		MONO_LOG ("3ret_failed");
 		return;
 	}
 	
@@ -3428,50 +3450,61 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 			g_error ("%s: failed to call mono_thread_detach_internal on thread %p, InternalThread: %p", __func__, internal->tid, internal);
 		mono_threads_unlock ();
 	}
+	MONO_LOG ("3");
 }
 
 static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 {
+	MONO_LOG ();
+
 	struct wait_data *wait=(struct wait_data *)user;
 
-	if(wait->num<MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS - 1) {
+	if (wait->num < MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS - 1) {
 		MonoInternalThread *thread=(MonoInternalThread *)value;
 
 		/* Ignore background threads, we abort them later */
 		/* Do not lock here since it is not needed and the caller holds threads_lock */
 		if (thread->state & ThreadState_Background) {
 			THREAD_DEBUG (g_message ("%s: ignoring background thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			MONO_LOG ("1 ThreadState_Background");
 			return; /* just leave, ignore */
 		}
 		
 		if (mono_gc_is_finalizer_internal_thread (thread)) {
 			THREAD_DEBUG (g_message ("%s: ignoring finalizer thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			MONO_LOG ("2");
 			return;
 		}
 
 		if (thread == mono_thread_internal_current ()) {
 			THREAD_DEBUG (g_message ("%s: ignoring current thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			MONO_LOG ("3");
 			return;
 		}
 
 		if (mono_thread_get_main () && (thread == mono_thread_get_main ()->internal_thread)) {
 			THREAD_DEBUG (g_message ("%s: ignoring main thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
+			MONO_LOG ("4");
 			return;
 		}
 
 		if (thread->flags & MONO_THREAD_FLAG_DONT_MANAGE) {
 			THREAD_DEBUG (g_message ("%s: ignoring thread %" G_GSIZE_FORMAT "with DONT_MANAGE flag set.", __func__, (gsize)thread->tid));
+			MONO_LOG ("5");
 			return;
 		}
 
+		MONO_LOG ("6");
 		THREAD_DEBUG (g_message ("%s: Invoking mono_thread_manage callback on thread %p", __func__, thread));
 		if ((thread->manage_callback == NULL) || (thread->manage_callback (thread->root_domain_thread) == TRUE)) {
 			wait->handles[wait->num]=mono_threads_open_thread_handle (thread->handle);
 			wait->threads[wait->num]=thread;
 			wait->num++;
 
+			MONO_LOG ("7");
 			THREAD_DEBUG (g_message ("%s: adding thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 		} else {
+			MONO_LOG ("8");
 			THREAD_DEBUG (g_message ("%s: ignoring (because of callback) thread %"G_GSIZE_FORMAT, __func__, (gsize)thread->tid));
 		}
 		
@@ -3480,6 +3513,7 @@ static void build_wait_tids (gpointer key, gpointer value, gpointer user)
 		/* Just ignore the rest, we can't do anything with
 		 * them yet
 		 */
+		MONO_LOG ("9");
 	}
 }
 
@@ -3492,22 +3526,30 @@ abort_threads (gpointer key, gpointer value, gpointer user)
 	MonoNativeThreadId self = mono_native_thread_id_get ();
 	MonoInternalThread *thread = (MonoInternalThread *)value;
 
-	if (wait->num >= MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS)
+	if (wait->num >= MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS) {
+		MONO_LOG ("1");
 		return;
+	}
 
-	if (mono_native_thread_id_equals (thread_get_tid (thread), self))
+	if (mono_native_thread_id_equals (thread_get_tid (thread), self)) {
+		MONO_LOG ("2");
 		return;
-	if (mono_gc_is_finalizer_internal_thread (thread))
+	}
+	if (mono_gc_is_finalizer_internal_thread (thread)) {
+		MONO_LOG ("3");
 		return;
+	}
 
-	if ((thread->flags & MONO_THREAD_FLAG_DONT_MANAGE))
+	if ((thread->flags & MONO_THREAD_FLAG_DONT_MANAGE)) {
+		MONO_LOG ("4");
 		return;
+	}
 
 	wait->handles[wait->num] = mono_threads_open_thread_handle (thread->handle);
 	wait->threads[wait->num] = thread;
 	wait->num++;
 
-	MONO_LOG ("%s: Aborting id: %"G_GSIZE_FORMAT"\n", __func__, (gsize)thread->tid);
+	MONO_LOG ("Aborting id: %p", (gsize)thread->tid);
 	mono_thread_internal_abort (thread, FALSE);
 }
 
@@ -3567,6 +3609,8 @@ mono_threads_set_shutting_down (void)
 void
 mono_thread_manage (void)
 {
+	MONO_LOG ();
+
 	struct wait_data wait_data;
 	struct wait_data *wait = &wait_data;
 
@@ -3607,12 +3651,17 @@ mono_thread_manage (void)
 		THREAD_DEBUG (g_message ("%s: I have %d threads after waiting.", __func__, wait->num));
 	} while(wait->num>0);
 
+	MONO_LOG ("2");
+
 	/* Mono is shutting down, so just wait for the end */
 	if (!mono_runtime_try_shutdown ()) {
 		/*FIXME mono_thread_suspend probably should call mono_thread_execute_interruption when self interrupting. */
+		MONO_LOG ("3");
 		mono_thread_suspend (mono_thread_internal_current ());
 		mono_thread_execute_interruption_void ();
 	}
+
+	MONO_LOG ("4");
 
 	/* 
 	 * Remove everything but the finalizer thread and self.
@@ -3629,8 +3678,10 @@ mono_thread_manage (void)
 		mono_threads_unlock ();
 
 		THREAD_DEBUG (g_message ("%s: wait->num is now %d", __func__, wait->num));
+		MONO_LOG ("5");
 		if (wait->num > 0) {
 			/* Something to wait for */
+			MONO_LOG ("6");
 			wait_for_tids (wait, MONO_INFINITE_WAIT, FALSE);
 		}
 	} while (wait->num > 0);
@@ -6117,6 +6168,11 @@ mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes)
 	while (1)
 		sleep (10);
 }
+
+gboolean
+mono_thread_self_aborting (void)
+{
+	return (mono_thread_internal_current ()->state & ThreadState_AbortRequested) != 0;
+}
+
 #endif
-
-

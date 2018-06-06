@@ -24,6 +24,9 @@
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
 
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
 static gboolean shutting_down_inited = FALSE;
 static gboolean shutting_down = FALSE;
 
@@ -92,12 +95,20 @@ mono_runtime_fire_process_exit_event (void)
 gboolean
 mono_runtime_try_shutdown (void)
 {
+	MONO_LOG ();
+
 	if (mono_atomic_cas_i32 (&shutting_down_inited, TRUE, FALSE))
 		return FALSE;
 
+	MONO_LOG ();
+
 	mono_runtime_fire_process_exit_event ();
 
+	MONO_LOG ();
+
 	mono_runtime_set_shutting_down ();
+
+	MONO_LOG ();
 
 	mono_threads_set_shutting_down ();
 
