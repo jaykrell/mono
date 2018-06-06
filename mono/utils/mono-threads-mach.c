@@ -26,6 +26,45 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/mono-threads-debug.h>
 
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
+#undef THREADS_DEBUG
+#undef THREADS_STW_DEBUG
+#undef THREADS_SUSPEND_DEBUG
+#undef THREADS_STATE_MACHINE_DEBUG
+#undef THREADS_INTERRUPT_DEBUG
+
+#if 0
+#define THREADS_DEBUG(...)
+#else
+#define THREADS_DEBUG MONO_LOG
+#endif
+
+#if 1
+#define THREADS_STW_DEBUG(...)
+#else
+#define THREADS_STW_DEBUG MONO_LOG
+#endif
+
+#if 0
+#define THREADS_SUSPEND_DEBUG(...)
+#else
+#define THREADS_SUSPEND_DEBUG MONO_LOG
+#endif
+
+#if 0
+#define THREADS_STATE_MACHINE_DEBUG(...)
+#else
+#define THREADS_STATE_MACHINE_DEBUG MONO_LOG
+#endif
+
+#if 0
+#define THREADS_INTERRUPT_DEBUG(...)
+#else
+#define THREADS_INTERRUPT_DEBUG MONO_LOG
+#endif
+
 void
 mono_threads_suspend_init (void)
 {
@@ -63,6 +102,8 @@ gboolean
 mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
 	kern_return_t ret;
+
+	MONO_LOG ("interrupt_kernel:%d info:%p,%p\n", __func__, interrupt_kernel, info, info->native_handle);
 
 	g_assert (info);
 
@@ -108,6 +149,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	kern_return_t ret;
 
+	MONO_LOG ();
+
 	if (info->async_target) {
 		MonoContext tmp = info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX].ctx;
 		mach_msg_type_number_t num_state, num_fpstate;
@@ -152,13 +195,29 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 	return ret == KERN_SUCCESS;
 }
 
+static const char *
+kernret_to_string (kern_return_t kern)
+{
+	switch (kern)
+	{
+	case KERN_SUCCESS: return "KERN_SUCCESS";
+	case KERN_ABORTED: return "KERN_ABORTED";
+	case MACH_RCV_INTERRUPTED: return "MACH_RCV_INTERRUPTED,";
+	case MACH_SEND_INTERRUPTED: return "MACH_SEND_INTERRUPTED";
+	}
+	return "";
+}
+
 void
 mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
+	MONO_LOG ("info:%p,%p", info, info->native_handle);
+
 	kern_return_t ret;
 
 	do {
 		ret = thread_suspend (info->native_handle);
+		MONO_LOG ("thread_suspend:%d(%s)", ret, kernret_to_string (ret));
 	} while (ret == KERN_ABORTED);
 
 	if (ret != KERN_SUCCESS)
@@ -166,7 +225,10 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 
 	do {
 		ret = thread_abort_safely (info->native_handle);
+		MONO_LOG ("thread_abort_safely:%d(%s)", ret, kernret_to_string (ret));
 	} while (ret == KERN_ABORTED);
+
+	MONO_LOG ();
 
 	/*
 	 * We are doing thread_abort when thread_abort_safely returns KERN_SUCCESS because
@@ -176,12 +238,17 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 	 * thread should have return from the kernel and should be waiting for thread_resume
 	 * to resume the user code.
 	 */
-	if (ret == KERN_SUCCESS)
+	if (ret == KERN_SUCCESS) {
 		ret = thread_abort (info->native_handle);
+		MONO_LOG ("thread_abort:%d(%s)", ret, kernret_to_string (ret));
+	}
 
 	do {
 		ret = thread_resume (info->native_handle);
+		MONO_LOG ("thread_resume:%d(%s)", ret, kernret_to_string (ret));
 	} while (ret == KERN_ABORTED);
+
+	MONO_LOG ("%d(%s)", ret, kernret_to_string (ret));
 
 	g_assert (ret == KERN_SUCCESS);
 }

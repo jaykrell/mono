@@ -55,6 +55,9 @@
 #include "mono/metadata/w32handle.h"
 #include "mono/metadata/callspec.h"
 
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
 #include "mini.h"
 #include "jit.h"
 #include "aot-compiler.h"
@@ -2399,6 +2402,8 @@ mono_main (int argc, char* argv[])
 		main_thread_handler (&main_args);
 		mono_thread_manage ();
 #endif
+
+		mono_log_dump ();
 
 		mini_cleanup (domain);
 

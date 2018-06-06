@@ -34,6 +34,45 @@
 extern int tkill (pid_t tid, int signal);
 #endif
 
+#undef THREADS_DEBUG
+#undef THREADS_STW_DEBUG
+#undef THREADS_SUSPEND_DEBUG
+#undef THREADS_STATE_MACHINE_DEBUG
+#undef THREADS_INTERRUPT_DEBUG
+
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
+#if 0
+#define THREADS_DEBUG(...)
+#else
+#define THREADS_DEBUG MONO_LOG
+#endif
+
+#if 1
+#define THREADS_STW_DEBUG(...)
+#else
+#define THREADS_STW_DEBUG MONO_LOG
+#endif
+
+#if 0
+#define THREADS_SUSPEND_DEBUG(...)
+#else
+#define THREADS_SUSPEND_DEBUG MONO_LOG
+#endif
+
+#if 1
+#define THREADS_STATE_MACHINE_DEBUG(...)
+#else
+#define THREADS_STATE_MACHINE_DEBUG MONO_LOG
+#endif
+
+#if 0
+#define THREADS_INTERRUPT_DEBUG(...)
+#else
+#define THREADS_INTERRUPT_DEBUG MONO_LOG
+#endif
+
 #if defined(_POSIX_VERSION) && !defined (TARGET_WASM)
 
 #include <pthread.h>
@@ -277,6 +316,8 @@ mono_native_thread_join (MonoNativeThreadId tid)
 gboolean
 mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel)
 {
+	MONO_LOG ("interrupt_kernel:%d", interrupt_kernel);
+
 	int sig = interrupt_kernel ? mono_threads_suspend_get_abort_signal () :  mono_threads_suspend_get_suspend_signal ();
 
 	if (!mono_threads_pthread_kill (info, sig)) {
@@ -289,6 +330,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 gboolean
 mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 {
+	MONO_LOG ();
 	return info->suspend_can_continue;
 }
 
@@ -301,6 +343,7 @@ This begins async resume. This function must do the following:
 gboolean
 mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
+	MONO_LOG ();
 	int sig = mono_threads_suspend_get_restart_signal ();
 
 	if (!mono_threads_pthread_kill (info, sig)) {
@@ -313,6 +356,8 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 void
 mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
+	MONO_LOG ();
+
 	/* We signal a thread to break it from the current syscall.
 	 * This signal should not be interpreted as a suspend request. */
 	info->syscall_break_signal = TRUE;

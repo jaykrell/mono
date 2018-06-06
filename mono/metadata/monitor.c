@@ -34,6 +34,9 @@
 #include <mono/utils/w32api.h>
 #include <mono/utils/mono-os-wait.h>
 
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
 /*
  * Pull the list of opcodes
  */
@@ -779,6 +782,8 @@ signal_monitor (gpointer mon_untyped)
 static inline gint32 
 mono_monitor_try_enter_inflated (MonoObject *obj, guint32 ms, gboolean allow_interruption, guint32 id)
 {
+	MONO_LOG ();
+
 	LockWord lw;
 	MonoThreadsSync *mon;
 	gint64 then = 0, now, delta;
@@ -1277,6 +1282,8 @@ ves_icall_System_Threading_Monitor_Monitor_pulse (MonoObject *obj)
 	LockWord lw;
 	MonoThreadsSync *mon;
 
+	MONO_LOG ();
+
 	LOCK_DEBUG (g_message ("%s: (%d) Pulsing %p", __func__, mono_thread_info_get_small_id (), obj));
 	
 	id = mono_thread_info_get_small_id ();
@@ -1308,7 +1315,9 @@ ves_icall_System_Threading_Monitor_Monitor_pulse_all (MonoObject *obj)
 	int id;
 	LockWord lw;
 	MonoThreadsSync *mon;
-	
+
+	MONO_LOG ();
+
 	LOCK_DEBUG (g_message("%s: (%d) Pulsing all %p", __func__, mono_thread_info_get_small_id (), obj));
 
 	id = mono_thread_info_get_small_id ();

@@ -120,6 +120,8 @@ restart_signal_get (void)
 static void
 restart_signal_handler (int _dummy, siginfo_t *_info, void *context)
 {
+	MONO_LOG ();
+
 	MonoThreadInfo *info;
 	int old_errno = errno;
 
@@ -131,15 +133,17 @@ restart_signal_handler (int _dummy, siginfo_t *_info, void *context)
 static void
 suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 {
+	MONO_LOG ();
+
 	int old_errno = errno;
 	int hp_save_index = mono_hazard_pointer_save_for_signal_handler ();
 
 	MonoThreadInfo *current = mono_thread_info_current ();
 
-	THREADS_SUSPEND_DEBUG ("SIGNAL HANDLER FOR %p [%p]\n", mono_thread_info_get_tid (current), (void*)current->native_handle);
+	THREADS_SUSPEND_DEBUG ("SIGNAL HANDLER FOR %p [%p]", mono_thread_info_get_tid (current), (void*)current->native_handle);
 	if (current->syscall_break_signal) {
 		current->syscall_break_signal = FALSE;
-		THREADS_SUSPEND_DEBUG ("\tsyscall break for %p\n", mono_thread_info_get_tid (current));
+		THREADS_SUSPEND_DEBUG ("\tsyscall break for %p", mono_thread_info_get_tid (current));
 		mono_threads_notify_initiator_of_abort (current);
 		goto done;
 	}
@@ -147,7 +151,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	/* Have we raced with self suspend? */
 	if (!mono_threads_transition_finish_async_suspend (current)) {
 		current->suspend_can_continue = TRUE;
-		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", mono_thread_info_get_tid (current));
+		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p", mono_thread_info_get_tid (current));
 		/* Under full preemptive suspend, there is no self suspension,
 		 * so no race.
 		 *
@@ -182,7 +186,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 	current->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_sigctx (&current->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], context);
 
 	if (!current->suspend_can_continue)
-		THREADS_SUSPEND_DEBUG ("\tThread is starting or detaching, failed to capture state %p\n", mono_thread_info_get_tid (current));
+		THREADS_SUSPEND_DEBUG ("\tThread is starting or detaching, failed to capture state %p", mono_thread_info_get_tid (current));
 
 	/*
 	Block the restart signal.
@@ -276,6 +280,7 @@ mono_threads_suspend_init_signals (void)
 gint
 mono_threads_suspend_get_suspend_signal (void)
 {
+	MONO_LOG ("suspend_signal_num:%d", suspend_signal_num);
 	g_assert (suspend_signal_num != -1);
 	return suspend_signal_num;
 }
@@ -283,6 +288,7 @@ mono_threads_suspend_get_suspend_signal (void)
 gint
 mono_threads_suspend_get_restart_signal (void)
 {
+	MONO_LOG ("restart_signal_num:%d", restart_signal_num);
 	g_assert (restart_signal_num != -1);
 	return restart_signal_num;
 }
@@ -290,6 +296,7 @@ mono_threads_suspend_get_restart_signal (void)
 gint
 mono_threads_suspend_get_abort_signal (void)
 {
+	MONO_LOG ("abort_signal_num:%d", abort_signal_num);
 	g_assert (abort_signal_num != -1);
 	return abort_signal_num;
 }

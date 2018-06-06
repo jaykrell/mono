@@ -35,6 +35,9 @@
 #include <mono/utils/refcount.h>
 #include <mono/utils/w32api.h>
 
+#define ENABLE_MONO_LOG 1
+#include <mono/utils/mono-log.h>
+
 #define CPU_USAGE_LOW 80
 #define CPU_USAGE_HIGH 95
 
@@ -360,6 +363,8 @@ mono_threadpool_worker_request (void)
 static gboolean
 worker_park (void)
 {
+	MONO_LOG ();
+
 	gboolean timeout = FALSE;
 	gboolean interrupted = FALSE;
 	gint32 old, new;
@@ -388,27 +393,30 @@ worker_park (void)
 			new = old + 1;
 		} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
 
-		switch (mono_coop_sem_timedwait (&worker.parked_threads_sem, rand_next (&rand_handle, 5 * 1000, 60 * 1000), MONO_SEM_FLAGS_ALERTABLE)) {
-		case MONO_SEM_TIMEDWAIT_RET_SUCCESS:
-			break;
-		case MONO_SEM_TIMEDWAIT_RET_ALERTED:
-			interrupted = TRUE;
-			break;
-		case MONO_SEM_TIMEDWAIT_RET_TIMEDOUT:
-			timeout = TRUE;
-			break;
-		default:
-			g_assert_not_reached ();
-		}
+		if (!mono_runtime_is_shutting_down ()) {
 
-		if (interrupted || timeout) {
-			/* If the semaphore was posted, then worker.parked_threads_count was decremented in worker_try_unpark */
-			do {
-				old = mono_atomic_load_i32 (&worker.parked_threads_count);
-				g_assert (old > G_MININT32);
+			switch (mono_coop_sem_timedwait (&worker.parked_threads_sem, rand_next (&rand_handle, 5 * 1000, 60 * 1000), MONO_SEM_FLAGS_ALERTABLE)) {
+			case MONO_SEM_TIMEDWAIT_RET_SUCCESS:
+				break;
+			case MONO_SEM_TIMEDWAIT_RET_ALERTED:
+				interrupted = TRUE;
+				break;
+			case MONO_SEM_TIMEDWAIT_RET_TIMEDOUT:
+				timeout = TRUE;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
 
-				new = old - 1;
-			} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
+			if (interrupted || timeout) {
+				/* If the semaphore was posted, then worker.parked_threads_count was decremented in worker_try_unpark */
+				do {
+					old = mono_atomic_load_i32 (&worker.parked_threads_count);
+					g_assert (old > G_MININT32);
+
+					new = old - 1;
+				} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
+			}
 		}
 
 		COUNTER_ATOMIC (counter, {
@@ -481,7 +489,7 @@ worker_thread (gpointer unused)
 			gboolean timeout;
 
 			timeout = worker_park ();
-			if (timeout)
+			if (timeout || mono_runtime_is_shutting_down ())
 				break;
 
 			continue;

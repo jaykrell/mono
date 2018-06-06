@@ -85,6 +85,7 @@ monoutils_sources = \
 	mono-time.h  		\
 	strenc.h		\
 	strenc.c		\
+	mono-log.c		\
 	mono-uri.c		\
 	mono-poll.c		\
 	mono-path.c		\
