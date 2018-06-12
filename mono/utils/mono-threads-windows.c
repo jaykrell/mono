@@ -76,8 +76,6 @@ mono_threads_suspend_check_suspend_result (MonoThreadInfo *info)
 	return info->suspend_can_continue;
 }
 
-
-
 void
 mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
@@ -96,7 +94,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 	handle = info->native_handle;
 	g_assert (handle);
 	
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_SET_THREAD_CONTEXT
 	if (info->async_target) {
 		MonoContext ctx;
 		CONTEXT context;
@@ -211,7 +209,6 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	return TRUE;
 }
 
-
 MonoNativeThreadId
 mono_native_thread_id_get (void)
 {
@@ -227,7 +224,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return CreateThread (NULL, 0, (func), (arg), 0, (tid)) != NULL;
+	return CreateThread (NULL, 0, func, arg, 0, tid) != NULL;
 }
 
 gboolean
@@ -241,11 +238,16 @@ mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle)
 	return res != WAIT_FAILED;
 }
 
-/*
- * Can't OpenThread on UWP until SDK 15063 (our minspec today is 10240),
- * but this function doesn't seem to be used on Windows anyway
- */
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_OPEN_THREAD
+
+WINBASEAPI
+HANDLE
+WINAPI
+OpenThread(
+	DWORD dwDesiredAccess,
+	BOOL  bInheritHandle,
+	DWORD dwThreadId
+	);
 
 gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
@@ -275,6 +277,12 @@ __readfsdword (unsigned long offset)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#if _WIN32_WINNT >= 0x0602 // Windows 8, including UWP
+	ULONG_PTR lo, hi;
+	GetCurrentThreadStackLimits (&lo, &hi);
+	*staddr = lo;
+	*stsize = hi - lo;
+#else
 	MEMORY_BASIC_INFORMATION meminfo;
 #if defined(_WIN64) || defined(_M_ARM)
 	/* win7 apis */
@@ -297,24 +305,34 @@ mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 
 	*staddr = stackBottom;
 	*stsize = stackTop - stackBottom;
-
+#endif
 }
 
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
-static gboolean is_wow64 = FALSE;
+#if !defined (_WIN64) && HAVE_IS_WOW64_PROCESS
+WINBASEAPI
+BOOL
+WINAPI
+IsWow64Process (
+	HANDLE hProcess,
+	PBOOL  Wow64Process
+	);
+static BOOL is_wow64;
 #endif
 
-/* We do this at init time to avoid potential races with module opening */
+// We do this at init time for historical reasons -- used to be LoadLibrary/GetProcAddress --
+// and to avoid doing it more than once.
 void
 mono_threads_platform_init (void)
 {
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-	LPFN_ISWOW64PROCESS is_wow64_func = (LPFN_ISWOW64PROCESS) GetProcAddress (GetModuleHandle (TEXT ("kernel32")), "IsWow64Process");
-	if (is_wow64_func)
-		is_wow64_func (GetCurrentProcess (), &is_wow64);
+#if !defined (_WIN64) && HAVE_IS_WOW64_PROCESS
+	IsWow64Process (GetCurrentProcess (), &is_wow64);
 #endif
 }
+
+// Missing in old headers/Cygwin.
+#define CONTEXT_EXCEPTION_REQUEST   0x40000000L
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000L
+#define CONTEXT_EXCEPTION_ACTIVE    0x08000000L
 
 /*
  * When running x86 process under x64 system syscalls are done through WoW64. This
@@ -327,10 +345,10 @@ mono_threads_platform_init (void)
 gboolean
 mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
 {
+// FIXME Pass a thread handle to avoid OpenThread + CloseHandle -- very expensive.
+// But note that it is only slow for x86.
 	gboolean ret = FALSE;
-#if SIZEOF_VOID_P == 4 && G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-/* FIXME On cygwin these are not defined */
-#if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
+#if !defined (_WIN64) && HAVE_IS_WOW64_PROCESS
 	if (is_wow64) {
 		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, FALSE, tid);
 		if (handle) {
@@ -345,7 +363,6 @@ mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
 			CloseHandle (handle);
 		}
 	}
-#endif
 #endif
 	return ret;
 }
@@ -387,14 +404,10 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 {
 #if defined(_MSC_VER)
 	/* http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx */
-	THREADNAME_INFO info;
-	info.dwType = 0x1000;
-	info.szName = name;
-	info.dwThreadID = tid;
-	info.dwFlags = 0;
+	THREADNAME_INFO info = {0x1000, name, tid, 0};
 
 	__try {
-		RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR),       (ULONG_PTR*)&info );
+		RaiseException (MS_VC_EXCEPTION, 0, sizeof (info) / sizeof (ULONG_PTR), (ULONG_PTR*)&info);
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER) {
 	}

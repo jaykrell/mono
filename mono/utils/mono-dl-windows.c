@@ -50,20 +50,20 @@ mono_dl_open_file (const char *file, int flags)
 	if (file) {
 		gunichar2* file_utf16 = g_utf8_to_utf16 (file, strlen (file), NULL, NULL, NULL);
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_SET_ERROR_MODE
 		guint last_sem = SetErrorMode (SEM_FAILCRITICALERRORS);
 #endif
 		guint32 last_error = 0;
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-		hModule = LoadLibrary (file_utf16);
+#ifndef HAVE_LOAD_LIBRARY
+		hModule = LoadLibraryW (file_utf16);
 #else
-		hModule = LoadPackagedLibrary (file_utf16, NULL);
+		hModule = LoadPackagedLibraryW (file_utf16, NULL);
 #endif
 		if (!hModule)
 			last_error = GetLastError ();
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_SET_ERROR_MODE
 		SetErrorMode (last_sem);
 #endif
 
@@ -72,8 +72,8 @@ mono_dl_open_file (const char *file, int flags)
 		if (!hModule)
 			SetLastError (last_error);
 	} else {
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-		hModule = GetModuleHandle (NULL);
+#if HAVE_GET_MODULE_HANDLE
+		hModule = GetModuleHandleW (NULL);
 #else
 		g_error("Not supported");
 #endif
@@ -88,10 +88,10 @@ mono_dl_close_handle (MonoDl *module)
 		FreeLibrary (module->handle);
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 void*
 mono_dl_lookup_symbol_in_process (const char *symbol_name)
 {
+#if HAVE_ENUM_PROCESS_MODULES
 	HMODULE *modules;
 	DWORD buffer_size = sizeof (HMODULE) * 1024;
 	DWORD needed, i;
@@ -135,8 +135,12 @@ mono_dl_lookup_symbol_in_process (const char *symbol_name)
 
 	g_free (modules);
 	return NULL;
+#else
+	g_unsupported_api ("EnumProcessModules");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return NULL;
+#endif
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *symbol_name)
@@ -162,16 +166,27 @@ mono_dl_convert_flags (int flags)
 	return 0;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_FORMAT_MESSAGE
+
+#if HAVE_LOCAL_FREE
+WINBASEAPI
+HLOCAL
+WINAPI
+LocalFree(
+	HLOCAL hMem
+	);
+#endif
+
 char*
 mono_dl_current_error_string (void)
 {
-	char* ret = NULL;
-	wchar_t* buf = NULL;
 	DWORD code = GetLastError ();
+#if HAVE_LOCAL_FREE
+	char* ret = NULL;
+	PWSTR buf = NULL;
 
-	if (FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&buf, 0, NULL))
+	if (FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (PWSTR)&buf, 0, NULL))
 	{
 		ret = g_utf16_to_utf8 (buf, wcslen(buf), NULL, NULL, NULL);
 		LocalFree (buf);
@@ -179,8 +194,16 @@ mono_dl_current_error_string (void)
 		g_assert_not_reached ();
 	}
 	return ret;
+#else
+	WCHAR buf [1024];
+
+	if (!FormatMessageW (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+		code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, G_N_ELEMENTS(buf) - 1, NULL))
+		buf[0] = 0;
+
+	return u16to8 (buf);
+#endif
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 
 int
 mono_dl_get_executable_path (char *buf, int buflen)

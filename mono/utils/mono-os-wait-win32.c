@@ -93,19 +93,17 @@ DWORD
 mono_win32_sleep_ex (DWORD timeout, BOOL alertable)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = SleepEx (timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }
@@ -114,19 +112,17 @@ DWORD
 mono_win32_wait_for_single_object_ex (HANDLE handle, DWORD timeout, BOOL alertable)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = WaitForSingleObjectEx (handle, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }
@@ -135,67 +131,67 @@ DWORD
 mono_win32_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, BOOL waitAll, DWORD timeout, BOOL alertable)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = WaitForMultipleObjectsEx (count, handles, waitAll, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+WINBASEAPI
+DWORD
+WINAPI
+SignalObjectAndWait(
+	HANDLE hObjectToSignal,
+	HANDLE hObjectToWaitOn,
+	DWORD  dwMilliseconds,
+	BOOL   bAlertable
+	);
 
 DWORD
 mono_win32_signal_object_and_wait (HANDLE toSignal, HANDLE toWait, DWORD timeout, BOOL alertable)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = SignalObjectAndWait (toSignal, toWait, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }
-
-#endif
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 DWORD
 mono_win32_msg_wait_for_multiple_objects_ex (DWORD count, CONST HANDLE *handles, DWORD timeout, DWORD wakeMask, DWORD flags)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 	BOOL alertable = flags & MWMO_ALERTABLE;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = MsgWaitForMultipleObjectsEx (count, handles, timeout, wakeMask, flags);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }
@@ -205,19 +201,17 @@ DWORD
 mono_win32_wsa_wait_for_multiple_events (DWORD count, const WSAEVENT FAR *handles, BOOL waitAll, DWORD timeout, BOOL alertable)
 {
 	DWORD result = WAIT_FAILED;
-	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	MonoThreadInfo *info = alertable ? mono_thread_info_current_unchecked () : NULL;
 
-	if (alertable && info) {
+	if (info)
 		enter_alertable_wait (info);
-	}
 
 	result = WSAWaitForMultipleEvents (count, handles, waitAll, timeout, alertable);
 
 	// NOTE, leave_alertable_wait should not affect GetLastError but
 	// if changed, GetLastError needs to be preserved and reset before returning.
-	if (alertable && info) {
+	if (info)
 		leave_alertable_wait (info);
-	}
 
 	return result;
 }

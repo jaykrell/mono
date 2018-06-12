@@ -376,30 +376,29 @@ mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumenam
 	return res;
 }
 
-#if HAVE_API_SUPPORT_WIN32_MOVE_FILE
 gboolean
 mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
+#if HAVE_API_SUPPORT_WIN32_MOVE_FILE
 	result = MoveFile (path, dest);
+#else
+	result = MoveFileEx (path, dest, MOVEFILE_COPY_ALLOWED);
+#endif
+	MONO_EXIT_GC_SAFE;
 	if (!result)
 		*error = GetLastError ();
 
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
-#endif
 
 #if HAVE_API_SUPPORT_WIN32_REPLACE_FILE
 gboolean
 mono_w32file_replace (const gunichar2 *destinationFileName, const gunichar2 *sourceFileName, const gunichar2 *destinationBackupFileName, guint32 flags, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
 	result = ReplaceFile (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
@@ -413,7 +412,7 @@ mono_w32file_replace (const gunichar2 *destinationFileName, const gunichar2 *sou
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_COPY_FILE
-// Support older UWP SDK?
+// Support older UWP SDK.
 WINBASEAPI
 BOOL
 WINAPI
@@ -422,23 +421,28 @@ CopyFileW (
 	PCWSTR NewFileName,
 	BOOL FailIfExists
 	);
+#endif
 
 gboolean
 mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwrite, gint32 *error)
 {
-	gboolean result;
-
+	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
+#if HAVE_API_SUPPORT_WIN32_COPY_FILE
 	result = CopyFile (path, dest, !overwrite);
+#else
+	COPYFILE2_EXTENDED_PARAMETERS copy_param = {0};
+	copy_param.dwSize = sizeof (COPYFILE2_EXTENDED_PARAMETERS);
+	copy_param.dwCopyFlags = (!overwrite) ? COPY_FILE_FAIL_IF_EXISTS : 0;
+	result = SUCCEEDED (CopyFile2 (path, dest, &copy_param));
+#endif
+	MONO_EXIT_GC_SAFE;
 	if (!result)
 		*error = GetLastError ();
 
-	MONO_EXIT_GC_SAFE;
-
 	return result;
 }
-#endif
 
 #if HAVE_API_SUPPORT_WIN32_LOCK_FILE
 gboolean
@@ -506,6 +510,54 @@ mono_w32file_get_console_error (void)
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
+
+#else
+
+HANDLE
+mono_w32file_get_console_output (void)
+{
+	ERROR_DECL (error);
+
+	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
+
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_OUTPUT_HANDLE)");
+	mono_error_set_pending_exception (error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
+HANDLE
+mono_w32file_get_console_input (void)
+{
+	ERROR_DECL (error);
+
+	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
+
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_INPUT_HANDLE)");
+	mono_error_set_pending_exception (error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
+HANDLE
+mono_w32file_get_console_error (void)
+{
+	ERROR_DECL (error);
+
+	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");
+
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_ERROR_HANDLE)");
+	mono_error_set_pending_exception (error);
+
+	SetLastError (ERROR_NOT_SUPPORTED);
+
+	return INVALID_HANDLE_VALUE;
+}
+
 #endif // HAVE_API_SUPPORT_WIN32_GET_STD_HANDLE
 
 gint64
