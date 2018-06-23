@@ -7983,6 +7983,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (pass_vtable) {
 				if (context_used) {
 					vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used, cmethod->klass, MONO_RGCTX_INFO_VTABLE);
+ printf("%s %d vtable_arg=%p\n", __FILE__, __LINE__, vtable_arg);
 				} else {
 					MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, cmethod->klass, &cfg->error);
 					CHECK_CFG_ERROR;
@@ -8005,6 +8006,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				vtable_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD_RGCTX);
+ printf("%s %d vtable_arg=%p\n", __FILE__, __LINE__, vtable_arg);
 
 				/* !marshalbyref is needed to properly handle generic methods + remoting */
 				if ((!(cmethod->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
@@ -8022,6 +8024,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				imt_arg = emit_get_rgctx_method (cfg, context_used,
 					cmethod, MONO_RGCTX_INFO_METHOD);
 				g_assert (imt_arg);
+printf("%s %d imt_arg=%p\n", __FILE__, __LINE__, imt_arg);
 			}
 
 			if (check_this)
@@ -8059,6 +8062,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						g_assert (cmethod->is_inflated);
 
 					imt_arg = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
+printf("%s %d imt_arg=%p\n", __FILE__, __LINE__, imt_arg);
 					g_assert (imt_arg);
 
 					virtual_ = TRUE;
@@ -8088,8 +8092,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				if (virtual_) {
 					if (fsig->generic_param_count) {
 						will_have_imt_arg = TRUE;
+printf("%s %d will_have_imt_arg=%d\n", __FILE__, __LINE__, will_have_imt_arg);
 					} else if (mono_class_is_interface (cmethod->klass) && !imt_arg) {
 						will_have_imt_arg = TRUE;
+printf("%s %d will_have_imt_arg=%d\n", __FILE__, __LINE__, will_have_imt_arg);
 					}
 				}
 			}
@@ -8103,6 +8109,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			// tailcall means "the backend can and will handle it".
 			// inst_tailcall means the tail. prefix is present.
+gboolean is_interface;
+is_interface = mono_class_is_interface (cmethod->klass);
+printf("%s %d vtable_arg=%p imt_arg=%p will_have_imt_arg=%d is_interface=%d\n", __FILE__, __LINE__, vtable_arg,
+imt_arg, will_have_imt_arg, is_interface);
 			tailcall_extra_arg = vtable_arg || imt_arg || will_have_imt_arg || mono_class_is_interface (cmethod->klass);
 			tailcall = inst_tailcall && is_supported_tailcall (cfg, ip, method, cmethod, fsig,
 						virtual_, tailcall_extra_arg, &tailcall_calli);
@@ -8308,9 +8318,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						/* Same as the virtual generic case above */
 						imt_arg = emit_get_rgctx_method (cfg, context_used,
 														 cmethod, MONO_RGCTX_INFO_METHOD);
+printf("%s %d imt_arg=%p\n", __FILE__, __LINE__, imt_arg);
 						g_assert (imt_arg);
 						/* This is not needed, as the trampoline code will pass one, and it might be passed in the same reg as the imt arg */
 						vtable_arg = NULL;
+printf("%s %d imt_arg=%p\n", __FILE__, __LINE__, imt_arg);
 					} else if (mono_class_is_interface (cmethod->klass) && !imt_arg) {
 						/* This can happen when we call a fully instantiated iface method */
 						g_assert (will_have_imt_arg);
@@ -8318,6 +8330,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 														 cmethod, MONO_RGCTX_INFO_METHOD);
 						g_assert (imt_arg);
 						vtable_arg = NULL;
+printf("%s %d imt_arg=%p, vtable_arg=%p\n", __FILE__, __LINE__, imt_arg, vtable_arg);
 					}
 				}
 
