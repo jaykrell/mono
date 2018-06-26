@@ -612,8 +612,8 @@ callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTa
 ldstr "qq"
 ldc.i4.4
 newobj instance void class [mscorlib]System.Tuple`2<string,int32>::.ctor(!0, !1)
-
 call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<string,int32>>(string, !!0, !!0)
+
 ldstr "TailCallLoopGenericClassAndMethodAbstractClass<string>.Method1<DateTime>"
 ldstr "qq"
 newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<string>::.ctor(!0)
