@@ -1177,25 +1177,16 @@ PROFILE_DISABLED_TESTS += \
 # https://bugzilla.xamarin.com/show_bug.cgi?id=60973
 PROFILE_DISABLED_TESTS += \
 	weak-fields.exe
-
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
-PROFILE_DISABLED_TESTS += tailcall-interface-conservestack.exe
-
 endif
 
 if HYBRID_AOT_TESTS
 PROFILE_DISABLED_TESTS += \
 	bug-80307.exe \
 	namedmutex-destroy-race.exe
-
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
 endif
 
 AOT_DISABLED_TESTS= \
 	constraints-load.exe
-
-# tailcall/fsharp FullAOT stack overflow in CI but not locally.
-AOT_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
 
 CI_DISABLED_TESTS = \
 	main-returns-background-resetabort.exe \
