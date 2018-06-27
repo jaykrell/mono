@@ -749,8 +749,6 @@ TESTS_IL_SRC=			\
 	tailcall/fsharp-deeptail-mutualTail1IsOdd.il \
 	tailcall/fsharp-deeptail-simpleTail1.il \
 	tailcall/fsharp-deeptail-simpleTail2.il \
-	fsharp-shallownotail.il \
-	fsharp-shallowtail.il \
 	gptail1.il		\
 	itail1.il		\
 	itaili1.il		\
