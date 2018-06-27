@@ -39,8 +39,8 @@ int main ()
 			break;
 	}
 
-	string marker_ldstr = "ldstr \"";	// start of each test, and contains name
-	string marker_ldc_i4_0 = "ldc.i4.0";	// start of suffix
+	const string marker_ldstr = "ldstr \"";	// start of each test, and contains name
+	const string marker_ldc_i4_0 = "ldc.i4.0";	// start of suffix
 
 	while (getline (cin, line))
 	{
@@ -52,8 +52,8 @@ int main ()
 			assert (getline (cin, line));
 			// tests start with ldstr
 			//printf("%s\n", line.c_str());
-			bool ldstr = line.length () >= marker_ldstr.length () && memcmp(line.c_str (), marker_ldstr.c_str (), marker_ldstr.length ()) == 0;
-			bool ldc_i4_0 = line.length () >= marker_ldc_i4_0.length () && memcmp(line.c_str (), marker_ldc_i4_0.c_str (), marker_ldc_i4_0.length ()) == 0;
+			const bool ldstr = line.length () >= marker_ldstr.length () && memcmp(line.c_str (), marker_ldstr.c_str (), marker_ldstr.length ()) == 0;
+			const bool ldc_i4_0 = line.length () >= marker_ldc_i4_0.length () && memcmp(line.c_str (), marker_ldc_i4_0.c_str (), marker_ldc_i4_0.length ()) == 0;
 			assert (ldstr || ldc_i4_0);
 			if (ldc_i4_0)
 			{
@@ -63,6 +63,12 @@ int main ()
 			string name1 = &line [marker_ldstr.length ()];
 			*strchr ((char*)name1.c_str (), '"') = 0; // truncate at quote
 			test->name = name1.c_str ();
+#if 1
+			// Change some chars to underscores.
+			for (auto& c: test->name)
+				if (strchr("<>", c))
+				c = '_';
+#else
 			// remove some chars
 			while (true)
 			{
@@ -94,14 +100,14 @@ int main ()
 				}
 				break;
 			}
+#endif
 			//printf("%s\n", test->name.c_str());
 		}
 		test->content.push_back (line);
 	}
 	while (getline (cin, line))
-	{
 		suffix.push_back (line);
-	}
+
 	for (auto& t: tests)
 	{
 		if (t.name == "")
