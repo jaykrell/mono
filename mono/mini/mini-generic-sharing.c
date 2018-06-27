@@ -3994,15 +3994,25 @@ mini_is_gsharedvt_klass (MonoClass *klass)
 }
 
 gboolean
+mono_is_usermode_native_debugger_present (void);
+
+gboolean
 mini_is_gsharedvt_signature (MonoMethodSignature *sig)
 {
 	int i;
 
-	if (sig->ret && mini_is_gsharedvt_type (sig->ret))
+	if (sig->ret && mini_is_gsharedvt_type (sig->ret)) {
+		if (mono_is_usermode_native_debugger_present ()) G_BREAKPOINT();
+		g_print ("%s 1\n", __func__);
 		return TRUE;
+	}
 	for (i = 0; i < sig->param_count; ++i) {
-		if (mini_is_gsharedvt_type (sig->params [i]))
+		if (mini_is_gsharedvt_type (sig->params [i])) {
+			if (mono_is_usermode_native_debugger_present ()) G_BREAKPOINT();
+			mini_is_gsharedvt_type (sig->params [i]);
+			g_print ("%s 2 %d\n", __func__, i);
 			return TRUE;
+		}
 	}
 	return FALSE;
 }

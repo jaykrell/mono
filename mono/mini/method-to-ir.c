@@ -3273,6 +3273,7 @@ static MonoInst*
 emit_get_rgctx_gsharedvt_call (MonoCompile *cfg, int context_used,
 							   MonoMethodSignature *sig, MonoMethod *cmethod, MonoRgctxInfoType rgctx_type)
 {
+	g_print ("%s %d\n", __func__, __LINE__);
 	MonoJumpInfoGSharedVtCall *call_info;
 	MonoJumpInfoRgctxEntry *entry;
 	MonoInst *rgctx;
@@ -3314,6 +3315,7 @@ static MonoInst*
 emit_get_rgctx_gsharedvt_method (MonoCompile *cfg, int context_used,
 								 MonoMethod *cmethod, MonoGSharedVtMethodInfo *info)
 {
+	g_print ("%s %d\n", __func__, __LINE__);
 	MonoJumpInfoRgctxEntry *entry;
 	MonoInst *rgctx;
 

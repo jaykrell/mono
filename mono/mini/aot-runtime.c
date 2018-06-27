@@ -1067,8 +1067,10 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 					return FALSE;
 				ref->method = mono_marshal_get_array_accessor_wrapper (m);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
+				g_print ("%s %d WRAPPER_SUBTYPE_GSHAREDVT_IN\n", __FILE__, __LINE__);
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
+				g_print ("%s %d WRAPPER_SUBTYPE_GSHAREDVT_OUT\n", __FILE__, __LINE__);
 				ref->method = mono_marshal_get_gsharedvt_out_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_IN) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
@@ -1078,11 +1080,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
 				ref->method = mini_get_interp_lmf_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
+				g_print ("%s %d WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG\n", __FILE__, __LINE__);
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_gsharedvt_in_sig_wrapper (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG) {
+				g_print ("%s %d WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG\n", __FILE__, __LINE__);
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)
 					return FALSE;
@@ -3238,6 +3242,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			MonoGenericSharingContext *gsctx = gi->generic_sharing_context;
 
 			gsctx->is_gsharedvt = TRUE;
+			g_print ("%s %d is_gsharedvt=true\n", __func__, __LINE__);
 		}
 	}
 
@@ -3804,9 +3809,12 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
+		if (ji->type == MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER)
+			g_print("%s %d MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER\n", __func__, __LINE__);
 		ji->data.target = decode_signature (aot_module, p, &p);
 		break;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+		g_print("%s %d MONO_PATCH_INFO_GSHAREDVT_CALL\n", __func__, __LINE__);
 		MonoJumpInfoGSharedVtCall *info = (MonoJumpInfoGSharedVtCall *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoGSharedVtCall));
 		info->sig = decode_signature (aot_module, p, &p);
 		g_assert (info->sig);
@@ -3817,6 +3825,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD: {
+		g_print("%s %d MONO_PATCH_INFO_GSHAREDVT_METHOD\n", __func__, __LINE__);
 		MonoGSharedVtMethodInfo *info = (MonoGSharedVtMethodInfo *)mono_mempool_alloc0 (mp, sizeof (MonoGSharedVtMethodInfo));
 		int i;
 		
