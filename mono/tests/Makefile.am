@@ -768,6 +768,58 @@ TESTS_IL_SRC=			\
 	tailcall-rgctxb-static.il \
 	tailcall-mrgctx.il 	\
 	tailcall-interface-conservestack.il \
+	tailcall-interface-conservestack-1.il \
+	tailcall-interface-conservestack-10.il \
+	tailcall-interface-conservestack-11.il \
+	tailcall-interface-conservestack-12.il \
+	tailcall-interface-conservestack-13.il \
+	tailcall-interface-conservestack-14.il \
+	tailcall-interface-conservestack-15.il \
+	tailcall-interface-conservestack-16.il \
+	tailcall-interface-conservestack-17.il \
+	tailcall-interface-conservestack-18.il \
+	tailcall-interface-conservestack-19.il \
+	tailcall-interface-conservestack-2.il \
+	tailcall-interface-conservestack-20.il \
+	tailcall-interface-conservestack-21.il \
+	tailcall-interface-conservestack-22.il \
+	tailcall-interface-conservestack-23.il \
+	tailcall-interface-conservestack-24.il \
+	tailcall-interface-conservestack-25.il \
+	tailcall-interface-conservestack-26.il \
+	tailcall-interface-conservestack-27.il \
+	tailcall-interface-conservestack-28.il \
+	tailcall-interface-conservestack-29.il \
+	tailcall-interface-conservestack-3.il \
+	tailcall-interface-conservestack-30.il \
+	tailcall-interface-conservestack-31.il \
+	tailcall-interface-conservestack-32.il \
+	tailcall-interface-conservestack-33.il \
+	tailcall-interface-conservestack-34.il \
+	tailcall-interface-conservestack-35.il \
+	tailcall-interface-conservestack-36.il \
+	tailcall-interface-conservestack-37.il \
+	tailcall-interface-conservestack-38.il \
+	tailcall-interface-conservestack-39.il \
+	tailcall-interface-conservestack-4.il \
+	tailcall-interface-conservestack-40.il \
+	tailcall-interface-conservestack-41.il \
+	tailcall-interface-conservestack-42.il \
+	tailcall-interface-conservestack-43.il \
+	tailcall-interface-conservestack-44.il \
+	tailcall-interface-conservestack-45.il \
+	tailcall-interface-conservestack-46.il \
+	tailcall-interface-conservestack-47.il \
+	tailcall-interface-conservestack-48.il \
+	tailcall-interface-conservestack-49.il \
+	tailcall-interface-conservestack-5.il \
+	tailcall-interface-conservestack-50.il \
+	tailcall-interface-conservestack-51.il \
+	tailcall-interface-conservestack-52.il \
+	tailcall-interface-conservestack-6.il \
+	tailcall-interface-conservestack-7.il \
+	tailcall-interface-conservestack-8.il \
+	tailcall-interface-conservestack-9.il \
 	tailcall-interface-justrun.il \
 	field-access.il		\
 	method-access.il	\
@@ -948,6 +1000,7 @@ endif
 if POWERPC
 # bug #71274
 PLATFORM_DISABLED_TESTS += finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+# FIXME
 PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 PLATFORM_DISABLED_TESTS += tailcall-mrgctx.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
 PLATFORM_DISABLED_TESTS += tailcall-rgctxa.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
@@ -1004,6 +1057,58 @@ PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail-mutualTail1IsOdd.exe
 PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail-simpleTail1.exe
 PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail-simpleTail2.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-1.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-10.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-11.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-12.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-13.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-14.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-15.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-16.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-17.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-18.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-19.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-2.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-20.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-21.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-22.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-23.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-24.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-25.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-26.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-27.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-28.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-29.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-3.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-30.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-31.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-32.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-33.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-34.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-35.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-36.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-37.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-38.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-39.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-4.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-40.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-41.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-42.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-43.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-44.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-45.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-46.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-47.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-48.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-49.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-5.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-50.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-51.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-52.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-6.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-7.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-8.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-9.exe
 PLATFORM_DISABLED_TESTS += ivtail1.exe
 endif
 
@@ -1531,6 +1636,7 @@ INTERP_DISABLED_TESTS = $(DISABLED_TESTS) \
 	tailcall/8273.exe \
 	$(TAILCALL_DISABLED_TESTS_RUN) \
 	bug-60843.exe
+# FIXME
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-Seq.filter-length1.exe
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-Seq.filter-length2.exe
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-Seq.filter-length3.exe
@@ -1577,6 +1683,59 @@ INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-mutualTail1IsEven.exe
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-mutualTail1IsOdd.exe
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-simpleTail1.exe
 INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-simpleTail2.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-1.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-10.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-11.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-12.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-13.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-14.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-15.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-16.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-17.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-18.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-19.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-2.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-20.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-21.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-22.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-23.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-24.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-25.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-26.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-27.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-28.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-29.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-3.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-30.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-31.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-32.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-33.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-34.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-35.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-36.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-37.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-38.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-39.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-4.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-40.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-41.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-42.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-43.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-44.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-45.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-46.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-47.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-48.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-49.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-5.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-50.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-51.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-52.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-6.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-7.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-8.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-9.exe
+
 
 # bug-48015.exe: be careful when re-enabling, it happens that it returns with exit code 0, but doesn't actually execute the test.
 # bug-60862.exe: missing support to map IP->method; only works on platforms with altstack support.
