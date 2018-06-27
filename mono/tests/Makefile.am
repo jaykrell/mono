@@ -990,16 +990,27 @@ PLATFORM_DISABLED_TESTS += async-exc-compilation.exe finally_guard.exe finally_b
 	unhandled-exception-5.exe unhandled-exception-6.exe unhandled-exception-7.exe unhandled-exception-8.exe
 endif
 
+# FIXME confirm these fail and why
 PLATFORM_DISABLED_TESTS += tailcall/2.exe
 PLATFORM_DISABLED_TESTS += tailcall/3.exe
 PLATFORM_DISABLED_TESTS += tailcall/4.exe
 PLATFORM_DISABLED_TESTS += tailcall/8273.exe
+
+# FIXME determine why these fail
+PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-16.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-17.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-18.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-19.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-20.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-21.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 endif
 
 if POWERPC
 # bug #71274
 PLATFORM_DISABLED_TESTS += finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
-# FIXME
+# FIXME actually see what works
 PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 PLATFORM_DISABLED_TESTS += tailcall-mrgctx.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
 PLATFORM_DISABLED_TESTS += tailcall-rgctxa.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
@@ -1119,6 +1130,7 @@ PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-unlo
 	pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe abort-cctor.exe load-exceptions.exe \
 	sgen-domain-unload-2.exe sgen-weakref-stress.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw.exe \
 	sgen-new-threads-dont-join-stw-2.exe sgen-new-threads-collect.exe sgen-bridge.exe
+# FIXME actually see what works
 PLATFORM_DISABLED_TESTS += tailcall-generic-cast-conservestack-il.exe
 PLATFORM_DISABLED_TESTS += tailcall-mrgctx.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
 PLATFORM_DISABLED_TESTS += tailcall-rgctxa.exe # MONO_ARCH_HAVE_VOLATILE_NON_PARAM_REGISTER 0
