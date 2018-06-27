@@ -5,8 +5,10 @@ Algorithm is just to split on the newline delimited ldstr opcodes
 within the main@ function, and generate file names from the ldstr,
 replacing special characters with underscores.
 
+git rm fsharp-deeptail-*
 rm fsharp-deeptail-*
 g++ split-fsharp.cpp -std=c++11 && ./a.out < fsharp-deeptail.il
+git add fsharp-deeptail-*
 */
 #include <iostream>
 #include <fstream>
@@ -61,10 +63,36 @@ int main ()
 			string name1 = &line [marker_ldstr.length ()];
 			*strchr ((char*)name1.c_str (), '"') = 0; // truncate at quote
 			test->name = name1.c_str ();
-			for (auto& c: test->name)
+			// remove some chars
+			while (true)
 			{
-				if (strchr("<>", c))
-					c = '_';
+				size_t c;
+				if ((c = test->name.find('<')) != string::npos)
+				{
+					test->name = test->name.replace(c, 1, "_");
+					continue;
+				}
+				if ((c = test->name.find('>')) != string::npos)
+				{
+					test->name = test->name.replace(c, 1, "_");
+					continue;
+				}
+				if ((c = test->name.find("..")) != string::npos)
+				{
+					test->name = test->name.replace(c, 2, "_");
+					continue;
+				}
+				if ((c = test->name.find("__")) != string::npos)
+				{
+					test->name = test->name.replace(c, 2, "_");
+					continue;
+				}
+				if ((c = test->name.find('.')) != string::npos)
+				{
+					test->name = test->name.replace(c, 1, "_");
+					continue;
+				}
+				break;
 			}
 			//printf("%s\n", test->name.c_str());
 		}
@@ -90,4 +118,12 @@ int main ()
 			output << a.c_str () << endl;
 
 	}
+	for (auto& t: tests)
+		printf("%s", ("\ttailcall/fsharp-deeptail-" + t.name + ".il \\\n").c_str());
+	for (auto& t: tests)
+		printf("%s", ("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail-" + t.name + ".il\n").c_str());
+	for (auto& t: tests)
+		printf("#%s", ("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail-" + t.name + ".il\n").c_str());
+	for (auto& t: tests)
+		printf("%s", ("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail-" + t.name + ".il\n").c_str());
 }
