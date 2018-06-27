@@ -1096,6 +1096,8 @@ ldc.i8 0
 callvirt instance class B class D`1<class A>::cast2(object, int64, int64)
 call void C3::print(object)
 
+// test-split-prefix do not remove or edit this line
+
 ldloc 0
 ldloc V_4
 ldc.i8 100
@@ -1491,6 +1493,8 @@ ldloca V_6
 conv.u8
 ldc.i8 0
 callvirt instance void class GI1`1<valuetype Point[]>::GF1<int64[]>(class GI2`1<!0>, int64, int64, int64)
+
+// test-split-suffix do not remove or edit this line
 
 ldsfld int64 C1::errors
 dup
