@@ -816,6 +816,7 @@ TESTS_IL_SRC=			\
 	tailcall-interface-conservestack-50.il \
 	tailcall-interface-conservestack-51.il \
 	tailcall-interface-conservestack-52.il \
+	tailcall-interface-conservestack-53.il \
 	tailcall-interface-conservestack-6.il \
 	tailcall-interface-conservestack-7.il \
 	tailcall-interface-conservestack-8.il \
@@ -1105,6 +1106,7 @@ PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-5.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-50.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-51.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-52.exe
+PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-53.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-6.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-7.exe
 PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack-8.exe
@@ -1731,6 +1733,7 @@ INTERP_DISABLED_TESTS += tailcall-interface-conservestack-5.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-50.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-51.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-52.exe
+INTERP_DISABLED_TESTS += tailcall-interface-conservestack-53.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-6.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-7.exe
 INTERP_DISABLED_TESTS += tailcall-interface-conservestack-8.exe

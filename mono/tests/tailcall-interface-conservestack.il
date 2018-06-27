@@ -129,10 +129,10 @@ ldarg 0
 ldarg 1
 bne.un IL_0013
 
-ldstr "{0}"
-ldsfld int64 C1::i
-box [mscorlib]System.Int64
-call void [mscorlib]System.Console::WriteLine(string, object)
+//ldstr "{0}"
+//ldsfld int64 C1::i
+//box [mscorlib]System.Int64
+//call void [mscorlib]System.Console::WriteLine(string, object)
 ret
 
 IL_0013:
@@ -635,7 +635,7 @@ ldarg 3
 call void C::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 C::cast1<class B>(object, int64, int64)
@@ -664,7 +664,7 @@ ldarg 3
 call void C::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 C::cast1<!!0>(object, int64, int64)
@@ -693,7 +693,7 @@ ldarg 3
 call void C::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 C::cast1<class B[]>(object, int64, int64)
@@ -722,7 +722,7 @@ ldarg 3
 call void C::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 C::cast1<!!0[]>(object, int64, int64)
@@ -792,7 +792,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<class B>(object, int64, int64)
@@ -820,7 +820,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<!!0>(object, int64, int64)
@@ -848,7 +848,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<class B[]>(object, int64, int64)
@@ -876,7 +876,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<!!0[]>(object, int64, int64)
@@ -904,7 +904,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<!0>(object, int64, int64)
@@ -932,7 +932,7 @@ conv.u8
 ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call !!0 class D`1<!T1>::cast1<!0>(object, int64, int64)
@@ -961,7 +961,7 @@ ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 class D`1<!T1>::cast3<!0[]>(object, int64, int64)
@@ -990,7 +990,7 @@ ldarg 3
 call void class D`1<!T1>::check(int64, int64)
 ldarg 0
 ldarg 1
-ldc.i8 100
+ldc.i8 99
 ldc.i8 0
 tail.
 call instance !!0 class D`1<!T1>::cast3<!0[]>(object, int64, int64)
@@ -1043,8 +1043,12 @@ ret
 	class GI2`1<int64> V_18,
 	class GI2`1<int64[]> V_19,
 	class GI2`1<valuetype Point> V_20,
-	class GI2`1<valuetype Point[]> V_21
+	class GI2`1<valuetype Point[]> V_21,
+	int64 depth
 	)
+
+ldc.i8 9999999
+stloc depth
 newobj instance void class D`1<class A>::.ctor()
 stloc 0
 newobj instance void class D`1<class B>::.ctor()
@@ -1089,25 +1093,25 @@ stloc V_20
 newobj instance void class GC2`1<valuetype Point[]>::.ctor()
 stloc V_21
 
-ldloc 0
-ldloc V_4
-ldc.i8 100
-ldc.i8 0
-callvirt instance class B class D`1<class A>::cast2(object, int64, int64)
-call void C3::print(object)
-
 // test-split-prefix do not remove or edit this line
 
 ldloc 0
 ldloc V_4
-ldc.i8 100
+ldloc depth
+ldc.i8 0
+callvirt instance class B class D`1<class A>::cast2(object, int64, int64)
+call void C3::print(object)
+
+ldloc 0
+ldloc V_4
+ldloc depth
 ldc.i8 0
 callvirt instance !!0 class D`1<class A>::cast3<class B>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 0
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 conv.i8
 callvirt instance !!0 class D`1<class A>::cast3<class B[]>(object, int64, int64)
@@ -1115,91 +1119,91 @@ call void C3::print(object)
 
 ldloc 0
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance class B[] class D`1<class A>::cast4(object, int64, int64)
 call void C3::print(object)
 
 ldloc 0
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !!0[] class D`1<class A>::cast5<class B>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 1
 ldloc V_4
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !0 class D`1<class B>::cast6(object, int64, int64)
 call void C3::print(object)
 
 ldloc 1
 ldloc V_4
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !0 class D`1<class B>::cast7<class A>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 2
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !0 class D`1<class B[]>::cast7<class A[]>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 1
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !0[] class D`1<class B>::cast8(object, int64, int64)
 call void C3::print(object)
 
 ldloc 1
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !0[] class D`1<class B>::cast9<class A>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 3
 ldloc V_4
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance class B C::cast2(object, int64, int64)
 call void C3::print(object)
 
 ldloc 3
 ldloc V_4
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !!0 C::cast3<class B>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 3
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !!0 C::cast3<class B[]>(object, int64, int64)
 call void C3::print(object)
 
 ldloc 3
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance class B[] C::cast4(object, int64, int64)
 call void C3::print(object)
 
 ldloc 3
 ldloc V_5
-ldc.i8 100
+ldloc depth
 ldc.i8 0
 callvirt instance !!0[] C::cast5<class B>(object, int64, int64)
 call void C3::print(object)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1207,7 +1211,7 @@ callvirt instance void I1::F1(class I2, int64, int64, int64)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1215,7 +1219,7 @@ callvirt instance void I1::GF1<object>(class I2, int64, int64, int64)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1223,7 +1227,7 @@ callvirt instance void I1::GF1<class A>(class I2, int64, int64, int64)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1231,7 +1235,7 @@ callvirt instance void I1::GF1<class A[]>(class I2, int64, int64, int64)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1239,7 +1243,7 @@ callvirt instance void I1::GF1<int64>(class I2, int64, int64, int64)
 
 ldloc V_7
 ldloc V_8
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1248,7 +1252,7 @@ callvirt instance void I1::GF1<int64[]>(class I2, int64, int64, int64)
 // This is the only failure on desktop.
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1256,7 +1260,7 @@ callvirt instance void class GI1`1<object>::F1(class GI2`1<!0>, int64, int64, in
 
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1264,7 +1268,7 @@ callvirt instance void class GI1`1<object>::GF1<object>(class GI2`1<!0>, int64, 
 
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1272,7 +1276,7 @@ callvirt instance void class GI1`1<object>::GF1<class A>(class GI2`1<!0>, int64,
 
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1280,7 +1284,7 @@ callvirt instance void class GI1`1<object>::GF1<class A[]>(class GI2`1<!0>, int6
 
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1288,7 +1292,7 @@ callvirt instance void class GI1`1<object>::GF1<int64>(class GI2`1<!0>, int64, i
 
 ldloc V_10
 ldloc V_16
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1296,7 +1300,7 @@ callvirt instance void class GI1`1<object>::GF1<int64[]>(class GI2`1<!0>, int64,
 
 ldloc V_11
 ldloc V_17
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1304,7 +1308,7 @@ callvirt instance void class GI1`1<object[]>::GF1<object[]>(class GI2`1<!0>, int
 
 ldloc V_11
 ldloc V_17
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1312,7 +1316,7 @@ callvirt instance void class GI1`1<object[]>::GF1<class A>(class GI2`1<!0>, int6
 
 ldloc V_11
 ldloc V_17
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1320,7 +1324,7 @@ callvirt instance void class GI1`1<object[]>::GF1<class A[]>(class GI2`1<!0>, in
 
 ldloc V_11
 ldloc V_17
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1328,7 +1332,7 @@ callvirt instance void class GI1`1<object[]>::GF1<int64>(class GI2`1<!0>, int64,
 
 ldloc V_11
 ldloc V_17
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1336,7 +1340,7 @@ callvirt instance void class GI1`1<object[]>::GF1<int64[]>(class GI2`1<!0>, int6
 
 ldloc V_12
 ldloc V_18
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1344,7 +1348,7 @@ callvirt instance void class GI1`1<int64>::GF1<object>(class GI2`1<!0>, int64, i
 
 ldloc V_12
 ldloc V_18
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1352,7 +1356,7 @@ callvirt instance void class GI1`1<int64>::GF1<class A>(class GI2`1<!0>, int64, 
 
 ldloc V_12
 ldloc V_18
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1360,7 +1364,7 @@ callvirt instance void class GI1`1<int64>::GF1<class A[]>(class GI2`1<!0>, int64
 
 ldloc V_12
 ldloc V_18
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1368,7 +1372,7 @@ callvirt instance void class GI1`1<int64>::GF1<int64>(class GI2`1<!0>, int64, in
 
 ldloc V_12
 ldloc V_18
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1376,7 +1380,7 @@ callvirt instance void class GI1`1<int64>::GF1<int64[]>(class GI2`1<!0>, int64, 
 
 ldloc V_13
 ldloc V_19
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1384,7 +1388,7 @@ callvirt instance void class GI1`1<int64[]>::GF1<object>(class GI2`1<!0>, int64,
 
 ldloc V_13
 ldloc V_19
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1392,7 +1396,7 @@ callvirt instance void class GI1`1<int64[]>::GF1<class A>(class GI2`1<!0>, int64
 
 ldloc V_13
 ldloc V_19
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1400,7 +1404,7 @@ callvirt instance void class GI1`1<int64[]>::GF1<class A[]>(class GI2`1<!0>, int
 
 ldloc V_13
 ldloc V_19
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1408,7 +1412,7 @@ callvirt instance void class GI1`1<int64[]>::GF1<int64>(class GI2`1<!0>, int64, 
 
 ldloc V_13
 ldloc V_19
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1416,7 +1420,7 @@ callvirt instance void class GI1`1<int64[]>::GF1<int64[]>(class GI2`1<!0>, int64
 
 ldloc V_14
 ldloc V_20
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1424,7 +1428,7 @@ callvirt instance void class GI1`1<valuetype Point>::GF1<object>(class GI2`1<!0>
 
 ldloc V_14
 ldloc V_20
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1432,7 +1436,7 @@ callvirt instance void class GI1`1<valuetype Point>::GF1<class A>(class GI2`1<!0
 
 ldloc V_14
 ldloc V_20
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1440,7 +1444,7 @@ callvirt instance void class GI1`1<valuetype Point>::GF1<class A[]>(class GI2`1<
 
 ldloc V_14
 ldloc V_20
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1448,7 +1452,7 @@ callvirt instance void class GI1`1<valuetype Point>::GF1<int64>(class GI2`1<!0>,
 
 ldloc V_14
 ldloc V_20
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1456,7 +1460,7 @@ callvirt instance void class GI1`1<valuetype Point>::GF1<int64[]>(class GI2`1<!0
 
 ldloc V_15
 ldloc V_21
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1464,7 +1468,7 @@ callvirt instance void class GI1`1<valuetype Point[]>::GF1<object>(class GI2`1<!
 
 ldloc V_15
 ldloc V_21
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1472,7 +1476,7 @@ callvirt instance void class GI1`1<valuetype Point[]>::GF1<class A>(class GI2`1<
 
 ldloc V_15
 ldloc V_21
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1480,7 +1484,7 @@ callvirt instance void class GI1`1<valuetype Point[]>::GF1<class A[]>(class GI2`
 
 ldloc V_15
 ldloc V_21
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0
@@ -1488,7 +1492,7 @@ callvirt instance void class GI1`1<valuetype Point[]>::GF1<int64>(class GI2`1<!0
 
 ldloc V_15
 ldloc V_21
-ldc.i8 100
+ldloc depth
 ldloca V_6
 conv.u8
 ldc.i8 0

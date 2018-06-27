@@ -1094,13 +1094,6 @@ newobj instance void class GC2`1<valuetype Point[]>::.ctor()
 stloc V_21
 
 
-ldloc V_15
-ldloc V_21
-ldloc depth
-ldloca V_6
-conv.u8
-ldc.i8 0
-callvirt instance void class GI1`1<valuetype Point[]>::GF1<int64>(class GI2`1<!0>, int64, int64, int64)
 
 
 ldsfld int64 C1::errors
