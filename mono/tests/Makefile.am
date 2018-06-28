@@ -1515,7 +1515,51 @@ PROFILE_DISABLED_TESTS += \
 # https://bugzilla.xamarin.com/show_bug.cgi?id=60973
 PROFILE_DISABLED_TESTS += \
 	weak-fields.exe
-endif
+
+# Some, probably all, of these tests use gsharedvt.
+# gsharedvt is very much at odds with tailcall, and they fail as a result.
+# RegularAOT and HybridAOT should be ok.
+#
+# The tests might be tweakable but then they will less resemble real world code.
+#
+# FullAOT should probably be changed to intersect tailcall signatures called
+# and all generic signatures provided, and compile more functions.
+# As well, gsharedvt can probably be a tailcall sometimes, like if parameters
+# fit in registers and there is no out conversion. Maybe it already does that.
+if MONO_ARCH_GSHAREDVT_SUPPORTED
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-26.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-31.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-33.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-34.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-35.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-36.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-37.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-41.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-43.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-44.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-45.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-46.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-47.exe
+PROFILE_DISABLED_TESTS += tailcall-interface-conservestack-51.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_DateTime_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_byte_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_int_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_string_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_DateTime_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_byte_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_int_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_string_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_DateTime_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_byte_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_int_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_string_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_DateTime_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_byte_.exe
+PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail-TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_int_.exe
+endif # MONO_ARCH_GSHAREDVT_SUPPORTED
+endif # FULL_AOT_TESTS
 
 if HYBRID_AOT_TESTS
 PROFILE_DISABLED_TESTS += \
