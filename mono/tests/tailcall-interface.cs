@@ -95,19 +95,17 @@ unsafe public class C1 : I1
 	[MethodImpl (NoInlining)]
 	int I1.F1 (I2 i2, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i2.F2 (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i2.F2 (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int I1.GF1<TF> (I2 i2, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i2.GF2<TF> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i2.GF2<TF> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 }
 
@@ -124,28 +122,25 @@ unsafe public class GC1<TC> : GI1<TC>
 	[MethodImpl (NoInlining)]
 	int GI1<TC>.F1 (GI2<TC> i2, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i2.F2 (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i2.F2 (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int GI1<TC>.GF1<TF> (GI2<TC> i2, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i2.GF2<TF> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i2.GF2<TF> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int GI1<TC>.HF1<TF> (GI2<TF> i2, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i2.HF2<TC> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i2.HF2<TC> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 }
 
@@ -163,19 +158,17 @@ unsafe public class C2 : I2
 	[MethodImpl (NoInlining)]
 	int I2.F2 (I1 i1, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i1.F1 (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i1.F1 (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int I2.GF2<TF> (I1 i1, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i1.GF1<TF> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i1.GF1<TF> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 }
 
@@ -194,28 +187,25 @@ unsafe public class GC2<TC> : GI2<TC>
 	[MethodImpl (NoInlining)]
 	int GI2<TC>.F2 (GI1<TC> i1, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i1.F1 (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i1.F1 (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int GI2<TC>.GF2<TF> (GI1<TC> i1, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i1.GF1<TF> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i1.GF1<TF> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 
 	[MethodImpl (NoInlining)]
 	int GI2<TC>.HF2<TF> (GI1<TF> i1, long counter, long initial_stack, long current_stack)
 	{
-		int local;
 		if (counter > 0)
-			return i1.HF1<TC> (this, counter - 1, initial_stack, (long)&local);
-		return check ((long)&local, current_stack);
+			return i1.HF1<TC> (this, counter - 1, initial_stack, (long)&counter);
+		return check ((long)&counter, current_stack);
 	}
 }
 
@@ -252,50 +242,45 @@ unsafe public class C
 	[MethodImpl (NoInlining)]
 	public T cast1<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast1<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast1<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return (T)o;
 	}
 
 	[MethodImpl (NoInlining)]
 	public B cast2 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast2 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast2 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<B> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T cast3<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast3<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast3<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public B[] cast4 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast4 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast4 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<B[]> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T[] cast5<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast5<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast5<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T[]> (o);
 	}
 }
@@ -311,90 +296,81 @@ unsafe public class D<T1>
 	[MethodImpl (NoInlining)]
 	public static T cast1<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast1<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast1<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return (T)o;
 	}
 
 	[MethodImpl (NoInlining)]
 	public B cast2 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast2 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast2 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<B> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T cast3<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast3<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast3<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public B[] cast4 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast4 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast4 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<B[]> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T[] cast5<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast5<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast5<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T[]> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T1 cast6 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast6 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast6 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T1> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T1 cast7<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast7<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast7<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast1<T1> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T1[] cast8 (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast8 (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast8 (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast3<T1[]> (o);
 	}
 
 	[MethodImpl (NoInlining)]
 	public T1[] cast9<T> (object o, long counter = 100, long stack = 0)
 	{
-		int local;
 		if (counter > 0)
-			return cast9<T> (o, counter - 1, (long)&local);
-		check ((long)&local, stack);
+			return cast9<T> (o, counter - 1, (long)&counter);
+		check ((long)&counter, stack);
 		return cast3<T1[]> (o);
 	}
 }

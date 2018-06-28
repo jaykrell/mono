@@ -119,8 +119,6 @@ ret
 
 .method public static void check(int64 stack1, int64 stack2)
 {
-.locals init (int64 V_0)
-
 ldsfld int64 C1::i
 ldc.i8 1
 add
@@ -179,7 +177,7 @@ ret
 .method private newslot virtual final instance void I1.F1(class I2 i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I1::F1
-.locals init (int32 V_0)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -190,7 +188,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -198,7 +196,7 @@ callvirt instance void I2::F2(class I1, int64, int64, int64)
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -209,7 +207,6 @@ ret
 .method private newslot virtual final instance void I1.GF1<TF>(class I2 i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I1::GF1
-.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -221,7 +218,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -229,7 +226,7 @@ callvirt instance void I2::GF2<!!0>(class I1, int64, int64, int64)
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -266,7 +263,6 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.F1'(class GI2`1<!TC> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::F1(class GI2`1<!0>, int64, int64, int64)
-.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -278,7 +274,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -286,7 +282,7 @@ callvirt instance void class GI2`1<!TC>::F2(class GI1`1<!0>, int64, int64, int64
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -296,7 +292,6 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.GF1'<TF>(class GI2`1<!TC> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::GF1<[1]>(class GI2`1<!0>, int64, int64, int64)
-.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -307,7 +302,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -315,7 +310,7 @@ callvirt instance void class GI2`1<!TC>::GF2<!!0>(class GI1`1<!0>, int64, int64,
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -326,7 +321,6 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.HF1'<TF>(class GI2`1<!!TF> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::HF1<[1]>(class GI2`1<!!TF>, int64, int64, int64)
-.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -338,7 +332,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -346,7 +340,7 @@ callvirt instance void class GI2`1<!!0>::HF2<!0>(class GI1`1<!!0>, int64, int64,
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -391,7 +385,6 @@ ret
 .method private newslot virtual final instance void I2.F2(class I1 i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I2::F2
-.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -403,7 +396,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -411,7 +404,7 @@ callvirt instance void I1::F1(class I2, int64, int64, int64)
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -421,7 +414,7 @@ ret
 .method private newslot virtual final instance void I2.GF2<TF>(class I1 i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I2::GF2
-.locals init (int32 V_0)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -431,14 +424,14 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 callvirt instance void I1::GF1<!!0>(class I2, int64, int64, int64)
 ret
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -484,28 +477,27 @@ ret
 }
 .method private newslot virtual final instance void 'GI2<TC>.F2'(class GI1`1<!TC> i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
-.override method instance void class GI2`1<!TC>::F2(class GI1`1<!0>,
-int64,
-int64,
-int64)
-.locals init (int32 V_0)
+.override method instance void class GI2`1<!TC>::F2(class GI1`1<!0>, int64, int64, int64)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
+
 ldarg 1
 ldarg 0
 ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 callvirt instance void class GI1`1<!TC>::F1(class GI2`1<!0>, int64, int64, int64)
 ret
+
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -514,21 +506,19 @@ ret
 }
 .method private newslot virtual final instance void 'GI2<TC>.GF2'<TF>(class GI1`1<!TC> i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
-.override method instance void class GI2`1<!TC>::GF2<[1]>(class GI1`1<!0>,
-int64,
-int64,
-int64)
-.locals init (int32 V_0)
+.override method instance void class GI2`1<!TC>::GF2<[1]>(class GI1`1<!0>, int64, int64, int64)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
+
 ldarg 1
 ldarg 0
 ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -536,7 +526,7 @@ callvirt instance void class GI1`1<!TC>::GF1<!!0>(class GI2`1<!0>, int64, int64,
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -545,11 +535,8 @@ ret
 }
 .method private newslot virtual final instance void 'GI2<TC>.HF2'<TF>(class GI1`1<!!TF> i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
-.override method instance void class GI2`1<!TC>::HF2<[1]>(class GI1`1<!!TF>,
-int64,
-int64,
-int64)
-.locals init (int32 V_0)
+.override method instance void class GI2`1<!TC>::HF2<[1]>(class GI1`1<!!TF>, int64, int64, int64)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -559,7 +546,7 @@ ldarg 2
 ldc.i8 1
 sub
 ldarg 3
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -567,7 +554,7 @@ callvirt instance void class GI1`1<!!0>::HF1<!0>(class GI2`1<!!0>, int64, int64,
 ret
 
 IL_0014:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg current_stack
@@ -629,16 +616,16 @@ ret
 
 .method public instance !!T cast1<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -646,7 +633,7 @@ call instance !!0 C::cast1<!!0>(object, int64, int64)
 ret
 
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -657,16 +644,16 @@ ret
 }
 .method public instance class B cast2(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
@@ -674,7 +661,7 @@ call instance class B C::cast2(object, int64, int64)
 ret
 
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -689,23 +676,24 @@ ret
 }
 .method public instance !!T cast3<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !!0 C::cast3<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -720,23 +708,24 @@ ret
 }
 .method public instance class B[] cast4(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance class B[] C::cast4(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -751,23 +740,24 @@ ret
 }
 .method public instance !!T[] cast5<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !!0[] C::cast5<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -798,22 +788,23 @@ ret
 }
 .method public static !!T cast1<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 1
 ldc.i8 0
 ble IL_0012
+
 ldarg 0
 ldarg 1
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call !!0 class D`1<!T1>::cast1<!!0>(object, int64, int64)
 ret
+
 IL_0012:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 2
@@ -824,23 +815,24 @@ ret
 }
 .method public instance class B cast2(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance class B class D`1<!T1>::cast2(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -854,23 +846,24 @@ ret
 }
 .method public instance !!T cast3<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !!0 class D`1<!T1>::cast3<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -884,23 +877,24 @@ ret
 }
 .method public instance class B[] cast4(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance class B[] class D`1<!T1>::cast4(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -914,23 +908,24 @@ ret
 }
 .method public instance !!T[] cast5<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !!0[] class D`1<!T1>::cast5<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -944,23 +939,24 @@ ret
 }
 .method public instance !T1 cast6(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !0 class D`1<!T1>::cast6(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -974,23 +970,24 @@ ret
 }
 .method public instance !T1 cast7<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !0 class D`1<!T1>::cast7<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -1004,23 +1001,24 @@ ret
 }
 .method public instance !T1[] cast8(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !0[] class D`1<!T1>::cast8(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
@@ -1035,23 +1033,24 @@ ret
 }
 .method public instance !T1[] cast9<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
+
 ldarg 0
 ldarg 1
 ldarg 2
 ldc.i8 1
 sub
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 tail.
 call instance !0[] class D`1<!T1>::cast9<!!0>(object, int64, int64)
 ret
+
 IL_0013:
-ldloca V_0
+ldarga counter
 conv.u
 conv.u8
 ldarg 3
