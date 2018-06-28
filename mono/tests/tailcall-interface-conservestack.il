@@ -173,7 +173,6 @@ ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void C1::check(int64, int64)
 ret
 }
@@ -182,9 +181,11 @@ ret
 {
 .override I1::GF1
 .locals init (int64 V_0)
+
 ldarg 2
 ldc.i8 0
 ble IL_0014
+
 ldarg 1
 ldarg 0
 ldarg 2
@@ -197,19 +198,18 @@ conv.u8
 tail.
 callvirt instance void I2::GF2<!!0>(class I1, int64, int64, int64)
 ret
+
 IL_0014:
 ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void C1::check(int64, int64)
 ret
 }
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -321,7 +321,6 @@ ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void class GC1`1<!TC>::check(int64, int64)
 ret
 }
@@ -387,7 +386,6 @@ ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void C2::check(int64, int64)
 ret
 }
@@ -415,14 +413,12 @@ ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void C2::check(int64, int64)
 ret
 }
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -454,7 +450,6 @@ ret
 {
 ldarg 0
 ldarg 1
-tail.
 call void C1::check(int64, int64)
 ret
 }
@@ -485,7 +480,6 @@ ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void class GC2`1<!TC>::check(int64, int64)
 ret
 }
@@ -511,12 +505,12 @@ conv.u8
 tail.
 callvirt instance void class GI1`1<!TC>::GF1<!!0>(class GI2`1<!0>, int64, int64, int64)
 ret
+
 IL_0014:
 ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void class GC2`1<!TC>::check(int64, int64)
 ret
 }
@@ -542,19 +536,18 @@ conv.u8
 tail.
 callvirt instance void class GI1`1<!!0>::HF1<!0>(class GI2`1<!!0>, int64, int64, int64)
 ret
+
 IL_0014:
 ldloca V_0
 conv.u
 conv.u8
 ldarg current_stack
-tail.
 call void class GC2`1<!TC>::check(int64, int64)
 ret
 }
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -564,7 +557,6 @@ ret
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -574,7 +566,6 @@ ret
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -624,6 +615,7 @@ conv.u8
 tail.
 call instance !!0 C::cast1<!!0>(object, int64, int64)
 ret
+
 IL_0013:
 ldloca V_0
 conv.u
@@ -651,6 +643,7 @@ conv.u8
 tail.
 call instance class B C::cast2(object, int64, int64)
 ret
+
 IL_0013:
 ldloca V_0
 conv.u
@@ -761,7 +754,6 @@ ret
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -772,7 +764,6 @@ ret
 {
 ldarg 0
 ldarg 1
-tail.
 call void C::check(int64, int64)
 ret
 }
@@ -1047,7 +1038,6 @@ ret
 .method public instance void .ctor()
 {
 ldarg 0
-tail.
 call instance void [mscorlib]System.Object::.ctor()
 ret
 }
@@ -1061,7 +1051,6 @@ ret
 
 .method static void print(object o) noinlining
 {
-tail.
 call void C3::print()
 ret
 }
@@ -1602,7 +1591,6 @@ box [mscorlib]System.Int64
 call void [mscorlib]System.Console::WriteLine(string, object)
 ldloc V_9
 conv.i4
-tail.
 call void [mscorlib]System.Environment::Exit(int32)
 ret
 }
