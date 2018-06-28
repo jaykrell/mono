@@ -990,8 +990,11 @@ PLATFORM_DISABLED_TESTS += async-exc-compilation.exe finally_guard.exe finally_b
 	unhandled-exception-5.exe unhandled-exception-6.exe unhandled-exception-7.exe unhandled-exception-8.exe
 endif
 
-# FIXME determine why these fail
+# test_virt.exe fails because callee takes more parameters than caller, 1 vs. 0, and
+# x86 passes no parameters in registers, so it is a stack imbalance.
 PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe
+
+# FIXME determine why these fail
 PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/16.exe
 PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/17.exe
 PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/18.exe
