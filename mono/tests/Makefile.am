@@ -994,14 +994,6 @@ endif
 # x86 passes no parameters in registers, so it is a stack imbalance.
 PLATFORM_DISABLED_TESTS += tailcall/coreclr/JIT/Methodical/tailcall/test_virt.exe
 
-# FIXME determine why these fail
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/16.exe
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/17.exe
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/18.exe
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/19.exe
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/20.exe
-PLATFORM_DISABLED_TESTS += tailcall/interface-conservestack/21.exe
-PLATFORM_DISABLED_TESTS += tailcall-interface-conservestack.exe
 endif
 
 if POWERPC
