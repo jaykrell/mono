@@ -18,6 +18,7 @@ extends [mscorlib]System.ValueType
 .field public int32 x
 .field public int32 y
 }
+
 .class interface private abstract I1
 {
 
@@ -141,16 +142,44 @@ ldc.i8 1
 add
 stsfld int64 C1::errors
 
-ldstr "{0} tailcall failure"
+ldstr "{0} tailcall failure stack1:{1:X} stack2:{2:X} delta:{3}"
+
+ldc.i4 4
+newarr [mscorlib]System.Object
+
+dup
+ldc.i4 0
 ldsfld int64 C1::i
 box [mscorlib]System.Int64
-call void [mscorlib]System.Console::WriteLine(string, object)
+stelem.ref
+
+dup
+ldc.i4 1
+ldarg 0
+box [mscorlib]System.Int64
+stelem.ref
+
+dup
+ldc.i4 2
+ldarg 1
+box [mscorlib]System.Int64
+stelem.ref
+
+dup
+ldc.i4 3
+ldarg 0
+ldarg 1
+sub
+box [mscorlib]System.Int64
+stelem.ref
+
+call void class [mscorlib]System.Console::WriteLine(string, object[])
 ret
 }
 .method private newslot virtual final instance void I1.F1(class I2 i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I1::F1
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -180,7 +209,7 @@ ret
 .method private newslot virtual final instance void I1.GF1<TF>(class I2 i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I1::GF1
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -237,7 +266,7 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.F1'(class GI2`1<!TC> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::F1(class GI2`1<!0>, int64, int64, int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -267,7 +296,7 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.GF1'<TF>(class GI2`1<!TC> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::GF1<[1]>(class GI2`1<!0>, int64, int64, int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -297,7 +326,7 @@ ret
 .method private newslot virtual final instance void 'GI1<TC>.HF1'<TF>(class GI2`1<!!TF> i2, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override method instance void class GI1`1<!TC>::HF1<[1]>(class GI2`1<!!TF>, int64, int64, int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -362,7 +391,7 @@ ret
 .method private newslot virtual final instance void I2.F2(class I1 i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I2::F2
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 
 ldarg 2
 ldc.i8 0
@@ -392,7 +421,7 @@ ret
 .method private newslot virtual final instance void I2.GF2<TF>(class I1 i1, int64 counter, int64 initial_stack, int64 current_stack) noinlining
 {
 .override I2::GF2
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -459,7 +488,7 @@ ret
 int64,
 int64,
 int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -489,7 +518,7 @@ ret
 int64,
 int64,
 int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -520,7 +549,7 @@ ret
 int64,
 int64,
 int64)
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0014
@@ -600,7 +629,7 @@ ret
 
 .method public instance !!T cast1<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -628,7 +657,7 @@ ret
 }
 .method public instance class B cast2(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -660,7 +689,7 @@ ret
 }
 .method public instance !!T cast3<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -691,7 +720,7 @@ ret
 }
 .method public instance class B[] cast4(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -722,7 +751,7 @@ ret
 }
 .method public instance !!T[] cast5<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -769,7 +798,7 @@ ret
 }
 .method public static !!T cast1<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 1
 ldc.i8 0
 ble IL_0012
@@ -795,7 +824,7 @@ ret
 }
 .method public instance class B cast2(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -825,7 +854,7 @@ ret
 }
 .method public instance !!T cast3<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -855,7 +884,7 @@ ret
 }
 .method public instance class B[] cast4(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -885,7 +914,7 @@ ret
 }
 .method public instance !!T[] cast5<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -915,7 +944,7 @@ ret
 }
 .method public instance !T1 cast6(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -945,7 +974,7 @@ ret
 }
 .method public instance !T1 cast7<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -975,7 +1004,7 @@ ret
 }
 .method public instance !T1[] cast8(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
@@ -1006,7 +1035,7 @@ ret
 }
 .method public instance !T1[] cast9<T>(object o, int64 counter, int64 stack) noinlining
 {
-.locals init (int64 V_0)
+.locals init (int32 V_0)
 ldarg 2
 ldc.i8 0
 ble IL_0013
