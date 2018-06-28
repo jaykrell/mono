@@ -3,8 +3,11 @@ This program is used to split tailcall-interface-conservestack.il into separate 
 
 Algorithm is just to split on special inserted markers.
 
+mkdir tailcall/interface-conservestack
 rm tailcall-interface-conservestack-*
+git rm tailcall-interface-conservestack-*
 g++ split-tailcall-interface-conservestack.cpp -std=c++11 && ./a.out < tailcall-interface-conservestack.il
+git add tailcall/interface-conservestack/*.il
 */
 #include <iostream>
 #include <fstream>
@@ -26,7 +29,7 @@ int main()
 	test_t *test = &test_dummy;
 	vector<string> suffix;
 
-	while (getline (cin, line) && line != "// test-split-prefix do not remove or edit this line")
+	while (getline(cin, line) && line != "// test-split-prefix do not remove or edit this line")
 		prefix.push_back(line);
 
 	while (getline (cin, line))
@@ -43,10 +46,14 @@ int main()
 	}
 	while (getline (cin, line))
 		suffix.push_back(line);
+
 	int i = 0;
+
+	system("mkdir tailcall/interface-conservestack");
+
 	for (auto& t: tests)
 	{
-		ofstream output("tailcall-interface-conservestack-" + to_string(++i) + ".il");
+		ofstream output("tailcall/interface-conservestack/" + to_string(++i) + ".il");
 		for (auto &a: prefix)
 			output << a << endl;
 		output << endl;
