@@ -16,6 +16,8 @@ git add fsharp-deeptail/*
 #include <string>
 #include <assert.h>
 #include <string.h>
+#include <set>
+#include <stdio.h>
 using namespace std;
 
 int main ()
@@ -25,6 +27,7 @@ int main ()
 		string name;
 		vector<string> content;
 	};
+	set<string> names; // consider map<string, vector<string>> tests;
 	string line;
 	vector<string> prefix;
 	vector<test_t> tests;
@@ -48,6 +51,16 @@ int main ()
 		// tests are delimited by empty lines
 		if (line.length() == 0)
 		{
+			if (tests.size() && tests.back().name.length())
+			{
+				auto a = names.find(tests.back().name);
+				if (a != names.end())
+				{
+					fprintf(stderr, "duplicate %s\n", a->c_str());
+					exit(1);
+				}
+				names.insert(names.end(), tests.back().name);
+			}
 			tests.resize (tests.size () + 1);
 			test = &tests.back ();
 			assert (getline (cin, line));
@@ -124,28 +137,14 @@ int main ()
 		for (auto &a: suffix)
 			output << a.c_str () << endl;
 	}
-	for (auto& t: tests)
-	{
-		if (t.name.length() == 0)
-			continue;
-		fputs(("\ttailcall/fsharp-deeptail/" + t.name + ".il \\\n").c_str(), stdout);
-	}
-	for (auto& t: tests)
-	{
-		if (t.name.length() == 0)
-			continue;
-		fputs(("#PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t.name + ".exe\n").c_str(), stdout);
-	}
-	for (auto& t: tests)
-	{
-		if (t.name.length() == 0)
-			continue;
-		fputs(("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t.name + ".exe\n").c_str(), stdout);
-	}
-	for (auto& t: tests)
-	{
-		if (t.name.length() == 0)
-			continue;
-		fputs(("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t.name + ".exe\n").c_str(), stdout);
-	}
+	for (auto const& t: names)
+		fputs(("\ttailcall/fsharp-deeptail/" + t + ".il \\\n").c_str(), stdout);
+	for (auto const& t: names)
+		fputs(("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
+/*
+	for (auto const& t: names)
+		fputs(("#PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
+	for (auto const& t: names)
+		fputs(("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
+*/
 }

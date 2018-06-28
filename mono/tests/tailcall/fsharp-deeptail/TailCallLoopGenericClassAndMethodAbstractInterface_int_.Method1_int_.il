@@ -246,16 +246,16 @@ extends [mscorlib]System.Object
 {
 .entrypoint
 
-ldstr "TailCallLoopGenericClassAndMethodAbstractClass<byte>.Method1<int>"
+ldstr "TailCallLoopGenericClassAndMethodAbstractInterface<int>.Method1<int>"
 ldc.i4.3
-newobj instance void class Fsharp/TailCallLoopGenericClassAndMethodAbstractClass`1<uint8>::.ctor(!0)
+call class Fsharp/InterfaceTailCallLoopGenericInterface`1<!!0> Fsharp::create<int32>(!!0)
 call int32 Fsharp::get_HugeInt()
 ldc.i4.4
-callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/AbstractTailCallLoopGenericClassAndMethod`1<uint8>::Method1<int32>(int32, !!0)
+callvirt instance class [mscorlib]System.Tuple`2<!0,!!0> class Fsharp/InterfaceTailCallLoopGenericInterface`1<int32>::Method1<int32>(int32, !!0)
 ldc.i4.3
 ldc.i4.4
-newobj instance void class [mscorlib]System.Tuple`2<uint8,int32>::.ctor(!0, !1)
-call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<uint8,int32>>(string, !!0, !!0)
+newobj instance void class [mscorlib]System.Tuple`2<int32,int32>::.ctor(!0, !1)
+call void Fsharp::RunTest<class [mscorlib]System.Tuple`2<int32,int32>>(string, !!0, !!0)
 
 ldc.i4.0
 call !!0 Microsoft.FSharp.Core.Operators::Exit<class Microsoft.FSharp.Core.Unit>(int32)
