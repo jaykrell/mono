@@ -1261,21 +1261,6 @@ PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/45.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/46.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/47.exe
 PROFILE_DISABLED_TESTS += tailcall/interface-conservestack/51.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_DateTime_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_byte_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_int_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_DateTime_.Method1_string_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_DateTime_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_byte_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_int_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_byte_.Method1_string_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_DateTime_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_byte_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_int_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_int_.Method1_string_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_DateTime_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_byte_.exe
-PROFILE_DISABLED_TESTS += tailcall/fsharp-deeptail/TailCallLoopGenericClassAndMethodAbstractClass_string_.Method1_int_.exe
 endif # MONO_ARCH_GSHAREDVT_SUPPORTED
 endif # FULL_AOT_TESTS
 
