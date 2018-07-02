@@ -1,15 +1,16 @@
-/*
-This program is used to split fsharp-deeptail.il into separate tests.
-
-Algorithm is just to split on the newline delimited ldstr opcodes
-within the main@ function, and generate file names from the ldstr,
-replacing special characters with underscores.
-
-git rm fsharp-deeptail-*
-rm fsharp-deeptail-*
-g++ split-fsharp.cpp -std=c++11 && ./a.out < fsharp-deeptail.il
-git add fsharp-deeptail/*
-*/
+//
+// This program is used to split fsharp-deeptail.il into separate tests.
+//
+// Algorithm is just to split on the newline delimited ldstr opcodes
+// within the main@ function, and generate file names from the ldstr,
+// replacing special characters with underscores.
+//
+// git rm fsharp-deeptail-*
+// rm fsharp-deeptail-*
+// g++ split-fsharp.cpp  && ./a.out < fsharp-deeptail.il
+// git add fsharp-deeptail/*
+//
+// Note This is valid C++98 for use with older compilers, where C++11 would be desirable.
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -20,20 +21,26 @@ git add fsharp-deeptail/*
 #include <stdio.h>
 using namespace std;
 
+typedef vector<string> strings_t;
+
+struct test_t
+{
+	string name;
+	strings_t content;
+};
+
+typedef vector<test_t> tests_t;
+
 int main ()
 {
-	struct test_t
-	{
-		string name;
-		vector<string> content;
-	};
-	set<string> names; // consider map<string, vector<string>> tests;
+	typedef set<string> names_t; // consider map<string, vector<string>> tests;
+	names_t names;
 	string line;
-	vector<string> prefix;
-	vector<test_t> tests;
+	strings_t prefix;
+	tests_t tests;
 	test_t test_dummy;
 	test_t *test = &test_dummy;
-	vector<string> suffix;
+	strings_t suffix;
 
 	while (getline (cin, line))
 	{
@@ -53,7 +60,7 @@ int main ()
 		{
 			if (tests.size() && tests.back().name.length())
 			{
-				auto a = names.find(tests.back().name);
+				names_t::iterator a = names.find(tests.back().name);
 				if (a != names.end())
 				{
 					fprintf(stderr, "duplicate %s\n", a->c_str());
@@ -79,9 +86,9 @@ int main ()
 			test->name = name1.c_str ();
 #if 1
 			// Change some chars to underscores.
-			for (auto& c: test->name)
-				if (strchr("<>", c))
-					c = '_';
+			for (string::iterator c = test->name.begin(); c != test->name.end(); ++c)
+				if (strchr("<>", *c))
+					*c = '_';
 #else
 			// remove some chars
 			while (true)
@@ -122,29 +129,29 @@ int main ()
 	while (getline (cin, line))
 		suffix.push_back (line);
 
-	for (auto& t: tests)
+	for (tests_t::const_iterator t = tests.begin(); t != tests.end(); ++t)
 	{
-		if (t.name.length() == 0)
+		if (t->name.length() == 0)
 			continue;
-		//printf("%s\n", t.name.c_str());
-		ofstream output("fsharp-deeptail/" + t.name + ".il");
-		for (auto &a: prefix)
-			output << a.c_str () << endl;
+		//printf("%s\n", t->name.c_str());
+		ofstream output("fsharp-deeptail/" + t->name + ".il");
+		for (strings_t::const_iterator a = prefix.begin(); a != prefix.end(); ++a)
+			output << a->c_str () << endl;
 		output << endl;
-		for (auto &a: t.content)
-			output << a.c_str () << endl;
+		for (strings_t::const_iterator a = t->content.begin(); a != t->content.end(); ++a)
+			output << a->c_str () << endl;
 		output << endl;
-		for (auto &a: suffix)
-			output << a.c_str () << endl;
+		for (strings_t::const_iterator a = suffix.begin(); a != suffix.end(); ++a)
+			output << a->c_str () << endl;
 	}
-	for (auto const& t: names)
-		fputs(("\ttailcall/fsharp-deeptail/" + t + ".il \\\n").c_str(), stdout);
-	for (auto const& t: names)
-		fputs(("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
+	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
+		fputs(("\ttailcall/fsharp-deeptail/" + *t + ".il \\\n").c_str(), stdout);
+	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
+		fputs(("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail/" + *t + ".exe\n").c_str(), stdout);
 /*
-	for (auto const& t: names)
-		fputs(("#PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
-	for (auto const& t: names)
-		fputs(("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + t + ".exe\n").c_str(), stdout);
+	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
+		fputs(("#PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + *t + ".exe\n").c_str(), stdout);
+	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
+		fputs(("PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + *t + ".exe\n").c_str(), stdout);
 */
 }

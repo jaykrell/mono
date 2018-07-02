@@ -1,14 +1,14 @@
-/*
-This program is used to split tailcall-interface-conservestack.il into separate tests.
-
-Algorithm is just to split on special inserted markers.
-
-mkdir tailcall/interface-conservestack
-rm tailcall-interface-conservestack-*
-git rm tailcall-interface-conservestack-*
-g++ split-tailcall-interface-conservestack.cpp -std=c++11 && ./a.out < tailcall-interface-conservestack.il
-git add tailcall/interface-conservestack/*.il
-*/
+// This program is used to split tailcall-interface-conservestack.il into separate tests.
+//
+// Algorithm is just to split on special inserted markers.
+//
+// mkdir tailcall/interface-conservestack
+// rm tailcall-interface-conservestack-*
+// git rm tailcall-interface-conservestack-*
+// g++ split-tailcall-interface-conservestack.cpp && ./a.out < tailcall-interface-conservestack.il
+// git add tailcall/interface-conservestack/*.il
+//
+// Note This is valid C++98 for use with older compilers, where C++11 would be desirable.
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,25 +16,28 @@ git add tailcall/interface-conservestack/*.il
 #include <assert.h>
 using namespace std;
 
+typedef vector<string> strings_t;
+struct test_t
+{
+	strings_t content;
+};
+typedef vector<test_t> tests_t;
+
 int main()
 {
-	struct test_t
-	{
-		vector<string> content;
-	};
 	string line;
-	vector<string> prefix;
-	vector<test_t> tests;
+	strings_t prefix;
+	tests_t tests;
 	test_t test_dummy;
 	test_t *test = &test_dummy;
-	vector<string> suffix;
+	strings_t suffix;
 
 	while (getline(cin, line) && line != "// test-split-prefix do not remove or edit this line")
 		prefix.push_back(line);
 
 	while (getline (cin, line))
 	{
-		if (line == "") // tests are delimited by empty lines
+		if (!line.length()) // tests are delimited by empty lines
 		{
 			tests.resize(tests.size() + 1);
 			test = &tests.back();
@@ -51,16 +54,18 @@ int main()
 
 	system("mkdir tailcall/interface-conservestack");
 
-	for (auto& t: tests)
+	for (tests_t::iterator test = tests.begin(); test != tests.end(); ++test)
 	{
-		ofstream output("tailcall/interface-conservestack/" + to_string(++i) + ".il");
-		for (auto &a: prefix)
-			output << a << endl;
+		char buffer[99];
+		sprintf(buffer, "%d", ++i)'
+		ofstream output("tailcall/interface-conservestack/" + buffer + ".il");
+		for (strings_t::const_iterator s = prefix.begin(); s != prefix.end(); ++s)
+			output << *s << endl;
 		output << endl;
-		for (auto &a: t.content)
-			output << a << endl;
+		for (strings_t::const_iterator s = test->content.begin(); s != test->content.end(); ++s)
+			output << *s << endl;
 		output << endl;
-		for (auto &a: suffix)
-			output << a << endl;
+		for (strings_t::const_iterator s = suffix.begin(); s != suffix.end(); ++s)
+			output << *s << endl;
 	}
 }
