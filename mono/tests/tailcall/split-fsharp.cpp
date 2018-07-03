@@ -11,6 +11,7 @@
 // git add fsharp-deeptail/*
 //
 // Note This is valid C++98 for use with older compilers, where C++11 would be desirable.
+#include <stdlib.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -20,6 +21,10 @@
 #include <set>
 #include <stdio.h>
 using namespace std;
+#include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 typedef vector<string> strings_t;
 
@@ -30,6 +35,16 @@ struct test_t
 };
 
 typedef vector<test_t> tests_t;
+
+static void
+CreateDir (const char *a)
+{
+#ifdef _WIN32
+	_mkdir (a);
+#else
+	mkdir (a, 0777);
+#endif
+}
 
 int main ()
 {
@@ -49,7 +64,9 @@ int main ()
 			break;
 	}
 
-	system("mkdir fsharp-deeptail");
+	CreateDir ("tailcall");
+	CreateDir ("fsharp-deeptail");
+
 	const string marker_ldstr = "ldstr \"";	// start of each test, and contains name
 	const string marker_ldc_i4_0 = "ldc.i4.0";	// start of suffix
 
@@ -134,7 +151,7 @@ int main ()
 		if (t->name.length() == 0)
 			continue;
 		//printf("%s\n", t->name.c_str());
-		ofstream output("fsharp-deeptail/" + t->name + ".il");
+		ofstream output(("tailcall/fsharp-deeptail/" + t->name + ".il").c_str());
 		for (strings_t::const_iterator a = prefix.begin(); a != prefix.end(); ++a)
 			output << a->c_str () << endl;
 		output << endl;
@@ -144,11 +161,10 @@ int main ()
 		for (strings_t::const_iterator a = suffix.begin(); a != suffix.end(); ++a)
 			output << a->c_str () << endl;
 	}
-	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
+/*	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
 		fputs(("\ttailcall/fsharp-deeptail/" + *t + ".il \\\n").c_str(), stdout);
 	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
 		fputs(("INTERP_DISABLED_TESTS += tailcall/fsharp-deeptail/" + *t + ".exe\n").c_str(), stdout);
-/*
 	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)
 		fputs(("#PLATFORM_DISABLED_TESTS += tailcall/fsharp-deeptail/" + *t + ".exe\n").c_str(), stdout);
 	for (names_t::const_iterator t = names.begin(); t != names.end(); ++t)

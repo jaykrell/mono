@@ -696,13 +696,71 @@ if HOST_DARWIN
 TESTS_CS_SRC += bug-8417.cs
 endif
 
-TESTS_IL_SRC=			\
-	tailcall/2.il	     \
-	tailcall/3.il	     \
-	tailcall/4.il	     \
-	tailcall/fsharp-deeptail.il	     \
-	tailcall/fsharp-shallowtail.il	 \
-	tailcall/fsharp-shallownotail.il \
+if CROSS_COMPILING # FIXME build vs. host vs. target
+
+TAILCALL_INTERFACE_CONSERVESTACK_IL=
+TAILCALL_FSHARP_DEEPTAIL_IL=
+
+else
+
+# These tests are produced by splitting up tailcall-interface-conservestack.il.
+TAILCALL_INTERFACE_CONSERVESTACK_IL=\
+	tailcall/interface-conservestack/1.il \
+	tailcall/interface-conservestack/10.il \
+	tailcall/interface-conservestack/11.il \
+	tailcall/interface-conservestack/12.il \
+	tailcall/interface-conservestack/13.il \
+	tailcall/interface-conservestack/14.il \
+	tailcall/interface-conservestack/15.il \
+	tailcall/interface-conservestack/16.il \
+	tailcall/interface-conservestack/17.il \
+	tailcall/interface-conservestack/18.il \
+	tailcall/interface-conservestack/19.il \
+	tailcall/interface-conservestack/2.il \
+	tailcall/interface-conservestack/20.il \
+	tailcall/interface-conservestack/21.il \
+	tailcall/interface-conservestack/22.il \
+	tailcall/interface-conservestack/23.il \
+	tailcall/interface-conservestack/24.il \
+	tailcall/interface-conservestack/25.il \
+	tailcall/interface-conservestack/26.il \
+	tailcall/interface-conservestack/27.il \
+	tailcall/interface-conservestack/28.il \
+	tailcall/interface-conservestack/29.il \
+	tailcall/interface-conservestack/3.il \
+	tailcall/interface-conservestack/30.il \
+	tailcall/interface-conservestack/31.il \
+	tailcall/interface-conservestack/32.il \
+	tailcall/interface-conservestack/33.il \
+	tailcall/interface-conservestack/34.il \
+	tailcall/interface-conservestack/35.il \
+	tailcall/interface-conservestack/36.il \
+	tailcall/interface-conservestack/37.il \
+	tailcall/interface-conservestack/38.il \
+	tailcall/interface-conservestack/39.il \
+	tailcall/interface-conservestack/4.il \
+	tailcall/interface-conservestack/40.il \
+	tailcall/interface-conservestack/41.il \
+	tailcall/interface-conservestack/42.il \
+	tailcall/interface-conservestack/43.il \
+	tailcall/interface-conservestack/44.il \
+	tailcall/interface-conservestack/45.il \
+	tailcall/interface-conservestack/46.il \
+	tailcall/interface-conservestack/47.il \
+	tailcall/interface-conservestack/48.il \
+	tailcall/interface-conservestack/49.il \
+	tailcall/interface-conservestack/5.il \
+	tailcall/interface-conservestack/50.il \
+	tailcall/interface-conservestack/51.il \
+	tailcall/interface-conservestack/52.il \
+	tailcall/interface-conservestack/53.il \
+	tailcall/interface-conservestack/6.il \
+	tailcall/interface-conservestack/7.il \
+	tailcall/interface-conservestack/8.il \
+	tailcall/interface-conservestack/9.il
+
+# These tests are produced by splitting up tailcall/fsharp-deeptail.il.
+TAILCALL_FSHARP_DEEPTAIL_IL=\
 	tailcall/fsharp-deeptail/Seq.filter-length1.il \
 	tailcall/fsharp-deeptail/Seq.filter-length2.il \
 	tailcall/fsharp-deeptail/Seq.filter-length3.il \
@@ -764,7 +822,38 @@ TESTS_IL_SRC=			\
 	tailcall/fsharp-deeptail/mutualTail1IsEven.il \
 	tailcall/fsharp-deeptail/mutualTail1IsOdd.il \
 	tailcall/fsharp-deeptail/simpleTail1.il \
-	tailcall/fsharp-deeptail/simpleTail2.il \
+	tailcall/fsharp-deeptail/simpleTail2.il
+
+$(TAILCALL_FSHARP_DEEPTAIL_IL): tailcall/fsharp-deeptail.stamp
+
+$(TAILCALL_INTERFACE_CONSERVESTACK_IL): tailcall/interface-conservestack.stamp
+
+BUILT_SOURCES=$(TAILCALL_FSHARP_DEEPTAIL_IL) $(TAILCALL_INTERFACE_CONSERVESTACK_IL)
+
+tailcall/fsharp-deeptail.stamp: tailcall/split-fsharp$(EXEEXT) tailcall/fsharp-deeptail.il
+	./tailcall/split-fsharp$(EXEEXT) < tailcall/fsharp-deeptail.il
+	touch -f $@
+
+tailcall/interface-conservestack.stamp: split-tailcall-interface-conservestack$(EXEEXT) tailcall-interface-conservestack.il
+	./split-tailcall-interface-conservestack$(EXEEXT) < tailcall-interface-conservestack.il
+	touch -f $@
+
+noinst_PROGRAMS = tailcall/split-fsharp split-tailcall-interface-conservestack
+
+tailcall_split_fsharp_SOURCES=tailcall/split-fsharp.cpp
+
+split_tailcall_interface_conservestack_SOURCES=split-tailcall-interface-conservestack.cpp
+
+endif
+
+TESTS_IL_SRC=			\
+	tailcall/2.il	     \
+	tailcall/3.il	     \
+	tailcall/4.il	     \
+	tailcall/fsharp-deeptail.il	     \
+	tailcall/fsharp-shallowtail.il	 \
+	tailcall/fsharp-shallownotail.il \
+	$(TAILCALL_FSHARP_DEEPTAIL_IL) \
 	gptail1.il		\
 	itail1.il		\
 	itaili1.il		\
@@ -781,60 +870,7 @@ TESTS_IL_SRC=			\
 	tailcall-rgctxb.il 	\
 	tailcall-rgctxb-static.il \
 	tailcall-mrgctx.il 	\
-	tailcall-interface-conservestack.il \
-	tailcall/interface-conservestack/1.il \
-	tailcall/interface-conservestack/10.il \
-	tailcall/interface-conservestack/11.il \
-	tailcall/interface-conservestack/12.il \
-	tailcall/interface-conservestack/13.il \
-	tailcall/interface-conservestack/14.il \
-	tailcall/interface-conservestack/15.il \
-	tailcall/interface-conservestack/16.il \
-	tailcall/interface-conservestack/17.il \
-	tailcall/interface-conservestack/18.il \
-	tailcall/interface-conservestack/19.il \
-	tailcall/interface-conservestack/2.il \
-	tailcall/interface-conservestack/20.il \
-	tailcall/interface-conservestack/21.il \
-	tailcall/interface-conservestack/22.il \
-	tailcall/interface-conservestack/23.il \
-	tailcall/interface-conservestack/24.il \
-	tailcall/interface-conservestack/25.il \
-	tailcall/interface-conservestack/26.il \
-	tailcall/interface-conservestack/27.il \
-	tailcall/interface-conservestack/28.il \
-	tailcall/interface-conservestack/29.il \
-	tailcall/interface-conservestack/3.il \
-	tailcall/interface-conservestack/30.il \
-	tailcall/interface-conservestack/31.il \
-	tailcall/interface-conservestack/32.il \
-	tailcall/interface-conservestack/33.il \
-	tailcall/interface-conservestack/34.il \
-	tailcall/interface-conservestack/35.il \
-	tailcall/interface-conservestack/36.il \
-	tailcall/interface-conservestack/37.il \
-	tailcall/interface-conservestack/38.il \
-	tailcall/interface-conservestack/39.il \
-	tailcall/interface-conservestack/4.il \
-	tailcall/interface-conservestack/40.il \
-	tailcall/interface-conservestack/41.il \
-	tailcall/interface-conservestack/42.il \
-	tailcall/interface-conservestack/43.il \
-	tailcall/interface-conservestack/44.il \
-	tailcall/interface-conservestack/45.il \
-	tailcall/interface-conservestack/46.il \
-	tailcall/interface-conservestack/47.il \
-	tailcall/interface-conservestack/48.il \
-	tailcall/interface-conservestack/49.il \
-	tailcall/interface-conservestack/5.il \
-	tailcall/interface-conservestack/50.il \
-	tailcall/interface-conservestack/51.il \
-	tailcall/interface-conservestack/52.il \
-	tailcall/interface-conservestack/53.il \
-	tailcall/interface-conservestack/6.il \
-	tailcall/interface-conservestack/7.il \
-	tailcall/interface-conservestack/8.il \
-	tailcall/interface-conservestack/9.il \
+	$(TAILCALL_INTERFACE_CONSERVESTACK_IL) \
 	tailcall-interface-justrun.il \
 	field-access.il		\
 	method-access.il	\
@@ -2950,3 +2986,4 @@ weak-fields.exe: weak-fields.cs Mono.Runtime.Testing.dll
 
 CLEANFILES = $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat LeafAssembly.dll MidAssembly.dll appdomain-marshalbyref-assemblyload2/*.dll 
 CLEANFILES += $(TESTS_TAILCALL_COMPILE) $(TESTSAOT_TAILCALL)
+CLEANFILES += $(BUILT_SOURCES)
