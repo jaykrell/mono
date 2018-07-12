@@ -89,6 +89,8 @@ namespace System.Threading {
 		private IntPtr owned_mutex;
 		private IntPtr suspended_event;
 		private int self_suspended;
+		private int num_waiters;
+		private int freeing;
 		/* 
 		 * These fields are used to avoid having to increment corlib versions
 		 * when a new field is added to the unmanaged MonoThread structure.

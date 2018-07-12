@@ -438,6 +438,8 @@ struct _MonoInternalThread {
 	GPtrArray *owned_mutexes;
 	MonoOSEvent *suspended;
 	gint32 self_suspended; // TRUE | FALSE
+	gint32 num_waiters;
+	gint32 freeing;
 
 	gsize thread_state;
 	/* 
