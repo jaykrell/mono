@@ -348,7 +348,8 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 }
 
 gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
+mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
+	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
 {
 	gboolean result;
 	ULARGE_INTEGER wapi_free_bytes_avail;
@@ -357,6 +358,8 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 
 	MONO_ENTER_GC_SAFE;
 	result = GetDiskFreeSpaceEx (path_name, &wapi_free_bytes_avail, &wapi_total_number_of_bytes, &wapi_total_number_of_free_bytes);
+	if (!result)
+		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
 	if (result) {
 		if (free_bytes_avail)

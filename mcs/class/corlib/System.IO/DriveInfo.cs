@@ -169,9 +169,19 @@ namespace System.IO {
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static bool GetDiskFreeSpaceInternal (string pathName, out ulong freeBytesAvail,
+		extern unsafe static bool GetDiskFreeSpaceInternal (char *pathName, int pathName_length, out ulong freeBytesAvail,
 							     out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes,
 							     out MonoIOError error);
+
+		static bool GetDiskFreeSpaceInternal (string pathName, out ulong freeBytesAvail,
+							     out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes,
+							     out MonoIOError error)
+		{
+			error = 0;
+			fixed (char *fixed_pathNae = pathName)
+				return GetDiskFreeSpaceInternal (fixed_pathName, (pathName != null) ? pathName.Length : 0,
+					freeBytesAvail, totalNumberOfBytes, totalNumberOfFreeBytes, error);
+		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern static uint GetDriveTypeInternal (string rootPathName);

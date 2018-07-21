@@ -7099,23 +7099,17 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 
 #ifndef PLATFORM_NO_DRIVEINFO
 ICALL_EXPORT MonoBoolean
-ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (MonoString *path_name, guint64 *free_bytes_avail,
+ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
 						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
-						gint32 *error)
+						gint32 *win32error, MonoError *error)
 {
-	gboolean result;
-
-	*error = ERROR_SUCCESS;
-
-	result = mono_w32file_get_disk_free_space (mono_string_chars (path_name), free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes);
-	if (!result)
-		*error = mono_w32error_get_last ();
-
-	return result;
+	*win32error = ERROR_SUCCESS;
+	// FIXME check for embedded nuls in native or managed
+	return mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes, win32error);
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) || G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-static inline guint32
+static guint32
 mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
 {
 	return mono_w32file_get_drive_type (mono_string_chars (root_path_name));
@@ -7133,14 +7127,12 @@ ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
 ICALL_EXPORT gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
-	error_init (error);
 	return mono_compile_method_checked (method, error);
 }
 
 ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError *error)
 {
-	error_init (error);
 	gchar *path;
 
 	path = g_build_path (G_DIR_SEPARATOR_S, mono_get_config_dir (), "mono", mono_get_runtime_info ()->framework_version, "machine.config", NULL);
@@ -7158,7 +7150,6 @@ ves_icall_System_Configuration_DefaultConfig_get_machine_config_path (MonoError 
 ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_app_config (MonoError *error)
 {
-	error_init (error);
 	const gchar *app_config;
 	MonoDomain *domain;
 	gchar *config_file_name, *config_file_path;
@@ -7222,7 +7213,6 @@ ves_icall_System_Environment_get_bundled_machine_config (MonoError *error)
 	return get_bundled_machine_config (error);
 }
 
-
 ICALL_EXPORT MonoStringHandle
 ves_icall_System_Configuration_DefaultConfig_get_bundled_machine_config (MonoError *error)
 {
@@ -7235,11 +7225,9 @@ ves_icall_System_Configuration_InternalConfigurationHost_get_bundled_machine_con
 	return get_bundled_machine_config (error);
 }
 
-
 ICALL_EXPORT MonoStringHandle
 ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
 {
-	error_init (error);
 	gchar *path;
 
 	path = g_path_get_dirname (mono_get_config_dir ());
@@ -7255,7 +7243,6 @@ ves_icall_System_Web_Util_ICalls_get_machine_install_dir (MonoError *error)
 ICALL_EXPORT gboolean
 ves_icall_get_resources_ptr (MonoReflectionAssemblyHandle assembly, gpointer *result, gint32 *size, MonoError *error)
 {
-	error_init (error);
 	MonoPEResourceDataEntry *entry;
 	MonoImage *image;
 
@@ -7314,7 +7301,6 @@ ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const
 ICALL_EXPORT MonoObjectHandle
 ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
-	error_init (error);
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_type);
 	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
 	MonoClass *klass = mono_class_from_mono_type (type);
@@ -7333,7 +7319,6 @@ ves_icall_System_Activator_CreateInstanceInternal (MonoReflectionTypeHandle ref_
 ICALL_EXPORT MonoReflectionMethodHandle
 ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, gboolean definition, MonoError *error)
 {
-	error_init (error);
 	MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 
 	MonoMethod *base = mono_method_get_base_method (method, definition, error);
@@ -7357,7 +7342,6 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, gboolean def
 ICALL_EXPORT MonoStringHandle
 ves_icall_MonoMethod_get_name (MonoReflectionMethodHandle m, MonoError *error)
 {
-	error_init (error);
 	MonoMethod *method = MONO_HANDLE_GETVAL (m, method);
 
 	MonoStringHandle s = mono_string_new_handle (MONO_HANDLE_DOMAIN (m), method->name, error);

@@ -1026,10 +1026,12 @@ static guint32 _wapi_stat_to_file_attributes (const gchar *pathname,
 	return attrs;
 }
 
-static void
+static int
 _wapi_set_last_error_from_errno (void)
 {
-	mono_w32error_set_last (mono_w32error_unix_to_win32 (errno));
+	int const win32error = mono_w32error_unix_to_win32 (errno);
+	mono_w32error_set_last (win32error);
+	return win32error;
 }
 
 static void _wapi_set_last_path_error_from_errno (const gchar *dir,
@@ -4244,7 +4246,8 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
 gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
+mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
+	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
 {
 #ifdef HAVE_STATVFS
 	struct statvfs fsstat;
@@ -4259,8 +4262,9 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	if (path_name == NULL) {
 		utf8_path_name = g_strdup (g_get_current_dir());
 		if (utf8_path_name == NULL) {
-			mono_w32error_set_last (ERROR_DIRECTORY);
-			return(FALSE);
+			mono_w32error_set_last (ERROR_DIRECTORY); // FIXME remove this
+			*win32error = ERROR_DIRECTORY;
+			return FALSE;
 		}
 	}
 	else {
@@ -4268,8 +4272,9 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 		if (utf8_path_name == NULL) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: unicode conversion returned NULL", __func__);
 
-			mono_w32error_set_last (ERROR_INVALID_NAME);
-			return(FALSE);
+			mono_w32error_set_last (ERROR_INVALID_NAME); // FIXME remove this
+			*win32error = ERROR_INVALID_NAME;
+			return FALSE;
 		}
 	}
 
@@ -4296,9 +4301,9 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	g_free(utf8_path_name);
 
 	if (ret == -1) {
-		_wapi_set_last_error_from_errno ();
+		*win32error = _wapi_set_last_error_from_errno ();
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: statvfs failed: %s", __func__, g_strerror (errno));
-		return(FALSE);
+		return FALSE;
 	}
 
 	/* total number of free bytes for non-root */
@@ -4326,25 +4331,23 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 		}
 	}
 	
-	return(TRUE);
+	return TRUE;
 }
 #else
 gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
+mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
+	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
 {
-	if (free_bytes_avail != NULL) {
-		*free_bytes_avail = (guint64) -1;
-	}
+	if (free_bytes_avail)
+		*free_bytes_avail = (gint64) -1;
 
-	if (total_number_of_bytes != NULL) {
-		*total_number_of_bytes = (guint64) -1;
-	}
+	if (total_number_of_bytes)
+		*total_number_of_bytes = (gint64) -1;
 
-	if (total_number_of_free_bytes != NULL) {
-		*total_number_of_free_bytes = (guint64) -1;
-	}
+	if (total_number_of_free_bytes)
+		*total_number_of_free_bytes = (gint64) -1;
 
-	return(TRUE);
+	return TRUE;
 }
 #endif
 
