@@ -91,14 +91,6 @@
 #define MONO_SIG_HANDLER_DEBUG 1 // "with_fault_addr" but could be extended in future, so "debug"
 #endif
 
-#if defined (__clang__)
-#define MONO_ATTRIBUTE_NO_OPTIMIZE __attribute__((optnone))
-#elif __GNUC > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)
-#define MONO_ATTRIBUTE_NO_OPTIMIZE __attribute__((optimize("O0")))
-#else
-#define MONO_ATTRIBUTE_NO_OPTIMIZE
-#endif
-
 #define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, gpointer context)
 #define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context))
 #ifdef MONO_SIG_HANDLER_DEBUG
