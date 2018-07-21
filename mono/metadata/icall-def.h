@@ -255,7 +255,7 @@ HANDLES(ICALL(ENV_4, "GetLogicalDrivesInternal", ves_icall_System_Environment_Ge
 HANDLES(ICALL(ENV_5, "GetMachineConfigPath", ves_icall_System_Configuration_DefaultConfig_get_machine_config_path))
 HANDLES(ICALL(ENV_51, "GetNewLine", ves_icall_System_Environment_get_NewLine))
 HANDLES(ICALL(ENV_6, "GetOSVersionString", ves_icall_System_Environment_GetOSVersionString))
-ICALL(ENV_6a, "GetPageSize", mono_pagesize)
+HANDLES(ICALL(ENV_6a, "GetPageSize", ves_icall_System_Environment_GetPageSize))
 HANDLES(ICALL(ENV_7, "GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath))
 ICALL(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable)
 ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get)

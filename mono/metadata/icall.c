@@ -8457,3 +8457,9 @@ ves_icall_System_GC_RecordPressure (gint64 value, MonoError *error)
 {
 	mono_gc_add_memory_pressure (value);
 }
+
+ICALL_EXPORT int
+ves_icall_System_Environment_GetPageSize (MonoError *error)
+{
+	return mono_pagesize ();
+}
