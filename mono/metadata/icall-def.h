@@ -263,7 +263,7 @@ HANDLES(ICALL(ENV_10, "get_HasShutdownStarted", ves_icall_System_Environment_get
 HANDLES(ICALL(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName))
 HANDLES(ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform))
 HANDLES(ICALL(ENV_14, "get_ProcessorCount", System_Environment_get_ProcessorCount))
-ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount)
+HANDLES(ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount))
 HANDLES(ICALL(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName))
 HANDLES(ICALL(ENV_16b, "get_bundled_machine_config", ves_icall_System_Environment_get_bundled_machine_config))
 HANDLES(ICALL(ENV_16m, "internalBroadcastSettingChange", ves_icall_System_Environment_BroadcastSettingChange))

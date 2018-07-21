@@ -6968,9 +6968,8 @@ ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-ICALL_EXPORT
-gint32
-ves_icall_System_Environment_get_TickCount (void)
+ICALL_EXPORT gint32
+ves_icall_System_Environment_get_TickCount (MonoError *error)
 {
 	/* this will overflow after ~24 days */
 	return (gint32) (mono_msec_boottime () & 0xffffffff);
