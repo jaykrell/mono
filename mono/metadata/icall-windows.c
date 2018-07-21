@@ -67,8 +67,8 @@ mono_icall_get_machine_name (MonoError *error)
 }
 #endif
 
-int
-mono_icall_get_platform (void)
+ICALL_EXPORT int
+ves_icall_System_Environment_get_Platform (MonoError *error)
 {
 	/* Win32NT */
 	return 2;

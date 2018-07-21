@@ -26,9 +26,6 @@ mono_icall_module_get_hinstance (MonoReflectionModuleHandle module);
 MonoStringHandle
 mono_icall_get_machine_name (MonoError *error);
 
-int
-mono_icall_get_platform (void);
-
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error);
 

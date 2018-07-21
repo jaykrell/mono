@@ -6573,8 +6573,8 @@ ves_icall_System_Environment_get_MachineName (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline int
-mono_icall_get_platform (void)
+ICALL_EXPORT int
+ves_icall_System_Environment_get_Platform (MonoError *error)
 {
 #if defined(__MACH__)
 	/* OSX */
@@ -6592,12 +6592,6 @@ mono_icall_get_platform (void)
 #endif
 }
 #endif /* !HOST_WIN32 */
-
-ICALL_EXPORT int
-ves_icall_System_Environment_get_Platform (MonoError *error)
-{
-	return mono_icall_get_platform ();
-}
 
 #ifndef HOST_WIN32
 static inline MonoStringHandle
