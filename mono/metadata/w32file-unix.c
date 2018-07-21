@@ -4660,11 +4660,12 @@ get_fstypename (gchar *utfpath)
 
 /* Linux has struct statfs which has a different layout */
 gboolean
-mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumename, gint volumesize, gint *outserial, gint *maxcomp, gint *fsflags, gunichar2 *fsbuffer, gint fsbuffersize)
+mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)
 {
-	gchar *utfpath;
-	gchar *fstypename;
+	gchar *utfpath = NULL;
+	gchar *fstypename = NULL;
 	gboolean status = FALSE;
+	gunichar2 *ret = NULL;
 	glong len;
 	
 	// We only support getting the file system type
@@ -4673,16 +4674,15 @@ mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumenam
 	
 	utfpath = mono_unicode_to_external (path);
 	if ((fstypename = get_fstypename (utfpath)) != NULL){
-		gunichar2 *ret = g_utf8_to_utf16 (fstypename, -1, NULL, &len, NULL);
+		ret = g_utf8_to_utf16 (fstypename, -1, NULL, &len, NULL);
 		if (ret != NULL && len < fsbuffersize){
 			memcpy (fsbuffer, ret, len * sizeof (gunichar2));
 			fsbuffer [len] = 0;
 			status = TRUE;
 		}
-		if (ret != NULL)
-			g_free (ret);
-		g_free (fstypename);
 	}
+	g_free (ret);
+	g_free (fstypename);
 	g_free (utfpath);
 	return status;
 }

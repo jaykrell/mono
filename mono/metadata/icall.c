@@ -6840,17 +6840,16 @@ leave:
 }
 #endif // HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS || !defined (HOST_WIN32)
 
-ICALL_EXPORT MonoString *
-ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_IO_DriveInfo_GetDriveFormat (const gunichar2 *path, int path_length, MonoError *error)
 {
-	ERROR_DECL (error);
 	gunichar2 volume_name [MAX_PATH + 1];
+
+	// FIXME check if path contains nuls
 	
-	if (mono_w32file_get_volume_information (mono_string_chars (path), NULL, 0, NULL, NULL, NULL, volume_name, MAX_PATH + 1) == FALSE)
-		return NULL;
-	MonoString *result = mono_string_from_utf16_checked (volume_name, error);
-	mono_error_set_pending_exception (error);
-	return result;
+	if (mono_w32file_get_file_system_type (path, volume_name, MAX_PATH + 1) == FALSE)
+		return NULL_HANDLE_STRING;
+	return mono_string_new_utf16_handle (mono_domain_get (), volume_name, g_utf16_len (volume_name), error);
 }
 
 ICALL_EXPORT MonoStringHandle

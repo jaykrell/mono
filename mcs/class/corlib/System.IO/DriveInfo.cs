@@ -68,7 +68,7 @@ namespace System.IO {
 		
 		static void GetDiskFreeSpace (string path, out ulong availableFreeSpace, out ulong totalSize, out ulong totalFreeSpace)
 		{
-			MonoIOError error;
+			MonoIOError error = 0;
 			if (!GetDiskFreeSpaceInternal (path, out availableFreeSpace, out totalSize, out totalFreeSpace, out error))
 				throw MonoIO.GetException (path, error);
 		}
@@ -165,7 +165,7 @@ namespace System.IO {
 
 		public override string ToString ()
 		{
-			return(Name);
+			return Name;
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -187,6 +187,12 @@ namespace System.IO {
 		extern static uint GetDriveTypeInternal (string rootPathName);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static string GetDriveFormat (string rootPathName);
+		extern unsafe static string GetDriveFormat (char *rootPathName, int rootPathName_length);
+
+		static unsafe string GetDriveFormat (string rootPathName)
+		{
+			fixed (char *fixed_rootPathName)
+				return GetDriveFormat (fixed_rootPathName, (rootPathName != null) ? rootPathName.Length : 0);
+		}
 	}
 }
