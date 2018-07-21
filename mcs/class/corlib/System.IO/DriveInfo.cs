@@ -178,19 +178,28 @@ namespace System.IO {
 							     out MonoIOError error)
 		{
 			error = 0;
+			// FIXME check for embedded nuls
 			fixed (char *fixed_pathName = pathName)
 				return GetDiskFreeSpaceInternal (fixed_pathName, (pathName != null) ? pathName.Length : 0,
 					out freeBytesAvail, out totalNumberOfBytes, out totalNumberOfFreeBytes, out error);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		extern static uint GetDriveTypeInternal (string rootPathName);
+		extern unsafe static uint GetDriveTypeInternal (char *rootPathName, int rootPathName_length);
+
+		unsafe static uint GetDriveTypeInternal (string rootPathName)
+		{
+			// FIXME check for embedded nuls
+			fixed (char *fixed_rootPathName = rootPathName)
+				return GetDriveTypeInternal (fixed_rootPathName, (rootPathName != null) ? rootPathName.Length : 0);
+		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern unsafe static string GetDriveFormat (char *rootPathName, int rootPathName_length);
 
 		static unsafe string GetDriveFormat (string rootPathName)
 		{
+			// FIXME check for embedded nuls
 			fixed (char *fixed_rootPathName = rootPathName)
 				return GetDriveFormat (fixed_rootPathName, (rootPathName != null) ? rootPathName.Length : 0);
 		}
