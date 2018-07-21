@@ -153,10 +153,9 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (const gunichar2 *ut
 }
 
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
-MonoStringHandle
-mono_icall_get_windows_folder_path (int folder, MonoError *error)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 {
-	error_init (error);
 	#ifndef CSIDL_FLAG_CREATE
 		#define CSIDL_FLAG_CREATE	0x8000
 	#endif

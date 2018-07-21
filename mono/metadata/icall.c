@@ -6775,20 +6775,13 @@ ves_icall_System_Environment_GetGacPath (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline MonoStringHandle
-mono_icall_get_windows_folder_path (int folder, MonoError *error)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 {
-	error_init (error);
 	g_warning ("ves_icall_System_Environment_GetWindowsFolderPath should only be called on Windows!");
 	return mono_string_new_handle (mono_domain_get (), "", error);
 }
 #endif /* !HOST_WIN32 */
-
-ICALL_EXPORT MonoStringHandle
-ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
-{
-	return mono_icall_get_windows_folder_path (folder, error);
-}
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 

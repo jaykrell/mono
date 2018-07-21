@@ -22,10 +22,9 @@ mono_icall_get_machine_name (MonoError *error)
 #endif
 
 #if !HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
-MonoStringHandle
-mono_icall_get_windows_folder_path (int folder, MonoError *error)
+ICALL_EXPORT MonoStringHandle
+ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 {
-	error_init (error);
 	g_unsupported_api ("SHGetFolderPath");
 	return mono_string_new_handle (mono_domain_get (), "", error);
 }
