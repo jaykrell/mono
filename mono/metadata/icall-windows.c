@@ -141,20 +141,15 @@ cleanup:
 	return names;
 }
 
-void
-mono_icall_set_environment_variable (MonoString *name, MonoString *value)
+
+ICALL_EXPORT void
+ves_icall_System_Environment_InternalSetEnvironmentVariable (const gunichar2 *utf16_name, gint32 name_length,
+		const gunichar2 *utf16_value, gint32 value_length, MonoError *error)
 {
-	gunichar2 *utf16_name, *utf16_value;
+	if (!utf16_value || !value_length || !utf16_value [0])
+		utf16_value = NULL;
 
-	utf16_name = name ? mono_string_chars (name) : NULL;
-	if ((value == NULL) || (mono_string_length (value) == 0) || (mono_string_chars (value)[0] == 0)) {
-		SetEnvironmentVariable (utf16_name, NULL);
-		return;
-	}
-
-	utf16_value = mono_string_chars (value);
-
-	SetEnvironmentVariable (utf16_name, utf16_value);
+	SetEnvironmentVariableW (utf16_name, utf16_value);
 }
 
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH
