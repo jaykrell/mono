@@ -58,7 +58,8 @@
 
 /* Don't use this */
 #ifndef MONO_SIGNAL_HANDLER_FUNC
-#define MONO_SIGNAL_HANDLER_FUNC(access, name, arglist) access void name arglist
+// FIXME Try to remove MONO_ATTRIBUTE_NO_OPTIMIZE.
+#define MONO_SIGNAL_HANDLER_FUNC(access, name, arglist) access void MONO_ATTRIBUTE_NO_OPTIMIZE name arglist
 #endif
 
 /*
@@ -94,17 +95,21 @@
 #define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, gpointer context)
 #define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context))
 #ifdef MONO_SIG_HANDLER_DEBUG
-#define MONO_SIG_HANDLER_FUNC_DEBUG(access, ftn) access MONO_ATTRIBUTE_NO_OPTIMIZE void ftn \
-	(int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context, void * volatile debug_fault_addr G_GNUC_UNUSED)
+// FIXME Try to remove MONO_ATTRIBUTE_NO_OPTIMIZE.
+#define MONO_SIG_HANDLER_FUNC_DEBUG(access, ftn) access void MONO_ATTRIBUTE_NO_OPTIMIZE ftn \
+	(int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context, void * volatile debug_fault_addr)
 #else
 #define MONO_SIG_HANDLER_FUNC_DEBUG_BEGIN
 #endif
 #define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
 #define MONO_SIG_HANDLER_GET_INFO() (_info)
 #define MONO_SIG_HANDLER_GET_CONTEXT void *ctx = context;
-#define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
 #ifdef MONO_SIG_HANDLER_DEBUG
-#define MONO_SIG_HANDLER_PARAMS_DEBUG MONO_SIG_HANDLER_PARAMS, debug_fault_addr
+#define MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA , debug_fault_addr
+#else
+#define MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA /* nothing */
 #endif
+#define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
+#define MONO_SIG_HANDLER_PARAMS_DEBUG MONO_SIG_HANDLER_PARAMS, MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA
 
 #endif // __MONO_SIGNAL_HANDLER_H__

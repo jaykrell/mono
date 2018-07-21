@@ -3372,7 +3372,7 @@ is_addr_implicit_null_check (void *addr)
 // just so debug_fault_addr can be seen in debugger stacks.
 #ifdef MONO_SIG_HANDLER_DEBUG
 MONO_NEVER_INLINE
-MONO_SIG_HANDLER_FUNC_DEBUG (static, mono_sigsegv_signal_handler_debug)
+MONO_SIG_HANDLER_FUNC_DEBUG (/* FIXME static */, mono_sigsegv_signal_handler_debug)
 #else
 MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #endif
@@ -3410,7 +3410,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (!mono_domain_get () || !jit_tls) {
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
-		mono_handle_native_crash ("SIGSEGV", ctx, info);
+		mono_handle_native_crash ("SIGSEGV", ctx, info MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA);
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
 			return;
@@ -3452,7 +3452,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (is_addr_implicit_null_check (info->si_addr)) {
 			mono_arch_handle_altstack_exception (ctx, info, info->si_addr, FALSE);
 		} else {
-			mono_handle_native_crash ("SIGSEGV", ctx, info);
+			mono_handle_native_crash ("SIGSEGV", ctx, info MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA);
 		}
 	}
 #else
@@ -3461,7 +3461,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		if (!mono_do_crash_chaining && mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
 			return;
 
-		mono_handle_native_crash ("SIGSEGV", ctx, info);
+		mono_handle_native_crash ("SIGSEGV", ctx, info MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA);
 
 		if (mono_do_crash_chaining) {
 			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
@@ -3472,7 +3472,7 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	if (is_addr_implicit_null_check (fault_addr)) {
 		mono_arch_handle_exception (ctx, NULL);
 	} else {
-		mono_handle_native_crash ("SIGSEGV", ctx, info);
+		mono_handle_native_crash ("SIGSEGV", ctx, info MONO_SIG_HANDLER_PARAMS_DEBUG_EXTRA);
 	}
 #endif
 }

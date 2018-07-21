@@ -2919,8 +2919,14 @@ static gboolean handle_crash_loop = FALSE;
  *   printing diagnostic information and aborting.
  */
 void
-mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+MONO_ATTRIBUTE_NO_OPTIMIZE // FIXME Try to remove this, ensure fault_addr still visible in crashes.
+mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, ...)
 {
+	// The ... parameters are an attempt to reduce optimization and see more in the debugger,
+	// for this function's callers. It is not extra parammeters this function uses.
+	//
+	// Performance around here does not matter, as long as the code is not too large.
+
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
 
 	if (handle_crash_loop)
@@ -2981,8 +2987,13 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #else
 
 void
-mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, ...)
 {
+	// The ... parameters are an attempt to reduce optimization and see more in the debugger,
+	// for this function's callers. It is not extra parammeters this function uses.
+	//
+	// Performance around here does not matter, as long as the code is not too large.
+
 	g_assert_not_reached ();
 }
 
