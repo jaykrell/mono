@@ -3372,7 +3372,7 @@ is_addr_implicit_null_check (void *addr)
 // just so debug_fault_addr can be seen in debugger stacks.
 #ifdef MONO_SIG_HANDLER_DEBUG
 MONO_NEVER_INLINE
-MONO_SIG_HANDLER_FUNC_DEBUG (/* FIXME static */, mono_sigsegv_signal_handler_debug)
+MONO_SIG_HANDLER_FUNC_DEBUG (static, mono_sigsegv_signal_handler_debug)
 #else
 MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 #endif
