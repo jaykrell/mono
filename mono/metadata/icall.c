@@ -6783,7 +6783,7 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-#if HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS
+#if HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS || !defined (HOST_WIN32)
 
 ICALL_EXPORT MonoArrayHandle
 ves_icall_System_Environment_GetLogicalDrives (MonoError *error)
@@ -6838,7 +6838,7 @@ leave:
 
 	return result;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
+#endif // HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS || !defined (HOST_WIN32)
 
 ICALL_EXPORT MonoString *
 ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)
