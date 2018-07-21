@@ -173,14 +173,14 @@ namespace System.IO {
 							     out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes,
 							     out MonoIOError error);
 
-		static bool GetDiskFreeSpaceInternal (string pathName, out ulong freeBytesAvail,
+		static unsafe bool GetDiskFreeSpaceInternal (string pathName, out ulong freeBytesAvail,
 							     out ulong totalNumberOfBytes, out ulong totalNumberOfFreeBytes,
 							     out MonoIOError error)
 		{
 			error = 0;
-			fixed (char *fixed_pathNae = pathName)
+			fixed (char *fixed_pathName = pathName)
 				return GetDiskFreeSpaceInternal (fixed_pathName, (pathName != null) ? pathName.Length : 0,
-					freeBytesAvail, totalNumberOfBytes, totalNumberOfFreeBytes, error);
+					out freeBytesAvail, out totalNumberOfBytes, out totalNumberOfFreeBytes, out error);
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -191,7 +191,7 @@ namespace System.IO {
 
 		static unsafe string GetDriveFormat (string rootPathName)
 		{
-			fixed (char *fixed_rootPathName)
+			fixed (char *fixed_rootPathName = rootPathName)
 				return GetDriveFormat (fixed_rootPathName, (rootPathName != null) ? rootPathName.Length : 0);
 		}
 	}
