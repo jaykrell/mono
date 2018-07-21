@@ -6783,7 +6783,7 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 }
 #endif /* !HOST_WIN32 */
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS
 
 ICALL_EXPORT MonoArrayHandle
 ves_icall_System_Environment_GetLogicalDrives (MonoError *error)

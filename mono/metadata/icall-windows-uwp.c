@@ -31,19 +31,12 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 #endif
 
 #if !HAVE_API_SUPPORT_WIN32_GET_LOGICAL_DRIVE_STRINGS
-MonoArray *
-mono_icall_get_logical_drives (void)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Environment_GetLogicalDrives (MonoError *error)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
-
 	g_unsupported_api ("GetLogicalDriveStrings");
-
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
-	mono_error_set_pending_exception (&mono_error);
-
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetLogicalDriveStrings");
 	SetLastError (ERROR_NOT_SUPPORTED);
-
 	return NULL;
 }
 #endif
