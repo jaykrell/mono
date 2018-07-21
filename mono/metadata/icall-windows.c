@@ -188,8 +188,8 @@ ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint3
 }
 #endif
 
-void
-mono_icall_write_windows_debug_string (const gunichar2 *message)
+ICALL_EXPORT void
+ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message, MonoError *error)
 {
 	OutputDebugString (message);
 }

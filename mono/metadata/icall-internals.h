@@ -28,18 +28,6 @@ mono_icall_get_machine_name (MonoError *error);
 
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error);
-
-void
-mono_icall_set_environment_variable (MonoString *name, MonoString *value);
-
-MonoStringHandle
-mono_icall_get_windows_folder_path (int folder, MonoError *error);
-
-void
-mono_icall_write_windows_debug_string (const gunichar2 *message);
-
-gint32
-mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds);
 #endif  /* HOST_WIN32 */
 
 // On platforms not using classic WIN API support the  implementation of bellow methods are hosted in separate source file
