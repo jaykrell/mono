@@ -6615,8 +6615,9 @@ ves_icall_System_Environment_get_NewLine (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline MonoBoolean
-mono_icall_is_64bit_os (void)
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Environment_GetIs64BitOperatingSystem (MonoError *error)
 {
 #if SIZEOF_VOID_P == 8
 	return TRUE;
@@ -6632,12 +6633,6 @@ mono_icall_is_64bit_os (void)
 #endif
 }
 #endif /* !HOST_WIN32 */
-
-ICALL_EXPORT MonoBoolean
-ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
-{
-	return mono_icall_is_64bit_os ();
-}
 
 ICALL_EXPORT MonoStringHandle
 ves_icall_System_Environment_GetEnvironmentVariable_native (const gchar *utf8_name, MonoError *error)
@@ -6811,16 +6806,14 @@ ves_icall_System_Environment_GetWindowsFolderPath (int folder, MonoError *error)
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
-static MonoArray *
-mono_icall_get_logical_drives (void)
+
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Environment_GetLogicalDrives (MonoError *error)
 {
-	ERROR_DECL (error);
 	gunichar2 buf [256], *ptr, *dname;
 	gunichar2 *u16;
 	guint initial_size = 127, size = 128;
 	gint ndrives;
-	MonoArray *result;
-	MonoString *drivestr;
 	MonoDomain *domain = mono_domain_get ();
 	gint len;
 
@@ -6847,20 +6840,17 @@ mono_icall_get_logical_drives (void)
 	} while (*dname);
 
 	dname = ptr;
-	result = mono_array_new_checked (domain, mono_defaults.string_class, ndrives, error);
-	if (mono_error_set_pending_exception (error))
-		goto leave;
+	MonoArrayHandle result = mono_array_new_handle (domain, mono_defaults.string_class, ndrives, error);
+	goto_if_nok (error, leave);
 
 	ndrives = 0;
 	do {
 		len = 0;
 		u16 = dname;
 		while (*u16) { u16++; len ++; }
-		drivestr = mono_string_new_utf16_checked (domain, dname, len, error);
-		if (mono_error_set_pending_exception (error))
-			goto leave;
 
-		mono_array_setref (result, ndrives++, drivestr);
+		mono_new_string_utf16_to_array (result, ndrives++, domain, dname, len, error);
+		goto_if_nok (error, leave);
 		while (*dname++);
 	} while (*dname);
 
@@ -6871,12 +6861,6 @@ leave:
 	return result;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-ICALL_EXPORT MonoArray *
-ves_icall_System_Environment_GetLogicalDrives (void)
-{
-	return mono_icall_get_logical_drives ();
-}
 
 ICALL_EXPORT MonoString *
 ves_icall_System_IO_DriveInfo_GetDriveFormat (MonoString *path)

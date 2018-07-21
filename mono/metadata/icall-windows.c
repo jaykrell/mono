@@ -81,29 +81,15 @@ mono_icall_get_new_line (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), "\r\n", error);
 }
 
-MonoBoolean
-mono_icall_is_64bit_os (void)
+ICALL_EXPORT MonoBoolean
+ves_icall_System_Environment_GetIs64BitOperatingSystem (MonoError *error)
 {
 #if SIZEOF_VOID_P == 8
 	return TRUE;
 #else
 	gboolean isWow64Process = FALSE;
-	if (IsWow64Process (GetCurrentProcess (), &isWow64Process)) {
-		return (MonoBoolean)isWow64Process;
-	}
-	return FALSE;
+	return IsWow64Process (GetCurrentProcess (), &isWow64Process) && isWow64Process;
 #endif
-}
-
-static void
-mono_new_string_utf16_to_array (MonoArrayHandle array, gsize index,
-	MonoDomain *domain, const WCHAR *s, gssize length, MonoError *error)
-{
-	// Handle creation outside of loop.
-	HANDLE_FUNCTION_ENTER ();
-	MonoStringHandle t = mono_string_new_utf16_handle (domain, s, length, error);
-	MONO_HANDLE_ARRAY_SETREF (array, index, t);
-	HANDLE_FUNCTION_RETURN ();
 }
 
 ICALL_EXPORT MonoArrayHandle

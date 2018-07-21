@@ -32,9 +32,6 @@ mono_icall_get_platform (void);
 MonoStringHandle
 mono_icall_get_new_line (MonoError *error);
 
-MonoBoolean
-mono_icall_is_64bit_os (void);
-
 void
 mono_icall_set_environment_variable (MonoString *name, MonoString *value);
 

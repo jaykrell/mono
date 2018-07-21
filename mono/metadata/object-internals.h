@@ -1941,6 +1941,10 @@ mono_string_new_utf16_checked (MonoDomain *domain, const guint16 *text, gint32 l
 MonoStringHandle
 mono_string_new_utf16_handle (MonoDomain *domain, const guint16 *text, gint32 len, MonoError *error);
 
+void
+mono_new_string_utf16_to_array (MonoArrayHandle array, gsize index,
+	MonoDomain *domain, const guint16 *s, gsize length, MonoError *error);
+
 MonoStringHandle
 mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
