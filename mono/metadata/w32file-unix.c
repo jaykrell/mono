@@ -4628,7 +4628,7 @@ ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int
 	drive_type = GetDriveTypeFromPath (utf8_root_path_name);
 	g_free (utf8_root_path_name);
 
-	return  drive_type;
+	return drive_type;
 }
 
 #if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__) || defined(_AIX)

@@ -7107,6 +7107,8 @@ ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int 
 	return mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes, win32error);
 }
 
+#endif /* PLATFORM_NO_DRIVEINFO */
+
 ICALL_EXPORT gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
