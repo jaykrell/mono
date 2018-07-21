@@ -8445,3 +8445,9 @@ ves_icall_System_Environment_GetPageSize (MonoError *error)
 {
 	return mono_pagesize ();
 }
+
+ICALL_EXPORT int
+System_Environment_get_ProcessorCount (MonoError *error)
+{
+	return mono_cpu_count ();
+}
