@@ -78,16 +78,12 @@ mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
 #endif
 
 #if !HAVE_API_SUPPORT_WIN32_WAIT_FOR_INPUT_IDLE
-gint32
-mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
+ICALL_EXPORT gint32
+ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds, MonoError *error)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
-
 	g_unsupported_api ("WaitForInputIdle");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "WaitForInputIdle");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "WaitForInputIdle");
 
 	return WAIT_TIMEOUT;
 }

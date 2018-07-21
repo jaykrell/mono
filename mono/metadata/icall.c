@@ -7823,18 +7823,12 @@ ves_icall_Mono_Runtime_GetDisplayName (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline gint32
-mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
+ICALL_EXPORT gint32
+ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds, MonoError *error)
 {
 	return WAIT_TIMEOUT;
 }
 #endif /* !HOST_WIN32 */
-
-ICALL_EXPORT gint32
-ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds, MonoError *error)
-{
-	return mono_icall_wait_for_input_idle (handle, milliseconds);
-}
 
 ICALL_EXPORT gint32
 ves_icall_Microsoft_Win32_NativeMethods_GetCurrentProcessId (MonoError *error)

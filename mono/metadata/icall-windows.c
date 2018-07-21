@@ -181,8 +181,8 @@ ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 #endif
 
 #if HAVE_API_SUPPORT_WIN32_WAIT_FOR_INPUT_IDLE
-gint32
-mono_icall_wait_for_input_idle (gpointer handle, gint32 milliseconds)
+ICALL_EXPORT gint32
+ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint32 milliseconds, MonoError *error)
 {
 	return WaitForInputIdle (handle, milliseconds);
 }
