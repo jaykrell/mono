@@ -540,9 +540,10 @@ GetDriveTypeW (
 	PCWSTR RootPathName
 	);
 
-guint32
-mono_w32file_get_drive_type (const gunichar2 *root_path_name)
+ICALL_EXPORT guint32
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error)
 {
+	// FIXME check for embedded nuls in native or managed
 	guint32 res;
 	MONO_ENTER_GC_SAFE;
 	res = GetDriveType (root_path_name);

@@ -4597,23 +4597,27 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 }
 #endif
 
-guint32
-mono_w32file_get_drive_type(const gunichar2 *root_path_name)
+ICALL_EXPORT guint32
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error);
+
+ICALL_EXPORT guint32
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error)
 {
+	// FIXME check for embedded nuls in native or managed
 	gchar *utf8_root_path_name;
 	guint32 drive_type;
 
 	if (root_path_name == NULL) {
 		utf8_root_path_name = g_strdup (g_get_current_dir());
 		if (utf8_root_path_name == NULL) {
-			return(DRIVE_NO_ROOT_DIR);
+			return DRIVE_NO_ROOT_DIR;
 		}
 	}
 	else {
 		utf8_root_path_name = mono_unicode_to_external (root_path_name);
 		if (utf8_root_path_name == NULL) {
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_FILE, "%s: unicode conversion returned NULL", __func__);
-			return(DRIVE_NO_ROOT_DIR);
+			return DRIVE_NO_ROOT_DIR;
 		}
 		
 		/* strip trailing slash for compare below */
@@ -4624,7 +4628,7 @@ mono_w32file_get_drive_type(const gunichar2 *root_path_name)
 	drive_type = GetDriveTypeFromPath (utf8_root_path_name);
 	g_free (utf8_root_path_name);
 
-	return (drive_type);
+	return  drive_type;
 }
 
 #if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__) || defined(_AIX)

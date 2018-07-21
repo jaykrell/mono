@@ -314,7 +314,7 @@ ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globaliz
 ICALL_TYPE(IODRIVEINFO, "System.IO.DriveInfo", IODRIVEINFO_1)
 HANDLES(ICALL(IODRIVEINFO_1, "GetDiskFreeSpaceInternal", ves_icall_System_IO_DriveInfo_GetDiskFreeSpace))
 HANDLES(ICALL(IODRIVEINFO_2, "GetDriveFormat", ves_icall_System_IO_DriveInfo_GetDriveFormat))
-ICALL(IODRIVEINFO_3, "GetDriveTypeInternal", ves_icall_System_IO_DriveInfo_GetDriveType)
+HANDLES(ICALL(IODRIVEINFO_3, "GetDriveTypeInternal", ves_icall_System_IO_DriveInfo_GetDriveType))
 #endif
 
 ICALL_TYPE(FAMW, "System.IO.FAMWatcher", FAMW_1)

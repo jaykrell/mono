@@ -7107,22 +7107,6 @@ ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int 
 	return mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes, win32error);
 }
 
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) || G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-static guint32
-mono_icall_drive_info_get_drive_type (MonoString *root_path_name)
-{
-	return mono_w32file_get_drive_type (mono_string_chars (root_path_name));
-}
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
-
-ICALL_EXPORT guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (MonoString *root_path_name)
-{
-	return mono_icall_drive_info_get_drive_type (root_path_name);
-}
-
-#endif /* PLATFORM_NO_DRIVEINFO */
-
 ICALL_EXPORT gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {
