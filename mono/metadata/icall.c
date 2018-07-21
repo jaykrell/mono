@@ -8450,3 +8450,15 @@ System_Environment_get_ProcessorCount (MonoError *error)
 {
 	return mono_cpu_count ();
 }
+
+ICALL_EXPORT int
+ves_icall_System_Environment_get_ExitCode (MonoError *error)
+{
+	return mono_environment_exitcode_get ();
+}
+
+ICALL_EXPORT void
+ves_icall_System_Environment_set_ExitCode (int value, MonoError *error)
+{
+	mono_environment_exitcode_set (value);
+}

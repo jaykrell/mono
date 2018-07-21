@@ -38,12 +38,6 @@ mono_environment_exitcode_get (void)
 	return exitcode;
 }
 
-gint32
-ves_icall_System_Environment_get_ExitCode (MonoError *error)
-{
-	return mono_environment_exitcode_get ();
-}
-
 /**
  * mono_environment_exitcode_set:
  */

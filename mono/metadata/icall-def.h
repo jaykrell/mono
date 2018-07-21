@@ -270,7 +270,7 @@ HANDLES(ICALL(ENV_16m, "internalBroadcastSettingChange", ves_icall_System_Enviro
 HANDLES(ICALL(ENV_17, "internalGetEnvironmentVariable_native", ves_icall_System_Environment_GetEnvironmentVariable_native))
 HANDLES(ICALL(ENV_18, "internalGetGacPath", ves_icall_System_Environment_GetGacPath))
 HANDLES(ICALL(ENV_19, "internalGetHome", ves_icall_System_Environment_InternalGetHome))
-ICALL(ENV_20, "set_ExitCode", mono_environment_exitcode_set)
+HANDLES(ICALL(ENV_20, "set_ExitCode", ves_icall_System_Environment_set_ExitCode))
 
 ICALL_TYPE(GC, "System.GC", GC_0)
 HANDLES(ICALL(GC_0, "GetCollectionCount", ves_icall_System_GC_GetCollectionCount))
