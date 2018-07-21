@@ -258,7 +258,7 @@ HANDLES(ICALL(ENV_6, "GetOSVersionString", ves_icall_System_Environment_GetOSVer
 HANDLES(ICALL(ENV_6a, "GetPageSize", ves_icall_System_Environment_GetPageSize))
 HANDLES(ICALL(ENV_7, "GetWindowsFolderPath", ves_icall_System_Environment_GetWindowsFolderPath))
 HANDLES(ICALL(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable))
-ICALL(ENV_9, "get_ExitCode", mono_environment_exitcode_get)
+HANDLES(ICALL(ENV_9, "get_ExitCode", ves_icall_System_Environment_get_ExitCode))
 ICALL(ENV_10, "get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted)
 HANDLES(ICALL(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName))
 ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform)
