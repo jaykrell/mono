@@ -6772,7 +6772,7 @@ ves_icall_System_Environment_InternalSetEnvironmentVariable (MonoString *name, M
 }
 
 ICALL_EXPORT void
-ves_icall_System_Environment_Exit (int result)
+ves_icall_System_Environment_Exit (int result, MonoError *error)
 {
 	mono_environment_exitcode_set (result);
 

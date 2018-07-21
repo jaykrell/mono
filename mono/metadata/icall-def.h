@@ -247,7 +247,7 @@ HANDLES(ICALL(ENUM_6, "get_hashcode", ves_icall_System_Enum_get_hashcode))
 HANDLES(ICALL(ENUM_7, "get_value", ves_icall_System_Enum_get_value))
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
-ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit)
+HANDLES(ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit))
 HANDLES(ICALL(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineArgs))
 HANDLES(ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames))
 ICALL(ENV_31, "GetIs64BitOperatingSystem", ves_icall_System_Environment_GetIs64BitOperatingSystem)
