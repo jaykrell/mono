@@ -6594,7 +6594,7 @@ mono_icall_get_platform (void)
 #endif /* !HOST_WIN32 */
 
 ICALL_EXPORT int
-ves_icall_System_Environment_get_Platform (void)
+ves_icall_System_Environment_get_Platform (MonoError *error)
 {
 	return mono_icall_get_platform ();
 }

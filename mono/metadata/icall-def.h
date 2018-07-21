@@ -261,7 +261,7 @@ HANDLES(ICALL(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environm
 HANDLES(ICALL(ENV_9, "get_ExitCode", ves_icall_System_Environment_get_ExitCode))
 HANDLES(ICALL(ENV_10, "get_HasShutdownStarted", ves_icall_System_Environment_get_HasShutdownStarted))
 HANDLES(ICALL(ENV_11, "get_MachineName", ves_icall_System_Environment_get_MachineName))
-ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform)
+HANDLES(ICALL(ENV_13, "get_Platform", ves_icall_System_Environment_get_Platform))
 ICALL(ENV_14, "get_ProcessorCount", mono_cpu_count)
 ICALL(ENV_15, "get_TickCount", ves_icall_System_Environment_get_TickCount)
 HANDLES(ICALL(ENV_16, "get_UserName", ves_icall_System_Environment_get_UserName))
