@@ -6950,7 +6950,7 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page, Mo
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Environment_get_HasShutdownStarted (void)
+ves_icall_System_Environment_get_HasShutdownStarted (MonoError *error)
 {
 	if (mono_runtime_is_shutting_down ())
 		return TRUE;
