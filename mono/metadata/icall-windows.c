@@ -95,19 +95,22 @@ mono_icall_is_64bit_os (void)
 #endif
 }
 
-MonoArray *
-mono_icall_get_environment_variable_names (MonoError *error)
+static void
+mono_new_string_utf16_to_array (MonoArrayHandle array, gsize index,
+	MonoDomain *domain, const WCHAR *s, gssize length, MonoError *error)
 {
-	MonoArray *names;
-	MonoDomain *domain;
-	MonoString *str;
-	WCHAR* env_strings;
-	WCHAR* env_string;
-	WCHAR* equal_str;
-	int n = 0;
+	// Handle creation outside of loop.
+	HANDLE_FUNCTION_ENTER ();
+	MonoStringHandle t = mono_string_new_utf16_handle (domain, s, length, error);
+	MONO_HANDLE_ARRAY_SETREF (array, index, t);
+	HANDLE_FUNCTION_RETURN ();
+}
 
-	error_init (error);
-	env_strings = GetEnvironmentStrings();
+ICALL_EXPORT MonoArrayHandle
+ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
+{
+	gsize n = 0;
+	WCHAR *env_strings = GetEnvironmentStrings();
 
 	if (env_strings) {
 		env_string = env_strings;
@@ -121,22 +124,20 @@ mono_icall_get_environment_variable_names (MonoError *error)
 		}
 	}
 
-	domain = mono_domain_get ();
-	names = mono_array_new_checked (domain, mono_defaults.string_class, n, error);
-	return_val_if_nok (error, NULL);
+	MonoDomain *domain = mono_domain_get ();
+	MonoArrayHandle names = mono_array_new_handle (domain, mono_defaults.string_class, n, error);
+	return_val_if_nok (error, NULL_HANDLE_ARRAY);
 
 	if (env_strings) {
 		n = 0;
-		env_string = env_strings;
+		WCHAR const *env_string = env_strings;
 		while (*env_string != '\0') {
 			/* weird case that MS seems to skip */
 			if (*env_string != '=') {
-				equal_str = wcschr(env_string, '=');
-				g_assert(equal_str);
-				str = mono_string_new_utf16_checked (domain, env_string, (gint32)(equal_str - env_string), error);
+				WCHAR const * const equal_str = wcschr (env_string, '=');
+				g_assert (equal_str);
+				mono_new_string_utf16_to_array (names, n, domain, env_string, (gsize)(equal_str - env_string), error);
 				goto_if_nok (error, cleanup);
-
-				mono_array_setref (names, n, str);
 				n++;
 			}
 			while (*env_string != '\0')
@@ -150,7 +151,7 @@ cleanup:
 	if (env_strings)
 		FreeEnvironmentStrings (env_strings);
 	if (!is_ok (error))
-		return NULL;
+		return NULL_HANDLE_ARRAY;
 	return names;
 }
 
