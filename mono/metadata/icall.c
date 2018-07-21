@@ -6962,20 +6962,11 @@ ves_icall_System_Environment_get_HasShutdownStarted (MonoError *error)
 }
 
 #ifndef HOST_WIN32
-static inline MonoBoolean
-mono_icall_broadcast_setting_change (MonoError *error)
-{
-	error_init (error);
-	return TRUE;
-}
-#endif /* !HOST_WIN32 */
-
 ICALL_EXPORT void
 ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 {
-	error_init (error);
-	mono_icall_broadcast_setting_change (error);
 }
+#endif /* !HOST_WIN32 */
 
 ICALL_EXPORT
 gint32
