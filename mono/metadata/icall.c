@@ -7096,19 +7096,6 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
 
-#ifndef PLATFORM_NO_DRIVEINFO
-ICALL_EXPORT MonoBoolean
-ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
-						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
-						gint32 *win32error)
-{
-	*win32error = ERROR_SUCCESS;
-	// FIXME check for embedded nuls in native or managed
-	return mono_w32file_get_disk_free_space (path_name, free_bytes_avail, total_number_of_bytes, total_number_of_free_bytes, win32error);
-}
-
-#endif /* PLATFORM_NO_DRIVEINFO */
-
 ICALL_EXPORT gpointer
 ves_icall_RuntimeMethodHandle_GetFunctionPointer (MonoMethod *method, MonoError *error)
 {

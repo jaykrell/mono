@@ -347,14 +347,20 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 	return res;
 }
 
-gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
-	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
+#ifndef PLATFORM_NO_DRIVEINFO
+
+ICALL_EXPORT MonoBoolean
+ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
+						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
+						gint32 *win32error)
 {
 	gboolean result;
 	ULARGE_INTEGER wapi_free_bytes_avail;
 	ULARGE_INTEGER wapi_total_number_of_bytes;
 	ULARGE_INTEGER wapi_total_number_of_free_bytes;
+
+	*win32error = ERROR_SUCCESS;
+	// FIXME check for embedded nuls in native or managed
 
 	MONO_ENTER_GC_SAFE;
 	result = GetDiskFreeSpaceEx (path_name, &wapi_free_bytes_avail, &wapi_total_number_of_bytes, &wapi_total_number_of_free_bytes);
@@ -372,6 +378,8 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 
 	return result;
 }
+
+#endif
 
 gboolean
 mono_w32file_get_file_system_type (const gunichar2 *path, gunichar2 *fsbuffer, gint fsbuffersize)

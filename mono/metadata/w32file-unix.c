@@ -4244,10 +4244,12 @@ GetLogicalDriveStrings_Mtab (guint32 len, gunichar2 *buf)
 }
 #endif
 
+#ifndef PLATFORM_NO_DRIVEINFO
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS)
-gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
-	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
+ICALL_EXPORT MonoBoolean
+ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
+						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
+						gint32 *win32error)
 {
 #ifdef HAVE_STATVFS
 	struct statvfs fsstat;
@@ -4258,6 +4260,9 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	gchar *utf8_path_name;
 	gint ret;
 	unsigned long block_size;
+
+	*win32error = 0;
+	// FIXME check for embedded nuls in native or managed
 
 	if (path_name == NULL) {
 		utf8_path_name = g_strdup (g_get_current_dir());
@@ -4334,10 +4339,14 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	return TRUE;
 }
 #else
-gboolean
-mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail,
-	guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes, gint32 *win32error)
+ICALL_EXPORT MonoBoolean
+ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
+						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
+						gint32 *win32error)
 {
+	*win32error = ERROR_SUCCESS;
+	// FIXME check for embedded nuls in native or managed
+
 	if (free_bytes_avail)
 		*free_bytes_avail = (gint64) -1;
 
@@ -4350,6 +4359,7 @@ mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_byte
 	return TRUE;
 }
 #endif
+#endif // PLATFORM_NO_DRIVEINFO
 
 /*
  * General Unix support
