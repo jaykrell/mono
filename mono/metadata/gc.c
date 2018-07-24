@@ -537,14 +537,8 @@ done:
 	return ret;
 }
 
-void
-ves_icall_System_GC_InternalCollect (int generation, MonoError *error)
-{
-	mono_gc_collect (generation);
-}
-
 gint64
-ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection, MonoError *error)
+ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
 	if (forceCollection)
 		mono_gc_collect (mono_gc_max_generation ());
@@ -587,7 +581,7 @@ ves_icall_System_GC_SuppressFinalize (MonoObjectHandle obj, MonoError *error)
 }
 
 void
-ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error)
+ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
 	if (mono_gc_is_null ())
 		return;
@@ -673,14 +667,8 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, guint32 handle,
 	return 0;
 }
 
-void
-ves_icall_System_GCHandle_FreeHandle (guint32 handle, MonoError *error)
-{
-	mono_gchandle_free (handle);
-}
-
 gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *error)
+ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	// Handles seem to only be in the way here, and the object is pinned.
 
@@ -712,7 +700,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *erro
 }
 
 MonoBoolean
-ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle, MonoError *error)
+ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }

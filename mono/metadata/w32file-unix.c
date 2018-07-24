@@ -4598,10 +4598,10 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 #endif
 
 ICALL_EXPORT guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error);
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length);
 
 ICALL_EXPORT guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error)
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length)
 {
 	// FIXME check for embedded nuls in native or managed
 	gchar *utf8_root_path_name;

@@ -61,11 +61,8 @@ void   mono_object_register_finalizer               (MonoObject  *obj);
 void
 mono_object_register_finalizer_handle (MonoObjectHandle obj);
 
-void
-ves_icall_System_GC_InternalCollect (int generation, MonoError *error);
-
 gint64
-ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection, MonoError *error);
+ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection);
 
 void
 ves_icall_System_GC_KeepAlive (MonoObjectHandle obj, MonoError *error);
@@ -76,20 +73,11 @@ ves_icall_System_GC_ReRegisterForFinalize (MonoObjectHandle obj, MonoError *erro
 void
 ves_icall_System_GC_SuppressFinalize (MonoObjectHandle obj, MonoError *error);
 
-void
-ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error);
-
 MonoObjectHandle
 ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error);
 
 guint32
 ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, guint32 handle, gint32 type, MonoError *error);
-
-void
-ves_icall_System_GCHandle_FreeHandle (guint32 handle, MonoError *error);
-
-gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *error);
 
 void
 ves_icall_System_GC_register_ephemeron_array (MonoObjectHandle array, MonoError *error);
@@ -124,7 +112,7 @@ void mono_gchandle_set_target (guint32 gchandle, MonoObject *obj);
 gboolean    mono_gc_ephemeron_array_add (MonoObject *obj);
 
 MonoBoolean
-ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle, MonoError *error);
+ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle);
 
 /* User defined marking function */
 /* It should work like this:

@@ -541,7 +541,7 @@ GetDriveTypeW (
 	);
 
 ICALL_EXPORT guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length, MonoError *error)
+ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, int root_path_name_length)
 {
 	// FIXME check for embedded nuls in native or managed
 	guint32 res;

@@ -6574,7 +6574,7 @@ ves_icall_System_Environment_get_MachineName (MonoError *error)
 
 #ifndef HOST_WIN32
 ICALL_EXPORT int
-ves_icall_System_Environment_get_Platform (MonoError *error)
+ves_icall_System_Environment_get_Platform (void)
 {
 #if defined(__MACH__)
 	/* OSX */
@@ -6611,7 +6611,7 @@ ves_icall_System_Environment_get_NewLine (MonoError *error)
 #ifndef HOST_WIN32
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Environment_GetIs64BitOperatingSystem (MonoError *error)
+ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 {
 #if SIZEOF_VOID_P == 8
 	return TRUE;
@@ -6752,7 +6752,7 @@ exit:
 #endif /* !HOST_WIN32 */
 
 ICALL_EXPORT void
-ves_icall_System_Environment_Exit (int result, MonoError *error)
+ves_icall_System_Environment_Exit (int result)
 {
 	mono_environment_exitcode_set (result);
 
@@ -6936,7 +6936,7 @@ ves_icall_System_Text_EncodingHelper_InternalCodePage (gint32 *int_code_page, Mo
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Environment_get_HasShutdownStarted (MonoError *error)
+ves_icall_System_Environment_get_HasShutdownStarted (void)
 {
 	if (mono_runtime_is_shutting_down ())
 		return TRUE;
@@ -6955,7 +6955,7 @@ ves_icall_System_Environment_BroadcastSettingChange (MonoError *error)
 #endif /* !HOST_WIN32 */
 
 ICALL_EXPORT gint32
-ves_icall_System_Environment_get_TickCount (MonoError *error)
+ves_icall_System_Environment_get_TickCount (void)
 {
 	/* this will overflow after ~24 days */
 	return (gint32) (mono_msec_boottime () & 0xffffffff);
@@ -7276,7 +7276,7 @@ ves_icall_System_Diagnostics_Debugger_Log (int level, MonoStringHandle category,
 
 #ifndef HOST_WIN32
 ICALL_EXPORT void
-ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message, MonoError *error)
+ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message) MonoError *error)
 {
 	g_warning ("WriteWindowsDebugString called and HOST_WIN32 not defined!\n");
 }
@@ -8360,49 +8360,7 @@ mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignatu
 }
 
 ICALL_EXPORT int
-ves_icall_System_GC_GetCollectionCount (int generation, MonoError *error)
-{
-	return mono_gc_collection_count (generation);
-}
-
-ICALL_EXPORT int
 ves_icall_System_GC_GetGeneration (MonoObjectHandle object, MonoError *error)
 {
 	return mono_gc_get_generation (MONO_HANDLE_RAW (object));
-}
-
-ICALL_EXPORT int
-ves_icall_System_GC_GetMaxGeneration (MonoError *error)
-{
-	return mono_gc_max_generation ();
-}
-
-ICALL_EXPORT void
-ves_icall_System_GC_RecordPressure (gint64 value, MonoError *error)
-{
-	mono_gc_add_memory_pressure (value);
-}
-
-ICALL_EXPORT int
-ves_icall_System_Environment_GetPageSize (MonoError *error)
-{
-	return mono_pagesize ();
-}
-
-ICALL_EXPORT int
-System_Environment_get_ProcessorCount (MonoError *error)
-{
-	return mono_cpu_count ();
-}
-
-ICALL_EXPORT int
-ves_icall_System_Environment_get_ExitCode (MonoError *error)
-{
-	return mono_environment_exitcode_get ();
-}
-
-ICALL_EXPORT void
-ves_icall_System_Environment_set_ExitCode (int value, MonoError *error)
-{
-	mono_environment_exitcode_set (value);
 }

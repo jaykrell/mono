@@ -82,7 +82,7 @@ mono_icall_get_new_line (MonoError *error)
 }
 
 ICALL_EXPORT MonoBoolean
-ves_icall_System_Environment_GetIs64BitOperatingSystem (MonoError *error)
+ves_icall_System_Environment_GetIs64BitOperatingSystem (void)
 {
 #if SIZEOF_VOID_P == 8
 	return TRUE;
@@ -189,7 +189,7 @@ ves_icall_Microsoft_Win32_NativeMethods_WaitForInputIdle (gpointer handle, gint3
 #endif
 
 ICALL_EXPORT void
-ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message, MonoError *error)
+ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message)
 {
 	OutputDebugString (message);
 }
