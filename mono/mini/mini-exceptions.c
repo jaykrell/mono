@@ -2921,7 +2921,7 @@ static gboolean handle_crash_loop = FALSE;
 void
 mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, ...)
 {
-	// The ... parameters are an attempt to reduce optimization and see more in the debugger,
+	// The ... parameters assist in a small deoptimization to see more in the debugger,
 	// for this function's callers. It is not extra parammeters this function uses.
 	//
 	// Performance around here does not matter, as long as the code is not too large.
@@ -2988,7 +2988,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 void
 mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, ...)
 {
-	// The ... parameters are an attempt to reduce optimization and see more in the debugger,
+	// The ... parameters assist in a small deoptimization to see more in the debugger,
 	// for this function's callers. It is not extra parammeters this function uses.
 	//
 	// Performance around here does not matter, as long as the code is not too large.
