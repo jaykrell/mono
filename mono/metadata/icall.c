@@ -7100,7 +7100,7 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 ICALL_EXPORT MonoBoolean
 ves_icall_System_IO_DriveInfo_GetDiskFreeSpace (const gunichar2 *path_name, int path_name_length, guint64 *free_bytes_avail,
 						guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes,
-						gint32 *win32error, MonoError *error)
+						gint32 *win32error)
 {
 	*win32error = ERROR_SUCCESS;
 	// FIXME check for embedded nuls in native or managed
