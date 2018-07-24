@@ -7263,7 +7263,7 @@ ves_icall_System_Diagnostics_Debugger_Log (int level, MonoStringHandle category,
 
 #ifndef HOST_WIN32
 ICALL_EXPORT void
-ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message) MonoError *error)
+ves_icall_System_Diagnostics_DefaultTraceListener_WriteWindowsDebugString (const gunichar2 *message)
 {
 	g_warning ("WriteWindowsDebugString called and HOST_WIN32 not defined!\n");
 }
