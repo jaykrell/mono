@@ -99,7 +99,7 @@ ves_icall_System_Environment_GetEnvironmentVariableNames (MonoError *error)
 	WCHAR *env_strings = GetEnvironmentStrings();
 
 	if (env_strings) {
-		env_string = env_strings;
+		WCHAR const *env_string = env_strings;
 		while (*env_string != '\0') {
 		/* weird case that MS seems to skip */
 			if (*env_string != '=')
