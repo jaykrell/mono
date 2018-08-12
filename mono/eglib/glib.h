@@ -83,7 +83,15 @@ typedef float          gfloat;
 typedef double         gdouble;
 typedef int32_t        gboolean;
 
+// C++ wchar_t is a unique type. Use it.
+#if defined (HOST_WIN32) && defined (__cplusplus)
+G_END_DECLS
+#include <wchar.h>
+typedef wchar_t gunichar2;
+BEGIN_DECLS
+#else
 typedef guint16 gunichar2;
+#endif
 typedef guint32 gunichar;
 
 /*
