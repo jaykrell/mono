@@ -66,9 +66,11 @@
 #ifdef  __cplusplus
 #define G_BEGIN_DECLS  extern "C" {
 #define G_END_DECLS    }
+#define G_EXTERN_C     extern "C"
 #else
-#define G_BEGIN_DECLS
-#define G_END_DECLS
+#define G_BEGIN_DECLS  /* nothing */
+#define G_END_DECLS    /* nothing */
+#define G_EXTERN_C     /* nothing */
 #endif
 
 #ifdef __cplusplus
