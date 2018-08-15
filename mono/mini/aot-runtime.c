@@ -86,7 +86,14 @@ typedef struct {
 	MonoJitInfo *jinfo;
 } JitInfoMap;
 
-typedef struct MonoAotModule {
+// warning: redefinition of typedef 'MonoAotModule' is a C11 feature [-Wtypedef-redefinition]
+#ifndef MonoAotModule
+#define MonoAotModule MonoAotModule
+struct MonoAotModule;
+typedef struct MonoAotModule MonoAotModule;
+#endif
+
+struct MonoAotModule {
 	char *aot_name;
 	/* Pointer to the Global Offset Table */
 	gpointer *got;
@@ -157,7 +164,7 @@ typedef struct MonoAotModule {
 
 	JitInfoMap *async_jit_info_table;
 	mono_mutex_t mutex;
-} MonoAotModule;
+};
 
 typedef struct {
 	void *next;
@@ -3040,18 +3047,18 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 		unwind_info = decode_value (p, &p);
 	}
 	if (has_generic_jit_info)
-		flags = (MonoJitInfoFlags)(flags | JIT_INFO_HAS_GENERIC_JIT_INFO);
+		flags |= JIT_INFO_HAS_GENERIC_JIT_INFO;
 
 	if (has_try_block_holes) {
 		num_holes = decode_value (p, &p);
-		flags = (MonoJitInfoFlags)(flags | JIT_INFO_HAS_TRY_BLOCK_HOLES);
+		flags |= JIT_INFO_HAS_TRY_BLOCK_HOLES;
 		try_holes_info_size = sizeof (MonoTryBlockHoleTableJitInfo) + num_holes * sizeof (MonoTryBlockHoleJitInfo);
 	} else {
 		num_holes = try_holes_info_size = 0;
 	}
 
 	if (has_arch_eh_jit_info) {
-		flags = (MonoJitInfoFlags)(flags | JIT_INFO_HAS_ARCH_EH_INFO);
+		flags |= JIT_INFO_HAS_ARCH_EH_INFO;
 		/* Overwrite the original code_len which includes alignment padding */
 		code_len = decode_value (p, &p);
 	}
@@ -3121,7 +3128,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
-		flags = (MonoJitInfoFlags)(flags | JIT_INFO_HAS_UNWIND_INFO);
+		flags |= JIT_INFO_HAS_UNWIND_INFO;
 
 		int num_llvm_clauses;
 		/* Get the length first */
@@ -4471,7 +4478,8 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	if (mini_get_debug_options ()->load_aot_jit_info_eagerly)
 		jinfo = mono_aot_find_jit_info (domain, amodule->assembly->image, code);
 
-	gboolean inited_ok = TRUE;
+	gboolean inited_ok;
+	inited_ok = TRUE;
 	if (init_class) {
 		MonoVTable *vt = mono_class_vtable_checked (domain, init_class, error);
 		if (!is_ok (error))
@@ -5535,8 +5543,8 @@ get_new_trampoline_from_page (int tramp_type)
 		page = (TrampolinePage*)addr;
 		page->next = trampoline_pages [tramp_type];
 		trampoline_pages [tramp_type] = page;
-		page->trampolines = (void*)(taddr + amodule->info.tramp_page_code_offsets [tramp_type]);
-		page->trampolines_end = (void*)(taddr + psize - 64);
+		page->trampolines = (guint8*)(taddr + amodule->info.tramp_page_code_offsets [tramp_type]);
+		page->trampolines_end = (guint8*)(taddr + psize - 64);
 		code = page->trampolines;
 		page->trampolines += specific_trampoline_size;
 		mono_aot_page_unlock ();
