@@ -575,7 +575,7 @@ void
 mono_arch_register_icall (void)
 {
 #ifdef HOST_WASM
-	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", mono_wasm_set_timeout);
+	mono_add_internal_call ("System.Threading.WasmRuntime::SetTimeout", (gpointer)mono_wasm_set_timeout);
 #endif
 }
 
@@ -635,15 +635,20 @@ pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *pa
 	return 0;
 }
 
+#ifdef __cplusplus
+#define MONO_RESTRICT /* nothing */
+#else
+#define MONO_RESTRICT restrict
+#endif
 
 int
-pthread_attr_getstacksize (const pthread_attr_t *restrict attr, size_t *restrict stacksize)
+pthread_attr_getstacksize (const pthread_attr_t *MONO_RESTRICT attr, size_t *MONO_RESTRICT stacksize)
 {
 	return 65536; //wasm page size
 }
 
 int
-pthread_sigmask (int how, const sigset_t * restrict set, sigset_t * restrict oset)
+pthread_sigmask (int how, const sigset_t * MONO_RESTRICT set, sigset_t * MONO_RESTRICT oset)
 {
 	return 0;
 }
