@@ -59,7 +59,7 @@
 typedef struct {
 	MonoFDHandle fdhandle;
 	gint domain;
-	gint type;
+	gint socket_type; // disambiguate from fdhandle.type
 	gint protocol;
 	gint saved_error;
 	gint still_readable;
@@ -176,7 +176,7 @@ mono_w32socket_accept (SOCKET sock, struct sockaddr *addr, socklen_t *addrlen, g
 
 	accepted_socket_data = socket_data_create (MONO_FDTYPE_SOCKET, accepted_fd);
 	accepted_socket_data->domain = sockethandle->domain;
-	accepted_socket_data->type = sockethandle->type;
+	accepted_socket_data->socket_type = sockethandle->socket_type;
 	accepted_socket_data->protocol = sockethandle->protocol;
 	accepted_socket_data->still_readable = 1;
 
@@ -703,7 +703,7 @@ retry_socket:
 
 	sockethandle = socket_data_create(MONO_FDTYPE_SOCKET, fd);
 	sockethandle->domain = domain;
-	sockethandle->type = type;
+	sockethandle->socket_type = type;
 	sockethandle->protocol = protocol;
 	sockethandle->still_readable = 1;
 
@@ -1072,7 +1072,7 @@ mono_w32socket_disconnect (SOCKET sock, gboolean reuse)
 	}
 
 	MONO_ENTER_GC_SAFE;
-	newsock = socket (sockethandle->domain, sockethandle->type, sockethandle->protocol);
+	newsock = socket (sockethandle->domain, sockethandle->socket_type, sockethandle->protocol);
 	MONO_EXIT_GC_SAFE;
 	if (newsock == -1) {
 		gint errnum = errno;
