@@ -22,7 +22,7 @@
 
 typedef gint SOCKET;
 
-typedef struct {
+typedef struct _WSABUF {
 	guint32 len;
 	gpointer buf;
 } WSABUF, *LPWSABUF;
@@ -73,7 +73,7 @@ typedef enum {
 } MonoAddressFamily;
 
 /* This is a copy of System.Net.Sockets.ProtocolType */
-typedef enum {
+enum {
 	ProtocolType_IP=0,
 	ProtocolType_Icmp=1,
 	ProtocolType_Igmp=2,
@@ -90,7 +90,8 @@ typedef enum {
 	ProtocolType_Spx=1256,
 	ProtocolType_SpxII=1257,
 	ProtocolType_Unknown=-1
-} MonoProtocolType;
+};
+typedef gint32 MonoProtocolType;
 
 /* This is a copy of System.Net.Sockets.SocketOptionLevel */
 typedef enum {

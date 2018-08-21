@@ -12,14 +12,7 @@
 
 MONO_BEGIN_DECLS
 
-typedef mono_byte MonoBoolean;
-
-typedef struct _MonoString MONO_RT_MANAGED_ATTR MonoString;
-typedef struct _MonoArray MONO_RT_MANAGED_ATTR MonoArray;
-typedef struct _MonoReflectionMethod MONO_RT_MANAGED_ATTR MonoReflectionMethod;
-typedef struct _MonoReflectionModule MONO_RT_MANAGED_ATTR MonoReflectionModule;
 typedef struct _MonoReflectionField MONO_RT_MANAGED_ATTR MonoReflectionField;
-typedef struct _MonoReflectionProperty MONO_RT_MANAGED_ATTR MonoReflectionProperty;
 typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
 typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
 typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
@@ -28,7 +21,6 @@ typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
 typedef struct _MonoReflectionMethodBody MONO_RT_MANAGED_ATTR MonoReflectionMethodBody;
-typedef struct _MonoAppContext MONO_RT_MANAGED_ATTR MonoAppContext;
 
 struct _MonoObject {
 	MonoVTable *vtable;

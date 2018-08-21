@@ -180,7 +180,7 @@ G_ENUM_FUNCTIONS (MonoThreadInfoFlags)
 
 typedef struct _MonoThreadInfoInterruptToken MonoThreadInfoInterruptToken;
 
-typedef struct _MonoThreadInfo {
+struct _MonoThreadInfo {
 	MonoLinkedListSetNode node;
 	guint32 small_id; /*Used by hazard pointers */
 	MonoNativeThreadHandle native_handle; /* Valid on mach, android and Windows */
@@ -276,7 +276,7 @@ typedef struct _MonoThreadInfo {
 	 * TODO support multiple values by multiple tools
 	 */
 	void *tools_data;
-} MonoThreadInfo;
+};
 
 typedef struct {
 	void* (*thread_attach)(THREAD_INFO_TYPE *info);

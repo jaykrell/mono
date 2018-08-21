@@ -231,11 +231,11 @@ struct _MonoStringBuilder {
 	int maxCapacity;
 };
 
-typedef struct {
+struct _MonoTypedRef {
 	MonoType *type;
 	gpointer  value;
 	MonoClass *klass;
-} MonoTypedRef;
+};
 
 typedef struct {
 	gpointer args;
@@ -343,7 +343,6 @@ typedef struct {
 /* Safely access System.Runtime.Remoting.Proxies.RealProxy from native code */
 TYPED_HANDLE_DECL (MonoRealProxy);
 
-typedef struct _MonoIUnknown MonoIUnknown;
 typedef struct _MonoIUnknownVTable MonoIUnknownVTable;
 
 /* STDCALL on windows, CDECL everywhere else to work with XPCOM and MainWin COM */
@@ -435,8 +434,6 @@ typedef enum {
 	MONO_THREAD_FLAG_APPDOMAIN_ABORT = 4, // Current requested abort originates from appdomain unload
 } MonoThreadFlags;
 
-struct _MonoThreadInfo;
-
 struct _MonoInternalThread {
 	MonoObject  obj;
 	volatile int lock_thread_id; /* to be used as the pre-shifted thread id in thin locks. Used for appdomain_ref push/pop */
@@ -451,7 +448,7 @@ struct _MonoInternalThread {
 	guint64 tid;	/* This is accessed as a gsize in the code (so it can hold a 64bit pointer on systems that need it), but needs to reserve 64 bits of space on all machines as it corresponds to a field in managed code */
 	gsize debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
 	gpointer *static_data;
-	struct _MonoThreadInfo *thread_info;
+	MonoThreadInfo *thread_info;
 	MonoAppContext *current_appcontext;
 	MonoThread *root_domain_thread;
 	MonoObject *_serialized_principal;
@@ -908,16 +905,16 @@ struct _MonoReflectionEvent {
 /* Safely access System.Reflection.EventInfo from native code */
 TYPED_HANDLE_DECL (MonoReflectionEvent);
 
-typedef struct {
+struct MonoReflectionMonoEvent {
 	MonoReflectionEvent object;
 	MonoClass *klass;
 	MonoEvent *event;
-} MonoReflectionMonoEvent;
+};
 
 /* Safely access Systme.Reflection.MonoEvent from native code */
 TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
-typedef struct {
+struct MonoReflectionParameter {
 	MonoObject object;
 	guint32 AttrsImpl;	
 	MonoReflectionType *ClassImpl;
@@ -926,7 +923,7 @@ typedef struct {
 	MonoString *NameImpl;
 	gint32 PositionImpl;
 	MonoObject *MarshalAsImpl;
-} MonoReflectionParameter;
+};
 
 /* Safely access System.Reflection.ParameterInfo from native code */
 TYPED_HANDLE_DECL (MonoReflectionParameter);
@@ -966,24 +963,24 @@ typedef struct {
 	MonoArray *names;
 } MonoEnumInfo;
 
-typedef struct {
+struct MonoMethodInfo {
 	MonoReflectionType *parent;
 	MonoReflectionType *ret;
 	guint32 attrs;
 	guint32 implattrs;
 	guint32 callconv;
-} MonoMethodInfo;
+};
 
-typedef struct {
+struct MonoPropertyInfo {
 	MonoReflectionType *parent;
 	MonoReflectionType *declaring_type;
 	MonoString *name;
 	MonoReflectionMethod *get;
 	MonoReflectionMethod *set;
 	guint32 attrs;
-} MonoPropertyInfo;
+};
 
-typedef struct {
+struct MonoEventInfo {
 	MonoReflectionType *declaring_type;
 	MonoReflectionType *reflected_type;
 	MonoString *name;
@@ -992,7 +989,7 @@ typedef struct {
 	MonoReflectionMethod *raise_method;
 	guint32 attrs;
 	MonoArray *other_methods;
-} MonoEventInfo;
+};
 
 typedef struct {
 	MonoString *name;
@@ -1270,10 +1267,7 @@ struct _MonoReflectionModule {
 	guint32 token;
 };
 
-/* Safely access System.Reflection.Module from native code */
-TYPED_HANDLE_DECL (MonoReflectionModule);
-
-typedef struct {
+struct _MonoReflectionModuleBuilder {
 	MonoReflectionModule module;
 	MonoDynamicImage *dynamic_image;
 	gint32     num_types;
@@ -1288,7 +1282,7 @@ typedef struct {
 	MonoArray *resources;
 	GHashTable *unparented_classes;
 	MonoArray *table_indexes;
-} MonoReflectionModuleBuilder;
+};
 
 /* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
 TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
