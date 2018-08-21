@@ -89,7 +89,7 @@ g_log_set_always_fatal (GLogLevelFlags fatal_mask)
 {
 	GLogLevelFlags old_fatal = fatal;
 
-	fatal |= fatal_mask;
+	fatal = (GLogLevelFlags)(fatal | fatal_mask);
 	
 	return old_fatal;
 }

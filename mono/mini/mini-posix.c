@@ -693,7 +693,7 @@ sampling_thread_func (gpointer unused)
 	mono_thread_set_name_internal (thread, name, FALSE, FALSE, error);
 	mono_error_assert_ok (error);
 
-	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	mono_thread_info_set_flags ((MonoThreadInfoFlags)(MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE));
 
 	int old_policy;
 	struct sched_param old_sched;

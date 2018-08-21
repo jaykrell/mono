@@ -5142,7 +5142,7 @@ mono_thread_cleanup_apartment_state (void)
 static void
 mono_thread_notify_change_state (MonoThreadState old_state, MonoThreadState new_state)
 {
-	MonoThreadState diff = old_state ^ new_state;
+	MonoThreadState diff = (MonoThreadState)(old_state ^ new_state);
 	if (diff & ThreadState_Background) {
 		/* If the thread changes the background mode, the main thread has to
 		 * be notified, since it has to rebuild the list of threads to
@@ -5160,7 +5160,7 @@ mono_thread_clear_and_set_state (MonoInternalThread *thread, MonoThreadState cle
 	LOCK_THREAD (thread);
 
 	MonoThreadState const old_state = (MonoThreadState)thread->state;
-	MonoThreadState const new_state = (old_state & ~clear) | set;
+	MonoThreadState const new_state = (MonoThreadState)((old_state & ~clear) | set);
 	thread->state = new_state;
 
 	UNLOCK_THREAD (thread);
@@ -5191,7 +5191,7 @@ mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test
 		return FALSE;
 	}
 
-	MonoThreadState const new_state = old_state | set;
+	MonoThreadState const new_state = (MonoThreadState)(old_state | set);
 	thread->state = new_state;
 
 	UNLOCK_THREAD (thread);

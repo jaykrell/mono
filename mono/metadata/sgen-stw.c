@@ -256,7 +256,7 @@ sgen_unified_suspend_stop_world (void)
 	mono_threads_begin_global_suspend ();
 	THREADS_STW_DEBUG ("[GC-STW-BEGIN][%p] *** BEGIN SUSPEND *** \n", mono_thread_info_get_tid (mono_thread_info_current ()));
 
-	for (MonoThreadSuspendPhase phase = MONO_THREAD_SUSPEND_PHASE_INITIAL; phase < MONO_THREAD_SUSPEND_PHASE_COUNT; phase++) {
+	for (MonoThreadSuspendPhase phase = MONO_THREAD_SUSPEND_PHASE_INITIAL; phase < MONO_THREAD_SUSPEND_PHASE_COUNT; phase = (MonoThreadSuspendPhase)(phase + 1)) {
 		gboolean need_next_phase = FALSE;
 		FOREACH_THREAD_EXCLUDE (info, MONO_THREAD_INFO_FLAGS_NO_GC) {
 			/* look at every thread in the first phase. */

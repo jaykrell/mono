@@ -95,7 +95,7 @@ public:
 
 #endif
 
-#ifdef __cplusplus
+#if 0 // #ifdef __cplusplus // added casts in a few places
 
 /*
 Provide for math on enums.

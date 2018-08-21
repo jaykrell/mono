@@ -1590,7 +1590,7 @@ aot_cache_load_module (MonoAssembly *assembly, char **aot_name)
 		if (!home)
 			return NULL;
 		cache_dir = g_strdup_printf ("%s/Library/Caches/mono/aot-cache", home);
-		if (!g_file_test (cache_dir, G_FILE_TEST_EXISTS|G_FILE_TEST_IS_DIR))
+		if (!g_file_test (cache_dir, (GFileTest)(G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
 			g_mkdir_with_parents (cache_dir, 0777);
 	}
 
@@ -3121,7 +3121,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 			}
 		}
 
-		flags |= JIT_INFO_HAS_UNWIND_INFO;
+		flags = (MonoJitInfoFlags)(flags | JIT_INFO_HAS_UNWIND_INFO);
 
 		int num_llvm_clauses;
 		/* Get the length first */

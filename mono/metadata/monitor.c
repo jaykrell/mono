@@ -925,7 +925,7 @@ retry_contended:
 		 * allow_interruption is FALSE to avoid hangs at shutdown.
 		 * FIXME Handle abort protected blocks
 		 */
-		if ((interrupted && !mono_thread_test_state (mono_thread_internal_current (), ThreadState_SuspendRequested | ThreadState_AbortRequested)) || !interrupted) {
+		if ((interrupted && !mono_thread_test_state (mono_thread_internal_current (), (MonoThreadState)(ThreadState_SuspendRequested | ThreadState_AbortRequested))) || !interrupted) {
 			/* We were interrupted (and allow_interruption is FALSE) or we were signaled */
 			if (ms != MONO_INFINITE_WAIT) {
 				now = mono_msec_ticks ();
