@@ -1552,7 +1552,7 @@ ves_icall_System_Net_Sockets_Socket_SupportPortReuse (MonoProtocolType proto, Mo
 #else
 #ifdef __linux__
 	/* Linux always supports double binding for UDP, even on older kernels. */
-	if (proto == ProtocolType_Udp)
+	if ((MonoProtocolType)proto == ProtocolType_Udp)
 		return TRUE;
 #endif
 	return FALSE;

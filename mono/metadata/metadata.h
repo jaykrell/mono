@@ -291,7 +291,6 @@ typedef struct {
 	} data;
 } MonoExceptionClause;
 
-typedef struct _MonoType MonoType;
 typedef struct _MonoGenericInst MonoGenericInst;
 typedef struct _MonoGenericClass MonoGenericClass;
 typedef struct _MonoGenericContext MonoGenericContext;

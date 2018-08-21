@@ -429,7 +429,7 @@ struct _MonoGenericClass {
 
 /* Additional details about a MonoGenericParam */
 /* Keep in sync with managed Mono.RuntimeStructs.GenericParamInfo */
-typedef struct {
+struct MonoGenericParamInfo {
 	MonoClass *pklass;		/* The corresponding `MonoClass'. */
 	const char *name;
 
@@ -440,7 +440,7 @@ typedef struct {
 
 	// Constraints on type parameters
 	MonoClass** constraints; /* NULL means end of list */
-} MonoGenericParamInfo;
+};
 
 /*
  * A type parameter.

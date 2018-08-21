@@ -40,11 +40,14 @@ typedef struct {
 	char *dllentry, *dll;
 } MonoReflectionMethodAux;
 
+#ifndef MonoResolveTokenError
+#define MonoResolveTokenError MonoResolveTokenError
 typedef enum {
 	ResolveTokenError_OutOfRange,
 	ResolveTokenError_BadTable,
 	ResolveTokenError_Other
 } MonoResolveTokenError;
+#endif
 
 MONO_API MONO_RT_EXTERNAL_ONLY
 int           mono_reflection_parse_type (char *name, MonoTypeNameParse *info);

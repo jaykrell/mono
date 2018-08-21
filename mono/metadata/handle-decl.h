@@ -23,8 +23,9 @@
 // The only operations allowed on them are the functions/macros in this file, and assignment
 // from same handle type to same handle type.
 //
-// Type-unsafe handles are a pointer to a struct with a pointer.
-// Besides the type-safe operations, these can also be:
+// Type-unsafe handles formerly were a pointer to a struct with a pointer.
+// The same level of indirection either way.
+// Besides the type-safe operations, they could also:
 //  1. compared to NULL, instead of only MONO_HANDLE_IS_NULL
 //  2. assigned from NULL, instead of only a handle
 //  3. MONO_HANDLE_NEW (T) from anything, instead of only a T*
@@ -36,16 +37,9 @@
 //
 // None of those operations were likely intended.
 //
-// FIXME Do this only on checked builds? Or certain architectures?
-// There is not runtime cost.
-// NOTE: Running this code depends on the ABI to pass a struct
-// with a pointer the same as a pointer. This is tied in with
-// marshaling. If this is not the case, turn off type-safety, perhaps per-OS per-CPU.
-#if defined (HOST_DARWIN) || defined (HOST_WIN32) || defined (HOST_ARM64) || defined (HOST_ARM) || defined (HOST_AMD64)
-#define MONO_TYPE_SAFE_HANDLES 1
-#else
-#define MONO_TYPE_SAFE_HANDLES 0 // PowerPC, S390X, SPARC, MIPS, Linux/x86, BSD/x86, etc.
-#endif
+// marshal-ilgen.c did not know how to marshal type safe handles, and they
+// were used then marshal-ilgen.c generated the wrappers, with ABIs
+// for which type-safe and type-unsafe did not match.
 
 /*
 Handle macros/functions
@@ -54,18 +48,16 @@ Handle macros/functions
 #define TYPED_HANDLE_PAYLOAD_NAME(TYPE) TYPE ## HandlePayload
 #define TYPED_HANDLE_NAME(TYPE) TYPE ## Handle
 #define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
+#define TYPED_IN_OUT_HANDLE_NAME(TYPE) TYPE ## HandleInOut
 
 // internal helpers:
 #define MONO_HANDLE_CAST_FOR(type) mono_handle_cast_##type
 #define MONO_HANDLE_TYPECHECK_FOR(type) mono_handle_typecheck_##type
 
 /*
- * TYPED_HANDLE_DECL(SomeType):
  *   Expands to a decl for handles to SomeType and to an internal payload struct.
  *
  * For example, TYPED_HANDLE_DECL(MonoObject) (see below) expands to:
- *
- * #if MONO_TYPE_SAFE_HANDLES
  *
  * typedef struct {
  *   MonoObject **__raw;
@@ -74,26 +66,13 @@ Handle macros/functions
  *   MonoObjectHandleOut;
  *
  * Internal helper functions are also generated.
- *
- * #else
- *
- * typedef struct {
- *   MonoObject *__raw;
- * } MonoObjectHandlePayload;
- *
- * typedef MonoObjectHandlePayload* MonoObjectHandle;
- * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
- *
- * #endif
  */
-
 #ifdef __cplusplus
 #define MONO_IF_CPLUSPLUS(x) x
 #else
 #define MONO_IF_CPLUSPLUS(x) /* nothing */
 #endif
 
-#if MONO_TYPE_SAFE_HANDLES
 #define TYPED_HANDLE_DECL(TYPE)							\
 	typedef struct {							\
 		MONO_IF_CPLUSPLUS (						\
@@ -103,7 +82,8 @@ Handle macros/functions
 		TYPE **__raw;							\
 	} TYPED_HANDLE_PAYLOAD_NAME (TYPE),					\
 	  TYPED_HANDLE_NAME (TYPE),						\
-	  TYPED_OUT_HANDLE_NAME (TYPE);						\
+	  TYPED_OUT_HANDLE_NAME (TYPE),						\
+	  TYPED_IN_OUT_HANDLE_NAME (TYPE);					\
 /* Do not call these functions directly. Use MONO_HANDLE_NEW and MONO_HANDLE_CAST. */ \
 /* Another way to do this involved casting mono_handle_new function to a different type. */ \
 static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
@@ -116,14 +96,28 @@ static inline MONO_ALWAYS_INLINE MonoObject* 			\
 MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
 {								\
 	return (MonoObject*)a;					\
+}								\
+/* Out/InOut synonyms for icall-def.h HANDLES () */		\
+static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
+MONO_HANDLE_CAST_FOR (TYPE##Out) (gpointer a)			\
+{								\
+	return MONO_HANDLE_CAST_FOR (TYPE) (a);			\
+}								\
+static inline MONO_ALWAYS_INLINE MonoObject* 			\
+MONO_HANDLE_TYPECHECK_FOR (TYPE##Out) (TYPE *a)			\
+{								\
+	return MONO_HANDLE_TYPECHECK_FOR (TYPE) (a);		\
+}								\
+static inline MONO_ALWAYS_INLINE TYPED_HANDLE_NAME (TYPE) 	\
+MONO_HANDLE_CAST_FOR (TYPE##InOut) (gpointer a)			\
+{								\
+	return MONO_HANDLE_CAST_FOR (TYPE) (a);			\
+}								\
+static inline MONO_ALWAYS_INLINE MonoObject* 			\
+MONO_HANDLE_TYPECHECK_FOR (TYPE##InOut) (TYPE *a)		\
+{								\
+	return MONO_HANDLE_TYPECHECK_FOR (TYPE) (a);		\
 }
-
-#else
-#define TYPED_HANDLE_DECL(TYPE)						\
-	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE);
-#endif
 
 /*
  * TYPED_VALUE_HANDLE_DECL(SomeType):
@@ -131,5 +125,17 @@ MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
  * It is currently identical to TYPED_HANDLE_DECL (valuetypes vs. referencetypes).
  */
 #define TYPED_VALUE_HANDLE_DECL(TYPE) TYPED_HANDLE_DECL(TYPE)
+
+#include "object-forward.h"
+
+/* Baked typed handles we all want */
+TYPED_HANDLE_DECL (MonoAppContext);
+TYPED_HANDLE_DECL (MonoArray);
+TYPED_HANDLE_DECL (MonoException);
+TYPED_HANDLE_DECL (MonoObject);
+TYPED_HANDLE_DECL (MonoString);
+
+/* Safely access System.Reflection.Module from native code */
+TYPED_HANDLE_DECL (MonoReflectionModule);
 
 #endif /* __MONO_HANDLE_DECL_H__ */
