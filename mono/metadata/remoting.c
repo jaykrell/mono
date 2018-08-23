@@ -108,8 +108,20 @@ register_icall (gpointer func, const char *name, const char *sigstr, gboolean sa
 	mono_register_jit_icall (func, name, sig, save);
 }
 
-#define register_icall(func, name, sigstr, save) \
-	(register_icall ((gpointer)(func), (name), (sigstr), (save)))
+#ifdef __cplusplus
+extern "C++" // in case of surrounding extern "C"
+{
+
+template <typename T>
+static void
+register_icall (T func, const char *name, const char *sigstr, gboolean save)
+{
+	// This could also go directly to mono_register_jit_icall.
+	register_icall ((gpointer)func, name, sigstr, save);
+}
+
+} // extern "C++"
+#endif // __cplusplus
 
 static inline void
 remoting_lock (void)
