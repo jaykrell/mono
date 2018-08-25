@@ -265,6 +265,8 @@ mono_threads_end_global_suspend (void)
 	mono_threads_coop_end_global_suspend ();
 }
 
+#undef mono_thread_info_current
+
 static void
 dump_threads (void)
 {
@@ -343,6 +345,9 @@ mono_hazard_pointer_clear_all (MonoThreadHazardPointers *hp, int retain)
 /*
 If return non null Hazard Pointer 1 holds the return value.
 */
+
+#undef mono_thread_info_lookup
+
 MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id)
 {
@@ -598,6 +603,8 @@ thread_exited_dtor (void *arg)
 #endif
 }
 
+#undef mono_thread_info_current_unchecked
+
 MonoThreadInfo*
 mono_thread_info_current_unchecked (void)
 {
@@ -715,6 +722,8 @@ mono_thread_info_detach (void)
 	}
 }
 
+#undef mono_thread_info_try_get_internal_thread_gchandle
+
 gboolean
 mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32 *gchandle)
 {
@@ -728,6 +737,8 @@ mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32
 	return TRUE;
 }
 
+#undef mono_thread_info_set_internal_thread_gchandle
+
 void
 mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gchandle)
 {
@@ -737,8 +748,10 @@ mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gch
 	info->internal_thread_gchandle = gchandle;
 }
 
+#undef mono_thread_info_unset_internal_thread_gchandle
+
 void
-mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info)
+mono_thread_info_unset_internal_thread_gchandle (MonoThreadInfo *info)
 {
 	g_assert (info);
 	g_assert (mono_thread_info_is_current (info));
@@ -1316,6 +1329,9 @@ This async call must cause stack unwinding as the current implementation doesn't
 to resume execution of the top-of-stack function. It's an acceptable limitation since this is
 currently used only to deliver exceptions.
 */
+
+#undef mono_thread_info_setup_async_call
+
 void
 mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data)
 {
@@ -1655,9 +1671,9 @@ mono_thread_info_usleep (guint64 us)
 }
 
 gpointer
-(mono_thread_info_tls_get) (THREAD_INFO_TYPE *info, MonoTlsKey key)
+(mono_thread_info_tls_get) (MonoThreadInfo *info, MonoTlsKey key)
 {
-	return ((MonoThreadInfo*)info)->tls [key];
+	return info->tls [key];
 }
 
 /*
@@ -1669,9 +1685,9 @@ gpointer
  * be paired with setting the real TLS variable since this provides no GC tracking.
  */
 void
-mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value)
+mono_thread_info_tls_set (MonoThreadInfo *info, MonoTlsKey key, gpointer value)
 {
-	((MonoThreadInfo*)info)->tls [key] = value;
+	info->tls [key] = value;
 }
 
 /*

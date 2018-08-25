@@ -85,7 +85,7 @@ THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort o
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 
-But extending MonoThreadInfo has de disavantage that all functions here return type
+But extending MonoThreadInfo has the disavantage that all functions here return type
 would require a cast, something like the following:
 
 typedef struct {
@@ -101,6 +101,19 @@ code ended up looking horrible. So we use this cute little hack. The idea is tha
 whomever is including this header can set the expected type to be used by functions here
 and reduce the number of casts drastically.
 
+Older version of this ran afoul of C++ typesafe linkage.
+The declarations did not match the implementation.
+That is fixed by having the "real" declarations and implementations
+always use MonoThreadInfo* and then having wrapper macros cast.
+
+One could also use wrapper static inlines, but that would require
+a rename of the functions and for example, breakpoints would no longer work.
+
+With C++ other workarounds will be viable.
+  - The wrappers can be same-named overloads -- still maybe breaking breakpoints.
+  - Inputs can be just derived classes.
+*/
+/*
 This technique breaks with C++ name mangling.
 
 Another technique that is compatible with that is e.g.
@@ -313,6 +326,12 @@ typedef struct _MonoThreadInfo {
 	void *tools_data;
 } MonoThreadInfo;
 
+static inline MonoThreadInfo*
+mono_thread_info (THREAD_INFO_TYPE *info)
+{
+	return (MonoThreadInfo*)info;
+}
+
 typedef struct {
 	void* (*thread_attach)(THREAD_INFO_TYPE *info);
 	/*
@@ -438,28 +457,32 @@ mono_thread_info_attach (void);
 MONO_API void
 mono_thread_info_detach (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 gboolean
-mono_thread_info_try_get_internal_thread_gchandle (THREAD_INFO_TYPE *info, guint32 *gchandle);
+mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32 *gchandle);
+
+#define mono_thread_info_try_get_internal_thread_gchandle(info, gchandle) \
+	(mono_thread_info_try_get_internal_thread_gchandle (mono_thread_info (info), (gchandle)))
 
 void
-mono_thread_info_set_internal_thread_gchandle (THREAD_INFO_TYPE *info, guint32 gchandle);
+mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gchandle);
+
+#define mono_thread_info_set_internal_thread_gchandle(info, gchandle) \
+	(mono_thread_info_set_internal_thread_gchandle (mono_thread_info (info), (gchandle)))
 
 void
-mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info);
+mono_thread_info_unset_internal_thread_gchandle (MonoThreadInfo *info);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_unset_internal_thread_gchandle(info) \
+	(mono_thread_info_unset_internal_thread_gchandle (mono_thread_info (info)))
 
 gboolean
 mono_thread_info_is_exiting (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
-THREAD_INFO_TYPE *
+MonoThreadInfo *
 mono_thread_info_current (void);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_current() \
+	((THREAD_INFO_TYPE*)mono_thread_info_current ())
 
 MONO_API gboolean
 mono_thread_info_set_tools_data (void *data);
@@ -467,12 +490,11 @@ mono_thread_info_set_tools_data (void *data);
 MONO_API void*
 mono_thread_info_get_tools_data (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
-THREAD_INFO_TYPE*
+MonoThreadInfo*
 mono_thread_info_current_unchecked (void);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_current_unchecked() \
+	((THREAD_INFO_TYPE*)mono_thread_info_current_unchecked ())
 
 MONO_API int
 mono_thread_info_get_small_id (void);
@@ -480,12 +502,11 @@ mono_thread_info_get_small_id (void);
 MonoLinkedListSet*
 mono_thread_info_list_head (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
-THREAD_INFO_TYPE*
+MonoThreadInfo*
 mono_thread_info_lookup (MonoNativeThreadId id);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_lookup(id) \
+	((THREAD_INFO_TYPE*)mono_thread_info_lookup (id))
 
 gboolean
 mono_thread_info_resume (MonoNativeThreadId tid);
@@ -493,12 +514,11 @@ mono_thread_info_resume (MonoNativeThreadId tid);
 void
 mono_thread_info_safe_suspend_and_run (MonoNativeThreadId id, gboolean interrupt_kernel, MonoSuspendThreadCallback callback, gpointer user_data);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 void
-mono_thread_info_setup_async_call (THREAD_INFO_TYPE *info, void (*target_func)(void*), void *user_data);
+mono_thread_info_setup_async_call (MonoThreadInfo *info, void (*target_func)(void*), void *user_data);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define  mono_thread_info_setup_async_call(info, target_func, user_data) \
+	(mono_thread_info_setup_async_call (mono_thread_info (info), (target_func), (user_data)))
 
 void
 mono_thread_info_suspend_lock (void);
@@ -527,17 +547,17 @@ mono_thread_info_sleep (guint32 ms, gboolean *alerted);
 gint
 mono_thread_info_usleep (guint64 us);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 gpointer
-mono_thread_info_tls_get (THREAD_INFO_TYPE *info, MonoTlsKey key);
+mono_thread_info_tls_get (MonoThreadInfo *info, MonoTlsKey key);
 
-#define mono_thread_info_tls_get(info, key) (g_cast (mono_thread_info_tls_get ((info), (key))))
+#define mono_thread_info_tls_get(info, key) \
+	(g_cast (mono_thread_info_tls_get (mono_thread_info (info), (key))))
 
 void
-mono_thread_info_tls_set (THREAD_INFO_TYPE *info, MonoTlsKey key, gpointer value);
+mono_thread_info_tls_set (MonoThreadInfo *info, MonoTlsKey key, gpointer value);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_tls_set(info, key, value) \
+	(mono_thread_info_tls_set (mono_thread_info (info), (key), (value)))
 
 void
 mono_thread_info_exit (gsize exit_code);
@@ -548,12 +568,11 @@ mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer d
 MONO_PAL_API void
 mono_thread_info_uninstall_interrupt (gboolean *interrupted);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 MonoThreadInfoInterruptToken*
 mono_thread_info_prepare_interrupt (THREAD_INFO_TYPE *info);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_prepare_interrupt(info) \
+	(mono_thread_info_prepare_interrupt (mono_thread_info (info)))
 
 void
 mono_thread_info_finish_interrupt (MonoThreadInfoInterruptToken *token);
@@ -564,18 +583,24 @@ mono_thread_info_self_interrupt (void);
 void
 mono_thread_info_clear_self_interrupt (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 gboolean
-mono_thread_info_is_interrupt_state (THREAD_INFO_TYPE *info);
+mono_thread_info_is_interrupt_state (MonoThreadInfo *info);
+
+#define mono_thread_info_is_interrupt_state(info) \
+	(mono_thread_info_is_interrupt_state (mono_thread_info (info)))
 
 void
-mono_thread_info_describe_interrupt_token (THREAD_INFO_TYPE *info, GString *text);
+mono_thread_info_describe_interrupt_token (MonoThreadInfo *info, GString *text);
+
+#define mono_thread_info_describe_interrupt_token(info, text) \
+	(mono_thread_info_describe_interrupt_token (mono_thread_info (info), (text)))
 
 gboolean
-mono_thread_info_is_live (THREAD_INFO_TYPE *info);
+mono_thread_info_is_live (MonoThreadInfo *info);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_is_live(info) \
+	(mono_thread_info_is_live (mono_thread_info (info)))
+
 int
 mono_thread_info_get_system_max_stack_size (void);
 
@@ -587,13 +612,12 @@ mono_threads_close_thread_handle (MonoThreadHandle *handle);
 
 #if !defined(HOST_WIN32)
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 /*Use this instead of pthread_kill */
 int
-mono_threads_pthread_kill (THREAD_INFO_TYPE *info, int signum);
+mono_threads_pthread_kill (MonoThreadInfo *info, int signum);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_threads_pthread_kill(info, signum) \
+	(mono_threads_pthread_kill (mono_thread_info (info), (signum)))
 
 #endif /* !defined(HOST_WIN32) */
 
@@ -621,7 +645,10 @@ This begins async suspend. This function must do the following:
 
 If begin suspend fails the thread must be left uninterrupted and resumed.
 */
-gboolean mono_threads_suspend_begin_async_suspend (THREAD_INFO_TYPE *info, gboolean interrupt_kernel);
+gboolean mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interrupt_kernel);
+
+#define mono_threads_suspend_begin_async_suspend(info, interrupt_kernel) \
+	(mono_threads_suspend_begin_async_suspend (mono_thread_info (info), (interrupt_kernel)))
 
 /*
 This verifies the outcome of an async suspend operation.
@@ -813,26 +840,35 @@ typedef enum {
 	MONO_THREAD_BEGIN_SUSPEND_NEXT_PHASE = 2,
 } MonoThreadBeginSuspendResult;
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+gboolean mono_thread_info_in_critical_location (MonoThreadInfo *info);
 
-gboolean mono_thread_info_in_critical_location (THREAD_INFO_TYPE *info);
-MonoThreadBeginSuspendResult mono_thread_info_begin_suspend (THREAD_INFO_TYPE *info, MonoThreadSuspendPhase phase);
-gboolean mono_thread_info_begin_resume (THREAD_INFO_TYPE *info);
+#define mono_thread_info_in_critical_location(info) \
+	(mono_thread_info_in_critical_location (mono_thread_info (info)))
 
-void mono_threads_add_to_pending_operation_set (THREAD_INFO_TYPE* info); //XXX rename to something to reflect the fact that this is used for both suspend and resume
+MonoThreadBeginSuspendResult mono_thread_info_begin_suspend (MonoThreadInfo *info, MonoThreadSuspendPhase phase);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_begin_suspend(info, phase) \
+	(mono_thread_info_begin_suspend (mono_thread_info (info), (phase)))
+
+gboolean mono_thread_info_begin_resume (MonoThreadInfo *info);
+
+#define mono_thread_info_begin_resume(info) \
+	(mono_thread_info_begin_resume (mono_thread_info (info)))
+
+void mono_threads_add_to_pending_operation_set (MonoThreadInfo* info); //XXX rename to something to reflect the fact that this is used for both suspend and resume
+
+#define mono_thread_info_is_current(info) \
+	(mono_threads_add_to_pending_operation_set (mono_thread_info (info)))
 
 gboolean mono_threads_wait_pending_operations (void);
 void mono_threads_begin_global_suspend (void);
 void mono_threads_end_global_suspend (void);
 
-G_BEGIN_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
-
 gboolean
 mono_thread_info_is_current (THREAD_INFO_TYPE *info);
 
-G_END_DECLS // FIXMEcxx THREAD_INFO_TYPE varying makes prototypes incorrect
+#define mono_thread_info_is_current(info) \
+	(mono_thread_info_is_current (mono_thread_info (info)))
 
 typedef enum {
 	MONO_THREAD_INFO_WAIT_RET_SUCCESS_0   =  0,
