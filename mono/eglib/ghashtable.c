@@ -39,8 +39,6 @@ struct _Slot {
 	Slot    *next;
 };
 
-static gpointer KEYMARKER_REMOVED = &KEYMARKER_REMOVED;
-
 struct _GHashTable {
 	GHashFunc      hash_func;
 	GEqualFunc     key_equal_func;
@@ -229,8 +227,19 @@ rehash (GHashTable *hash)
 }
 
 void
-g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gboolean replace)
+g_hash_table_lookup_full (GHashTable *hash, GHashTableLookupFull *params)
 {
+	// If the key was present, this function will never replace anything,
+	// but will return pointers for caller to optionally do a replacement.
+	//
+	// If the key was not present, then this function can optionally do an insertion.
+	//
+	// If an insertion is done, it can be considered complete or partial.
+	// Internal pointers are returned to replace the insertion, without repeating the lookup.
+	// Rehash does not invalidate those pointers, but removal does.
+
+	gconstpointer key = params->new_key;
+
 	guint hashcode;
 	Slot *s;
 	GEqualFunc equal;
@@ -245,24 +254,42 @@ g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gbo
 	hashcode = ((*hash->hash_func) (key)) % hash->table_size;
 	for (s = hash->table [hashcode]; s != NULL; s = s->next){
 		if ((*equal) (s->key, key)){
-			if (replace){
-				if (hash->key_destroy_func != NULL)
-					(*hash->key_destroy_func)(s->key);
-				s->key = key;
-			}
-			if (hash->value_destroy_func != NULL)
-				(*hash->value_destroy_func) (s->value);
-			s->value = value;
-			sanity_check (hash);
-			return;
+			params->was_present = TRUE;
+			goto exit;
 		}
 	}
-	s = g_new (Slot, 1);
-	s->key = key;
-	s->value = value;
-	s->next = hash->table [hashcode];
-	hash->table [hashcode] = s;
-	hash->in_use++;
+	params->was_present = FALSE;
+	if (params->insert) {
+		s = g_new (Slot, 1);
+		s->key = (gpointer)key; // const_cast
+		s->value = params->new_value;
+		s->next = hash->table [hashcode];
+		hash->table [hashcode] = s;
+		hash->in_use++;
+exit:
+		params->key = &s->key;
+		params->value = &s->value;
+		sanity_check (hash);
+	}
+}
+
+void
+g_hash_table_insert_replace (GHashTable *hash, gpointer key, gpointer value, gboolean replace)
+{
+	GHashTableLookupFull full = {key, value, TRUE};
+	g_hash_table_lookup_full (hash, &full);
+	if (!full.was_present) {
+		// Lookup did the insert, but not a replace.
+		return;
+	}
+	if (replace){
+		if (hash->key_destroy_func != NULL)
+			(*hash->key_destroy_func)(*full.key);
+		*full.key = key;
+	}
+	if (hash->value_destroy_func != NULL)
+		(*hash->value_destroy_func) (*full.value);
+	*full.value = value;
 	sanity_check (hash);
 }
 
@@ -308,37 +335,23 @@ g_hash_table_size (GHashTable *hash)
 gpointer
 g_hash_table_lookup (GHashTable *hash, gconstpointer key)
 {
-	gpointer orig_key, value;
-	
-	if (g_hash_table_lookup_extended (hash, key, &orig_key, &value))
-		return value;
-	else
-		return NULL;
+	GHashTableLookupFull full = {key};
+	g_hash_table_lookup_full (hash, &full);
+	return full.was_present ? *full.value : NULL;
 }
 
 gboolean
 g_hash_table_lookup_extended (GHashTable *hash, gconstpointer key, gpointer *orig_key, gpointer *value)
 {
-	GEqualFunc equal;
-	Slot *s;
-	guint hashcode;
-	
-	g_return_val_if_fail (hash != NULL, FALSE);
-	sanity_check (hash);
-	equal = hash->key_equal_func;
-
-	hashcode = ((*hash->hash_func) (key)) % hash->table_size;
-	
-	for (s = hash->table [hashcode]; s != NULL; s = s->next){
-		if ((*equal)(s->key, key)){
-			if (orig_key)
-				*orig_key = s->key;
-			if (value)
-				*value = s->value;
-			return TRUE;
-		}
-	}
-	return FALSE;
+	GHashTableLookupFull full = {key};
+	g_hash_table_lookup_full (hash, &full);
+	if (!full.was_present)
+		return FALSE;
+	if (orig_key)
+		*orig_key = *full.key;
+	if (value)
+		*value = *full.value;
+	return TRUE;
 }
 
 void

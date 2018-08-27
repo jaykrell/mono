@@ -534,6 +534,29 @@ guint           g_spaced_primes_closest      (guint x);
 #define g_hash_table_insert(h,k,v)    g_hash_table_insert_replace ((h),(k),(v),FALSE)
 #define g_hash_table_replace(h,k,v)   g_hash_table_insert_replace ((h),(k),(v),TRUE)
 
+// This function has multiple use-cases.
+//
+//  if (!lookup())
+//     insert()
+// Can be achieved in about half the time for the insert case,
+//   as the failed lookup can do all or most of the insert.
+// The successful lookup path is no worse (just a few instructions).
+//
+// insert() can know if the value was already present
+// and free the new candidate, and return the preexisting value,
+// with just one lookup.
+typedef struct GHashTableLookupFull {
+	gconstpointer new_key;
+	gpointer new_value;
+	gboolean insert;
+	gboolean was_present;
+	gpointer *key;   // preexisting, or place to store for insert
+	gpointer *value; // preexisting, or place to store for insert
+} GHashTableLookupFull;
+
+void
+g_hash_table_lookup_full (GHashTable *hash, GHashTableLookupFull *params);
+
 gboolean g_direct_equal (gconstpointer v1, gconstpointer v2);
 guint    g_direct_hash  (gconstpointer v1);
 gboolean g_int_equal    (gconstpointer v1, gconstpointer v2);

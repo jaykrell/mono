@@ -33,10 +33,6 @@
 
 #include "mono-value-hash.h"
 
-#ifndef G_MAXINT32
-#define G_MAXINT32 2147483647
-#endif
-
 /*
  * This code is based on eglib/ghashtable.c with work done by Hans Petter Jansson
  * (hpj@novell.com) to make it use internal probing instead of chaining.
@@ -62,8 +58,6 @@ struct _Slot {
 	/* The tombstone status is stored in the lowest order bit of the value. */
 	gpointer value;
 };
-
-static gpointer KEYMARKER_REMOVED = &KEYMARKER_REMOVED;
 
 struct _MonoValueHashTable {
 	GHashFunc      hash_func;

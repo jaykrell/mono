@@ -8478,30 +8478,42 @@ mono_arch_skip_single_step (MonoContext *ctx)
 SeqPointInfo*
 mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
-	SeqPointInfo *info;
+	SeqPointInfo *info = NULL;
 	MonoJitInfo *ji;
+	SeqPointInfo *info_free = NULL;
+	GHashTableLookupFull lookup = {code, NULL, TRUE};
 
 	// FIXME: Add a free function
 
 	mono_domain_lock (domain);
-	info = (SeqPointInfo *)g_hash_table_lookup (domain_jit_info (domain)->arch_seq_points,
-								code);
+	g_hash_table_lookup_full (domain_jit_info (domain)->arch_seq_points, &lookup);
+	if  (lookup.was_present)
+		info = (SeqPointInfo*)*lookup.value;
 	mono_domain_unlock (domain);
 
-	if (!info) {
-		ji = mono_jit_info_table_find (domain, code);
-		g_assert (ji);
+	if (info)
+		return info;
 
-		// FIXME: Optimize the size
-		info = (SeqPointInfo *)g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size * sizeof (gpointer)));
+	ji = mono_jit_info_table_find (domain, code);
+	g_assert (ji);
 
-		info->ss_tramp_addr = &ss_trampoline;
+	// FIXME: Optimize the size
+	info = (SeqPointInfo *)g_malloc0 (sizeof (SeqPointInfo) + (ji->code_size * sizeof (gpointer)));
 
-		mono_domain_lock (domain);
-		g_hash_table_insert (domain_jit_info (domain)->arch_seq_points,
-							 code, info);
-		mono_domain_unlock (domain);
+	info->ss_tramp_addr = &ss_trampoline;
+
+	mono_domain_lock (domain);
+
+	if (*lookup.value) {
+		info_free = info;
+		info = (SeqPointInfo*)*lookup.value;
+	} else {
+		*lookup.value = info;
 	}
+
+	mono_domain_unlock (domain);
+
+	g_free (info_free);
 
 	return info;
 }
