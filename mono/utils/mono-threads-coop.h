@@ -18,8 +18,6 @@
 #include "mono-threads.h"
 #include "mono-threads-api.h"
 
-G_BEGIN_DECLS
-
 /* JIT specific interface */
 extern volatile size_t mono_polling_required;
 
@@ -63,6 +61,10 @@ typedef enum {
 /* Don't use this. */
 void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
 
+// THREAD_INFO_TYPE varying breaks typesafe linkage,
+// so extern "C" is needed here. There are several other ways
+// to fix this.
+G_BEGIN_DECLS // due to THREAD_INFO_TYPE
 
 /*
  * The following are used when detaching a thread. We need to pass the MonoThreadInfo*
@@ -100,6 +102,6 @@ mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
 
-G_END_DECLS
+G_END_DECLS // due to THREAD_INFO_TYPE
 
 #endif

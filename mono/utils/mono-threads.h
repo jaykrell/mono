@@ -80,6 +80,11 @@ typedef struct {
 	MonoOSEvent event;
 } MonoThreadHandle;
 
+// THREAD_INFO_TYPE varying breaks typesafe linkage,
+// so extern "C" is needed here -- around  the THREAD_INFO_TYPE uses.
+// There are several other ways to fix this.
+G_BEGIN_DECLS // due to THREAD_INFO_TYPE
+
 /*
 THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
@@ -753,5 +758,7 @@ void mono_threads_join_unlock (void);
 typedef void (*background_job_cb)(void);
 void mono_threads_schedule_background_job (background_job_cb cb);
 #endif
+
+G_END_DECLS // due to THREAD_INFO_TYPE
 
 #endif /* __MONO_THREADS_H__ */
