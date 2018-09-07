@@ -1284,6 +1284,7 @@ typedef struct {
 
 	/* Points to the gsharedvt locals area at runtime */
 	MonoInst *gsharedvt_locals_var;
+	MonoInst *gsharedvt_locals_var_volatile;
 
 	/* The localloc instruction used to initialize gsharedvt_locals_var */
 	MonoInst *gsharedvt_locals_var_ins;

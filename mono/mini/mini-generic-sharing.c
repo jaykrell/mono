@@ -2237,7 +2237,7 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 		MonoGSharedVtMethodInfo *info = (MonoGSharedVtMethodInfo *)data;
 		MonoGSharedVtMethodRuntimeInfo *res;
 		MonoType *t;
-		int i, offset, align, size;
+		int i, offset, align = 1, size;
 
 		// FIXME:
 		res = (MonoGSharedVtMethodRuntimeInfo *)g_malloc0 (sizeof (MonoGSharedVtMethodRuntimeInfo) + (info->num_entries * sizeof (gpointer)));
@@ -2250,16 +2250,19 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 			case MONO_RGCTX_INFO_LOCAL_OFFSET:
 				t = (MonoType *)template_->data;
 
-				size = mono_type_size (t, &align);
+				size = mini_type_stack_size (t, &align);
 
-				if (align < sizeof (gpointer))
-					align = sizeof (gpointer);
-				if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
-					align = 2 * sizeof (gpointer);
-			
+				align = MAX (align, sizeof (gpointer));
+/*
+				if (MONO_CLASS_IS_SIMD (cfg, mono_class_from_mono_type (t)))
+					align = MAX (align, 16);
+*/
+				if (MONO_TYPE_ISSTRUCT (t))
+					align = MAX (align, 2 * sizeof (gpointer));
+
+				size = (size + align - 1) & ~(align - 1);
 				// FIXME: Do the same things as alloc_stack_slots
-				offset += align - 1;
-				offset &= ~(align - 1);
+				offset = (offset + align - 1) & ~(align - 1);
 				res->entries [i] = GINT_TO_POINTER (offset);
 				offset += size;
 				break;
@@ -2270,7 +2273,9 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				break;
 			}
 		}
+		offset = (offset + align - 1) & ~(align - 1);
 		res->locals_size = offset;
+		res->locals_size += 64;
 
 		return res;
 	}
