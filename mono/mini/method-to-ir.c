@@ -6954,9 +6954,15 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, var->dreg, ins->dreg);
 
 		/* Allocate locals */
+
+		MonoInst *locals_var_volatile = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
+		/* prevent it from being register allocated */
+		//locals_var_volatile->flags |= MONO_INST_VOLATILE;
+		cfg->gsharedvt_locals_var_volatile = locals_var_volatile;
+
 		locals_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 		/* prevent it from being register allocated */
-		locals_var->flags |= MONO_INST_VOLATILE;
+		//locals_var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_locals_var = locals_var;
 
 		dreg = alloc_ireg (cfg);
@@ -6967,6 +6973,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		ins->sreg1 = dreg;
 		MONO_ADD_INS (cfg->cbb, ins);
 		cfg->gsharedvt_locals_var_ins = ins;
+
+		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, locals_var_volatile->dreg, locals_var->dreg);
 		
 		cfg->flags |= MONO_CFG_HAS_ALLOCA;
 		/*
@@ -12905,6 +12913,23 @@ mono_spill_global_vars (MonoCompile *cfg, gboolean *need_local_opts)
 					int reg1, reg2, reg3;
 					MonoInst *info_var = cfg->gsharedvt_info_var;
 					MonoInst *locals_var = cfg->gsharedvt_locals_var;
+
+					MonoBasicBlock *gsharedvt_ok = NULL;
+					MonoBasicBlock *gsharedvt_bad = NULL;
+					NEW_BBLOCK (cfg, gsharedvt_ok);
+					NEW_BBLOCK (cfg, gsharedvt_bad);
+
+					MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, cfg->gsharedvt_locals_var->dreg, cfg->gsharedvt_locals_var_volatile->dreg);
+					MONO_EMIT_NEW_BRANCH_BLOCK2 (cfg, OP_PBEQ, gsharedvt_ok, gsharedvt_bad);
+
+					MonoInst *brk;
+					MONO_START_BB (cfg, gsharedvt_bad);
+					cfg->cbb =  gsharedvt_bad;
+					MONO_INST_NEW (cfg, brk, OP_BREAK);
+					MONO_ADD_INS (cfg->cbb, brk);
+
+					MONO_START_BB (cfg, gsharedvt_ok);
+					cfg->cbb =  gsharedvt_ok;
 
 					/*
 					 * gsharedvt local.
