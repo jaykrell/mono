@@ -3817,8 +3817,26 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 		if (cfg->flags & MONO_CFG_NEEDS_DECOMPOSE)
 			mono_decompose_array_access_opts (cfg);
 
-		if (!cfg->disable_llvm)
+		const char* name_space = m_class_get_name_space (cfg->method->klass);
+		const char* klass = m_class_get_name (cfg->method->klass);
+		const char *name = cfg->method->name;
+
+		if (!cfg->disable_llvm) {
+			if (strcmp (name, "get_Oid") == 0) {
+				if (strcmp (klass, "ECCurve") == 0) {
+					if (strcmp (name_space, "System.Security.Cryptography") == 0) {
+						printf("%s %s %s\n", name_space, klass, name);
+						//cfg->disable_llvm = TRUE;
+					}
+				}
+			}
+		}
+
+		if (!cfg->disable_llvm) {
+			printf("llvm %s %s %s %s\n", __func__, name_space, klass, name);
 			mono_llvm_emit_method (cfg);
+		}
+
 		if (cfg->disable_llvm) {
 			if (cfg->verbose_level >= (cfg->llvm_only ? 0 : 1)) {
 				//nm = mono_method_full_name (cfg->method, TRUE);

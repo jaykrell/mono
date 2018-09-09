@@ -8689,3 +8689,63 @@ ves_icall_System_Threading_Thread_YieldInternal (void)
 	mono_threads_platform_yield ();
 	return TRUE;
 }
+
+typedef struct gshared_memcpy_t {
+	pthread_t pthread;
+	void *dest;
+	void *source;
+	int suspicious;
+	size_t len;
+	size_t count;
+	void *stack;
+	uint64_t before[2];
+	uint64_t after[2];
+	void *backtrace[64];
+	char **backtrace_symbols;
+	intptr_t stack2[1024 / sizeof (intptr_t)];
+} gshared_memcpy_t;
+
+ICALL_EXPORT
+size_t gshared_memcpy_count;
+ICALL_EXPORT
+gshared_memcpy_t gshared_memcpy_log[1024];
+
+#include <execinfo.h>
+
+ICALL_EXPORT void
+ves_icall_gsharedvt_memcpy (void * volatile dest, void* volatile source, int volatile len)
+{
+	if (len != 4) {
+		memmove (dest, source, len);
+		return;
+	}
+#if 1
+	size_t count = __sync_fetch_and_add (&gshared_memcpy_count, 1);
+	size_t index = count % 1024;
+	gshared_memcpy_t *a = &gshared_memcpy_log [index];
+	memset (a, 0, sizeof (*a));
+	//int b = backtrace (a->backtrace, 64);
+	//a->backtrace_symbols = backtrace_symbols (a->backtrace, b);
+	a->count = count;
+	a->dest = dest;
+	a->source = source;
+	a->len = len;
+	a->pthread = pthread_self ();
+	a->stack = &len;
+	memmove (a->stack2, &dest, 1024);
+	memmove (a->before, (char*)dest - 8, 16);
+	char saved[4];
+	memmove (saved, dest, 4);
+	memmove (dest, source, len);
+	memmove (a->after, (char*)dest - 8, 16);
+	if ((a->before[1] >> 32) == 0x7fff
+		&& (a->before[1] & 0xFFFFFFFF) > 0xff
+		&& (a->after[1] & 0xFFFFFFFF) < 0xff)
+	{
+		memmove (dest, saved, 4);
+		//G_BREAKPOINT ();
+		a->suspicious = TRUE;
+		memmove (dest, source, len);
+	}
+#endif
+}

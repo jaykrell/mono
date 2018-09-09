@@ -994,14 +994,7 @@ class_type_info (MonoDomain *domain, MonoClass *klass, MonoRgctxInfoType info_ty
 
 		if (info_type == MONO_RGCTX_INFO_MEMCPY) {
 			if (!memcpy_method [size]) {
-				MonoMethod *m;
-				char name [32];
-
-				if (size == 0)
-					sprintf (name, "memcpy");
-				else
-					sprintf (name, "memcpy_aligned_%d", size);
-				m = get_method_nofail (mono_defaults.string_class, name, 3, 0);
+				MonoMethod *m = get_method_nofail (mono_defaults.string_class, "gsharedvt_memcpy", 3, 0);
 				g_assert (m);
 				mono_memory_barrier ();
 				memcpy_method [size] = m;
@@ -2251,17 +2244,18 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				t = (MonoType *)template_->data;
 
 				size = mono_type_size (t, &align);
+				size = MAX (size, 4);
+				align = MAX (align, sizeof (gpointer));
 
-				if (align < sizeof (gpointer))
-					align = sizeof (gpointer);
-				if (MONO_TYPE_ISSTRUCT (t) && align < 2 * sizeof (gpointer))
-					align = 2 * sizeof (gpointer);
+				if (MONO_TYPE_ISSTRUCT (t))
+					align = MAX (align, 2 * sizeof (gpointer));
 			
 				// FIXME: Do the same things as alloc_stack_slots
 				offset += align - 1;
 				offset &= ~(align - 1);
 				res->entries [i] = GINT_TO_POINTER (offset);
 				offset += size;
+				offset = (offset + align - 1) & ~(align - 1);
 				break;
 			default:
 				res->entries [i] = instantiate_info (domain, template_, context, klass, error);
@@ -2270,7 +2264,8 @@ instantiate_info (MonoDomain *domain, MonoRuntimeGenericContextInfoTemplate *oti
 				break;
 			}
 		}
-		res->locals_size = offset;
+		res->locals_size = offset + 1;
+		mono_memory_barrier ();
 
 		return res;
 	}

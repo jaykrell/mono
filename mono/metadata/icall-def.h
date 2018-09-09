@@ -891,6 +891,7 @@ ICALL(STRING_8, ".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_S
 ICALL(STRING_9, "FastAllocateString", ves_icall_System_String_InternalAllocateStr)
 ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
 ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
+ICALL(STRING_12, "gsharedvt_memcpy", ves_icall_gsharedvt_memcpy)
 
 ICALL_TYPE(TENC, "System.Text.EncodingHelper", TENC_1)
 HANDLES(ICALL(TENC_1, "InternalCodePage", ves_icall_System_Text_EncodingHelper_InternalCodePage))

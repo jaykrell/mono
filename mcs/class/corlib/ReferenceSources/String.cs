@@ -219,6 +219,9 @@ namespace System
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		internal extern static unsafe void gsharedvt_memcpy (byte *dest, byte *src, int size);
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal extern static String FastAllocateString (int length);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
