@@ -3826,7 +3826,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 				if (strcmp (klass, "ECCurve") == 0) {
 					if (strcmp (name_space, "System.Security.Cryptography") == 0) {
 						printf("%s %s %s\n", name_space, klass, name);
-						//cfg->disable_llvm = TRUE;
+						cfg->disable_llvm = TRUE;
 					}
 				}
 			}
