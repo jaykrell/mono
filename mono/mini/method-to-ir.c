@@ -6962,7 +6962,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		dreg = alloc_ireg (cfg);
 		MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADI4_MEMBASE, dreg, var->dreg, MONO_STRUCT_OFFSET (MonoGSharedVtMethodRuntimeInfo, locals_size));
 
-		cfg->disable_llvm = TRUE;
+//		cfg->disable_llvm = TRUE;
 
 //		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, dreg, dreg, 1);
 
