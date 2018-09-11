@@ -74,6 +74,7 @@ g_free (void *ptr)
 gpointer
 g_memdup (gconstpointer mem, guint byte_size)
 {
+	size += 1024;
 	gpointer ptr;
 
 	if (mem == NULL)
@@ -88,57 +89,39 @@ g_memdup (gconstpointer mem, guint byte_size)
 
 gpointer g_realloc (gpointer obj, gsize size)
 {
-	gpointer ptr;
-	if (!size) {
-		g_free (obj);
-		return 0;
-	}
-	ptr = G_REALLOC_INTERNAL (obj, size);
-	if (ptr)
-		return ptr;
-	g_error ("Could not allocate %i bytes", size);
+	size += 1024;
+	return realloc (obj, size);
 }
 
 gpointer 
 g_malloc (gsize x) 
 { 
-	gpointer ptr;
-	if (!x)
-		return 0;
-	ptr = G_MALLOC_INTERNAL (x);
-	if (ptr) 
-		return ptr;
-	g_error ("Could not allocate %i bytes", x);
+	x += 1024;
+	return memset (malloc (x), 0, x);
 }
 
 gpointer g_calloc (gsize n, gsize x)
 {
-	gpointer ptr;
-	if (!x || !n)
-		return 0;
-	ptr = G_CALLOC_INTERNAL (n, x);
-	if (ptr)
-		return ptr;
-	g_error ("Could not allocate %i (%i * %i) bytes", x*n, n, x);
+	x *= n;
+	x += 1024;
+	return memset (malloc (x), 0, x);
 }
+
 gpointer g_malloc0 (gsize x) 
 { 
-	return g_calloc (1,x);
+	x += 1024;
+	return memset (malloc (x), 0, x);
 }
 
 gpointer g_try_malloc (gsize x) 
 {
-	if (x)
-		return G_MALLOC_INTERNAL (x);
-	return 0;
+	x += 1024;
+	return memset (malloc (x), 0, x);
 }
 
 
 gpointer g_try_realloc (gpointer obj, gsize size)
 { 
-	if (!size) {
-		G_FREE_INTERNAL (obj);
-		return 0;
-	} 
-	return G_REALLOC_INTERNAL (obj, size);
+	size += 1024;
+	return realloc (obj, size);
 }
