@@ -6969,8 +6969,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->gsharedvt_locals_var_ins = ins;
 		
 		cfg->flags |= MONO_CFG_HAS_ALLOCA;
-		//if (init_locals)
+		/*
+		if (init_locals)
 			ins->flags |= MONO_INST_INIT;
+		*/
 	}
 
 	if (mono_security_core_clr_enabled ()) {
