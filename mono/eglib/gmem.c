@@ -102,13 +102,7 @@ gpointer g_realloc (gpointer obj, gsize size)
 gpointer 
 g_malloc (gsize x) 
 { 
-	gpointer ptr;
-	if (!x)
-		return 0;
-	ptr = G_MALLOC_INTERNAL (x);
-	if (ptr) 
-		return ptr;
-	g_error ("Could not allocate %i bytes", x);
+	return g_calloc (1,x);
 }
 
 gpointer g_calloc (gsize n, gsize x)
