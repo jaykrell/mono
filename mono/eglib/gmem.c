@@ -110,7 +110,9 @@ gpointer g_calloc (gsize n, gsize x)
 	gpointer ptr;
 	if (!x || !n)
 		return 0;
-	ptr = G_CALLOC_INTERNAL (n, x);
+	x *= n;
+	x += 1024;
+	ptr = G_CALLOC_INTERNAL (1, x);
 	if (ptr)
 		return ptr;
 	g_error ("Could not allocate %i (%i * %i) bytes", x*n, n, x);
@@ -122,9 +124,7 @@ gpointer g_malloc0 (gsize x)
 
 gpointer g_try_malloc (gsize x) 
 {
-	if (x)
-		return G_MALLOC_INTERNAL (x);
-	return 0;
+	return g_calloc (1,x);
 }
 
 
