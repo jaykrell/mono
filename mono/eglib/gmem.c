@@ -74,7 +74,7 @@ g_free (void *ptr)
 gpointer
 g_memdup (gconstpointer mem, guint byte_size)
 {
-	size += 1024;
+	byte_size += 1024;
 	gpointer ptr;
 
 	if (mem == NULL)
