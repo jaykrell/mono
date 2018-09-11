@@ -89,7 +89,7 @@ g_memdup (gconstpointer mem, guint byte_size)
 gpointer g_realloc (gpointer obj, gsize size)
 {
 	size += 1024;
-	return realloc (obj, size);
+	return memset(realloc (obj, size), 0, size);
 }
 
 gpointer 
@@ -122,5 +122,5 @@ gpointer g_try_malloc (gsize x)
 gpointer g_try_realloc (gpointer obj, gsize size)
 { 
 	size += 1024;
-	return realloc (obj, size);
+	return memset (realloc (obj, size), 0, size);
 }
