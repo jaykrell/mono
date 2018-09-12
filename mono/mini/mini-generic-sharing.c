@@ -1129,15 +1129,12 @@ tramp_info_hash (gconstpointer key)
 static gboolean
 tramp_info_equal (gconstpointer a, gconstpointer b)
 {
-	return FALSE;
-#if 0
 	GSharedVtTrampInfo *tramp1 = (GSharedVtTrampInfo *)a;
 	GSharedVtTrampInfo *tramp2 = (GSharedVtTrampInfo *)b;
 
 	/* The signatures should be internalized */
 	return tramp1->is_in == tramp2->is_in && tramp1->calli == tramp2->calli && tramp1->vcall_offset == tramp2->vcall_offset &&
 		tramp1->addr == tramp2->addr && tramp1->sig == tramp2->sig && tramp1->gsig == tramp2->gsig;
-#endif
 }
 
 static MonoType*
@@ -1767,7 +1764,7 @@ gpointer
 mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSignature *normal_sig, MonoMethodSignature *gsharedvt_sig, gint32 vcall_offset, gboolean calli)
 {
 	ERROR_DECL (error);
-	gpointer res, info;
+	gpointer res = NULL, info;
 	MonoDomain *domain = mono_domain_get ();
 	MonoJitDomainInfo *domain_info;
 	GSharedVtTrampInfo *tramp_info;
@@ -1801,7 +1798,7 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	mono_domain_lock (domain);
 	if (!domain_info->gsharedvt_arg_tramp_hash)
 		domain_info->gsharedvt_arg_tramp_hash = g_hash_table_new (tramp_info_hash, tramp_info_equal);
-	res = g_hash_table_lookup (domain_info->gsharedvt_arg_tramp_hash, &tinfo);
+	//res = g_hash_table_lookup (domain_info->gsharedvt_arg_tramp_hash, &tinfo);
 	mono_domain_unlock (domain);
 	if (res)
 		return res;
