@@ -1792,16 +1792,6 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 
 	domain_info = domain_jit_info (domain);
 
-	/*
-	 * The arg trampolines might only have a finite number in full-aot, so use a cache.
-	 */
-	mono_domain_lock (domain);
-	if (!domain_info->gsharedvt_arg_tramp_hash)
-		domain_info->gsharedvt_arg_tramp_hash = g_hash_table_new (tramp_info_hash, tramp_info_equal);
-	//res = g_hash_table_lookup (domain_info->gsharedvt_arg_tramp_hash, &tinfo);
-	mono_domain_unlock (domain);
-	if (res)
-		return res;
 
 	info = mono_arch_get_gsharedvt_call_info (addr, normal_sig, gsharedvt_sig, gsharedvt_in, vcall_offset, calli);
 
@@ -1845,11 +1835,6 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 	/* Cache it */
 	tramp_info = (GSharedVtTrampInfo *)mono_domain_alloc0 (domain, sizeof (GSharedVtTrampInfo));
 	memcpy (tramp_info, &tinfo, sizeof (GSharedVtTrampInfo));
-
-	mono_domain_lock (domain);
-	/* Duplicates are not a problem */
-	g_hash_table_insert (domain_info->gsharedvt_arg_tramp_hash, tramp_info, addr);
-	mono_domain_unlock (domain);
 
 	return addr;
 }
