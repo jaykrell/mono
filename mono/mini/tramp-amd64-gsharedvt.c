@@ -48,10 +48,10 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 {
 	int i;
 
-	DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p info:%p caller:%p callee:%p mrgctx_reg:%p\n", __func__, pthread_self(), info, caller, callee, mrgctx_reg);
+	DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p info:%p caller:%p callee:%p mrgctx_reg:%p\n", __func__, pthread_self (), info, caller, callee, mrgctx_reg);
 
 	for (i = 0; i < PARAM_REGS; ++i)
-		DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p reg [%d] -> %p\n", __func__, pthread_self(), i, caller [i]);
+		DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p reg [%d] -> %p\n", __func__, pthread_self (), i, caller [i]);
 
 	/* Set vtype ret arg */
 	if (info->vret_slot != -1) {
