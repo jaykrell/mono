@@ -51,7 +51,7 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 	DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p info:%p caller:%p callee:%p mrgctx_reg:%p\n", __func__, pthread_self (), info, caller, callee, mrgctx_reg);
 
 	for (i = 0; i < PARAM_REGS; ++i)
-		DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p reg [%d] -> %p\n", __func__, pthread_self (), i, caller [i]);
+		DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p in reg [%d] -> %p\n", __func__, pthread_self (), i, caller [i]);
 
 	/* Set vtype ret arg */
 	if (info->vret_slot != -1) {
@@ -93,11 +93,11 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 			gpointer *addr = (gpointer*)caller [source_reg];
 
 			for (j = 0; j < slot_count; ++j) {
-				DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p byref_to_byval: [%d] <- [%d] (%d words) (%p/%p) <- (%p/%p)\n",
+				DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p byref_to_byval: [%d] <- [%d] (%d words) (%p/%p) <- (%p/%p/%p)\n",
 					__func__, pthread_self (),
 					dest_reg, source_reg, slot_count,
 					&callee [dest_reg + j], callee [dest_reg + j],
-					&caller [source_reg + j], caller [source_reg + j]);
+					&caller [source_reg + j], caller [source_reg + j], addr [j]);
 				callee [dest_reg + j] = addr [j];
 			}
 			break;
@@ -142,7 +142,7 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 	}
 
 	for (i = 0; i < PARAM_REGS; ++i)
-		DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p reg [%d] <- %p\n", __func__, pthread_self (), i, callee [i]);
+		DEBUG_AMD64_GSHAREDVT_PRINT("%s thread:%p out reg [%d] <- %p\n", __func__, pthread_self (), i, callee [i]);
 
 	//Can't handle for now
 	if (info->vcall_offset != -1){
