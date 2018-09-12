@@ -1828,9 +1828,9 @@ MonoClass *
 mono_class_from_mono_type (MonoType *type)
 {
 	MonoClass *result;
-	MONO_ENTER_GC_UNSAFE;
+	//MONO_ENTER_GC_UNSAFE;
 	result = mono_class_from_mono_type_internal (type);
-	MONO_EXIT_GC_UNSAFE;
+	//MONO_EXIT_GC_UNSAFE;
 	return result;
 }
 
