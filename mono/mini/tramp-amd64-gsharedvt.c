@@ -70,16 +70,24 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 		int source_reg = src & SRC_REG_MASK;
 		int dest_reg = dst & SRC_REG_MASK;
 
-		DEBUG_AMD64_GSHAREDVT_PRINT ("source %x dest %x marshal %d: ", src, dst, arg_marshal);
+		DEBUG_AMD64_GSHAREDVT_PRINT ("%d source %x dest %x marshal %d: ", i, src, dst, arg_marshal);
 		switch (arg_marshal) {
 		case GSHAREDVT_ARG_NONE:
 			callee [dest_reg] = caller [source_reg];
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- %d (%p) <- (%p)\n", dest_reg, source_reg, &callee [dest_reg], caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("none: [%d] <- %d (%p/%p) <- (%p/%p)\n",
+				dest_reg,
+				source_reg,
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]);
 			break;
 		case GSHAREDVT_ARG_BYVAL_TO_BYREF:
 			/* gsharedvt argument passed by addr in reg/stack slot */
 			callee [dest_reg] = &caller [source_reg];
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- &%d (%p) <- (%p)\n", dest_reg, source_reg, &callee [dest_reg], &caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("byval_to_byref: [%d] <- &%d (%p/%p) <- (%p/%p)\n",
+				dest_reg,
+				source_reg,
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]);
 			break;
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL: {
 			int slot_count = (src >> SLOT_COUNT_SHIFT) & SLOT_COUNT_MASK;
@@ -88,28 +96,40 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 
 			for (j = 0; j < slot_count; ++j)
 				callee [dest_reg + j] = addr [j];
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- [%d] (%d words) (%p) <- (%p)\n", dest_reg, source_reg, slot_count, &callee [dest_reg], &caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval: [%d] <- [%d] (%d words) (%p/%p) <- (%p/%p)\n",
+				dest_reg, source_reg, slot_count,
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U1: {
 			guint8 *addr = (guint8*)caller [source_reg];
 
 			callee [dest_reg] = (gpointer)(mgreg_t)*addr;
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- (u1) [%d] (%p) <- (%p)\n", dest_reg, source_reg, &callee [dest_reg], &caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval_u1: [%d] <- (u1) [%d] (%p/%p) <- (%p/%p)\n",
+				dest_reg, source_reg,
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U2: {
 			guint16 *addr = (guint16*)caller [source_reg];
 
 			callee [dest_reg] = (gpointer)(mgreg_t)*addr;
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- (u2) [%d] (%p) <- (%p)\n", dest_reg, source_reg, &callee [dest_reg], &caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval_u2: [%d] <- (u2) [%d] (%p/%p) <- (%p/%p)\n",
+				dest_reg, source_reg
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U4: {
 			guint32 *addr = (guint32*)caller [source_reg];
 
 			callee [dest_reg] = (gpointer)(mgreg_t)*addr;
-			DEBUG_AMD64_GSHAREDVT_PRINT ("[%d] <- (u4) [%d] (%p) <- (%p)\n", dest_reg, source_reg, &callee [dest_reg], &caller [source_reg]);
+			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval_u4: [%d] <- (u4) [%d] (%p/%p) <- (%p/%p)\n", dest_reg, source_reg,
+				&callee [dest_reg], callee [dest_reg],
+				&caller [source_reg], caller [source_reg]
+				);
 			break;
 		}
 
