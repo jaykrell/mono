@@ -117,7 +117,7 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 
 			callee [dest_reg] = (gpointer)(mgreg_t)*addr;
 			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval_u2: [%d] <- (u2) [%d] (%p/%p) <- (%p/%p)\n",
-				dest_reg, source_reg
+				dest_reg, source_reg,
 				&callee [dest_reg], callee [dest_reg],
 				&caller [source_reg], caller [source_reg]);
 			break;
@@ -128,8 +128,7 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 			callee [dest_reg] = (gpointer)(mgreg_t)*addr;
 			DEBUG_AMD64_GSHAREDVT_PRINT ("byref_to_byval_u4: [%d] <- (u4) [%d] (%p/%p) <- (%p/%p)\n", dest_reg, source_reg,
 				&callee [dest_reg], callee [dest_reg],
-				&caller [source_reg], caller [source_reg]
-				);
+				&caller [source_reg], caller [source_reg]);
 			break;
 		}
 
