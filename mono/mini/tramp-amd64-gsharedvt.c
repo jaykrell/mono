@@ -40,8 +40,8 @@
 #define SLOT_COUNT_SHIFT 24
 #define SLOT_COUNT_MASK 0xFF
 
-//#undef DEBUG_AMD64_GSHAREDVT_PRINT
-//#define DEBUG_AMD64_GSHAREDVT_PRINT printf
+#undef DEBUG_AMD64_GSHAREDVT_PRINT
+#define DEBUG_AMD64_GSHAREDVT_PRINT printf
 
 gpointer
 mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpointer *callee, gpointer mrgctx_reg)
