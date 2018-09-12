@@ -522,8 +522,8 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
 
-	g_free (callee_cinfo);
-	g_free (caller_cinfo);
+	//g_free (callee_cinfo);
+	//g_free (caller_cinfo);
 
 	DEBUG_AMD64_GSHAREDVT_PRINT ("allocated an info at %p stack usage %d\n", info, info->stack_usage);
 	mono_memory_barrier ();

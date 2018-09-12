@@ -1129,12 +1129,15 @@ tramp_info_hash (gconstpointer key)
 static gboolean
 tramp_info_equal (gconstpointer a, gconstpointer b)
 {
+	return FALSE;
+#if 0
 	GSharedVtTrampInfo *tramp1 = (GSharedVtTrampInfo *)a;
 	GSharedVtTrampInfo *tramp2 = (GSharedVtTrampInfo *)b;
 
 	/* The signatures should be internalized */
 	return tramp1->is_in == tramp2->is_in && tramp1->calli == tramp2->calli && tramp1->vcall_offset == tramp2->vcall_offset &&
 		tramp1->addr == tramp2->addr && tramp1->sig == tramp2->sig && tramp1->gsig == tramp2->gsig;
+#endif
 }
 
 static MonoType*
