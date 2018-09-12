@@ -1815,6 +1815,8 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 			mono_memory_barrier ();
 			mono_error_assert_ok (error);
 			tramp_addr = addr;
+		} else {
+			mono_memory_barrier ();
 		}
 		addr = tramp_addr;
 	} else {
@@ -1827,6 +1829,8 @@ mini_get_gsharedvt_wrapper (gboolean gsharedvt_in, gpointer addr, MonoMethodSign
 			mono_memory_barrier ();
 			mono_error_assert_ok (error);
 			tramp_addr = addr;
+		} else {
+			mono_memory_barrier ();
 		}
 		addr = tramp_addr;
 	}
