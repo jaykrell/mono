@@ -58,7 +58,6 @@ storage_name (ArgStorage st)
 	}
 }
 
-#ifdef DEBUG_AMD64_GSHAREDVT
 static char *
 arg_info_desc (ArgInfo *info)
 {
@@ -74,7 +73,6 @@ arg_info_desc (ArgInfo *info)
 
 	return g_string_free (str, FALSE);
 }
-#endif
 
 static inline void
 add_to_map (GPtrArray *map, int src, int dst)
@@ -519,7 +517,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			info->vret_slot = map_stack_slot (info->stack_usage / sizeof (gpointer));
 			info->stack_usage += mono_type_stack_size_internal (normal_sig->ret, NULL, FALSE) + sizeof (gpointer);
 		}
-		DEBUG_AMD64_GSHAREDVT_PRINT ("RET marshal is %s\n", ret_marshal_name [info->ret_marshal]);
+		DEBUG_AMD64_GSHAREDVT_PRINT ("RET marshal is %d\n", info->ret_marshal);
 	}
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
