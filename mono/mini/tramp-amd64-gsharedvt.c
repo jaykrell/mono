@@ -48,6 +48,8 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 {
 	int i;
 
+	DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s %p %p %p %p\n", __func__, info, caller, callee, mrgctx_reg);
+
 #ifdef DEBUG_AMD64_GSHAREDVT
 	printf ("mono_amd64_start_gsharedvt_call info %p caller %p callee %p ctx %p\n", info, caller, callee, mrgctx_reg);
 
