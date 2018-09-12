@@ -31,6 +31,9 @@
 
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
+#undef DEBUG_AMD64_GSHAREDVT_PRINT
+#define DEBUG_AMD64_GSHAREDVT_PRINT printf
+
 gboolean
 mono_arch_gsharedvt_sig_supported (MonoMethodSignature *sig)
 {
