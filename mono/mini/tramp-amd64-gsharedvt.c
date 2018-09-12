@@ -141,6 +141,9 @@ mono_amd64_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoi
 		}
 	}
 
+	for (i = 0; i < PARAM_REGS; ++i)
+		DEBUG_AMD64_GSHAREDVT_PRINT("\n\n%s thread:%p reg [%d] -> %p\n", __func__, pthread_self (), i, callee [i]);
+
 	//Can't handle for now
 	if (info->vcall_offset != -1){
 		MonoObject *this_obj = (MonoObject*)caller [0];
