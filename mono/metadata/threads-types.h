@@ -85,6 +85,9 @@ typedef enum {
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
+MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+
 #ifdef __cplusplus
 template <typename T>
 inline MonoInternalThread*
@@ -386,6 +389,9 @@ void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppC
 
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
 
+MonoInternalThreadHandle
+mono_thread_internal_current_handle (void);
+
 void mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
@@ -417,6 +423,9 @@ ICALL_EXPORT
 void ves_icall_thread_finish_async_abort (void);
 
 MONO_PROFILER_API void mono_thread_set_name_internal (MonoInternalThread *this_obj, MonoString *name, gboolean permanent, gboolean reset, MonoError *error);
+
+void
+mono_thread_set_name_internal_handle (MonoInternalThreadHandle this_obj, MonoStringHandle name, gboolean permanent, gboolean reset, MonoError *error);
 
 void mono_thread_suspend_all_other_threads (void);
 gboolean mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout);
@@ -564,5 +573,11 @@ typedef struct {
 
 gboolean
 mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
+
+void
+mono_lock_thread_handle (MonoInternalThreadHandle thread);
+
+void
+mono_unlock_thread_handle (MonoInternalThreadHandle thread);
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

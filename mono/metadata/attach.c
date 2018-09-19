@@ -130,19 +130,16 @@ decode_int (guint8 *buf, guint8 **endbuf, guint8 *limit)
 static char*
 decode_string_value (guint8 *buf, guint8 **endbuf, guint8 *limit)
 {
-	int type;
-    gint32 length;
 	guint8 *p = buf;
-	char *s;
 
-	type = decode_byte (p, &p, limit);
+	int const type = decode_byte (p, &p, limit);
 	if (type == PRIM_TYPE_NULL) {
 		*endbuf = p;
 		return NULL;
 	}
 	g_assert (type == PRIM_TYPE_STRING);
 
-	length = 0;
+	gint32 length = 0;
 	while (TRUE) {
 		guint8 b = decode_byte (p, &p, limit);
 		
@@ -154,7 +151,7 @@ decode_string_value (guint8 *buf, guint8 **endbuf, guint8 *limit)
 
 	g_assert (length < (1 << 16));
 
-	s = (char *)g_malloc (length + 1);
+	char * const s = g_new (char, length + 1);
 
 	g_assert (p + length <= limit);
 	memcpy (s, p, length);
@@ -265,22 +262,24 @@ mono_attach_cleanup (void)
 }
 
 static int
-mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject **exc)
+mono_attach_load_agent (MonoDomain *domain, const char *agent, const char *args, MonoError *error)
 {
-	ERROR_DECL (error);
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoAssembly *agent_assembly;
 	MonoImage *image;
 	MonoMethod *method;
 	guint32 entry;
-	MonoArray *main_args;
+	MonoArrayHandle main_args;
 	gpointer pa [1];
 	MonoImageOpenStatus open_status;
+	int result = 1;
 
 	agent_assembly = mono_assembly_open_predicate (agent, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
-		g_free (agent);
-		return 2;
+		result = 2;
+		goto exit;
 	}
 
 	/* 
@@ -291,51 +290,41 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	entry = mono_image_get_entry_point (image);
 	if (!entry) {
 		g_print ("Assembly '%s' doesn't have an entry point.\n", mono_image_get_filename (image));
-		g_free (agent);
-		return 1;
+		goto exit;
 	}
 
 	method = mono_get_method_checked (image, entry, NULL, NULL, error);
 	if (method == NULL){
 		g_print ("The entry point method of assembly '%s' could not be loaded due to %s\n", agent, mono_error_get_message (error));
-		mono_error_cleanup (error);
-		g_free (agent);
-		return 1;
+		goto exit;
 	}
-	
-	
-	main_args = (MonoArray*)mono_array_new_checked (domain, mono_defaults.string_class, (args == NULL) ? 0 : 1, error);
-	if (main_args == NULL) {
+
+	main_args = mono_array_new_handle (domain, mono_defaults.string_class, args ? 1 : 0, error);
+	if (MONO_HANDLE_IS_NULL (main_args)) {
 		g_print ("Could not allocate main method args due to %s\n", mono_error_get_message (error));
-		mono_error_cleanup (error);
-		g_free (agent);
-		return 1;
+		goto exit;
 	}
 
 	if (args) {
-		MonoString *args_str = mono_string_new_checked (domain, args, error);
+		MonoStringHandle args_str = mono_string_new_handle (domain, args, error);
 		if (!is_ok (error)) {
 			g_print ("Could not allocate main method arg string due to %s\n", mono_error_get_message (error));
-			mono_error_cleanup (error);
-			g_free (agent);
-			return 1;
+			goto exit;
 		}
-		mono_array_set (main_args, MonoString*, 0, args_str);
+		MONO_HANDLE_ARRAY_SETREF (main_args, 0, args_str);
 	}
 
 
-	pa [0] = main_args;
-	mono_runtime_try_invoke (method, NULL, pa, exc, error);
+	pa [0] = MONO_HANDLE_RAW (main_args);
+	mono_runtime_try_invoke_handle (method, NULL_HANDLE, pa, error);
 	if (!is_ok (error)) {
 		g_print ("The entry point method of assembly '%s' could not be executed due to %s\n", agent, mono_error_get_message (error));
-		mono_error_cleanup (error);
-		g_free (agent);
-		return 1;
+		goto exit;
 	}
 
-	g_free (agent);
-
-	return 0;
+	result = 0;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 /*
@@ -483,40 +472,46 @@ transport_send (int fd, guint8 *data, int len)
 static void
 transport_start_receive (void)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
-	MonoInternalThread *internal;
+	MonoInternalThreadHandle internal;
 
 	transport_connect ();
 
 	if (!listen_fd)
-		return;
+		goto exit;
 
-	internal = mono_thread_create_internal (mono_get_root_domain (), (gpointer)receiver_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
+	internal = mono_thread_create_internal_handle (mono_get_root_domain (), (gpointer)receiver_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, error);
 	mono_error_assert_ok (error);
 
-	receiver_thread_handle = mono_threads_open_thread_handle (internal->handle);
+	receiver_thread_handle = mono_threads_open_thread_handle (MONO_HANDLE_GETVAL (internal, handle));
 	g_assert (receiver_thread_handle);
+
+exit:
+	HANDLE_FUNCTION_RETURN ();
 }
 
 static gsize WINAPI
 receiver_thread (void *arg)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	int res, content_len;
 	guint8 buffer [256];
 	guint8 *p, *p_end;
-	MonoObject *exc;
-	MonoInternalThread *internal;
+	MonoInternalThreadHandle internal;
 
-	internal = mono_thread_internal_current ();
-	MonoString *attach_str = mono_string_new_checked (mono_domain_get (), "Attach receiver", error);
+	internal = mono_thread_internal_current_handle ();
+	MonoStringHandle attach_str = mono_string_new_handle (mono_domain_get (), "Attach receiver", error);
 	mono_error_assert_ok (error);
-	mono_thread_set_name_internal (internal, attach_str, TRUE, FALSE, error);
+	mono_thread_set_name_internal_handle (internal, attach_str, TRUE, FALSE, error);
 	mono_error_assert_ok (error);
 	/* Ask the runtime to not abort this thread */
 	//internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
 	/* Ask the runtime to not wait for this thread */
-	internal->state |= ThreadState_Background;
+	MONO_HANDLE_RAW (internal)->state |= ThreadState_Background;
 
 	printf ("attach: Listening on '%s'...\n", server_uri);
 
@@ -575,8 +570,14 @@ receiver_thread (void *arg)
 			agent_args = decode_string_value (p, &p, p_end);
 
 			printf ("attach: Loading agent '%s'.\n", agent_name);
-			mono_attach_load_agent (mono_domain_get (), agent_name, agent_args, &exc);
 
+			ERROR_DECL (inner_error);
+
+			mono_attach_load_agent (mono_domain_get (), agent_name, agent_args, inner_error);
+
+			mono_error_cleanup (error);
+			g_free (agent_name);
+			g_free (agent_args);
 			g_free (body);
 
 			// FIXME: Send back a result
@@ -591,7 +592,7 @@ receiver_thread (void *arg)
 			break;
 	}
 
-	return 0;
+	HANDLE_FUNCTION_RETURN_VAL (0);
 }
 
 #else /* DISABLE_ATTACH */
