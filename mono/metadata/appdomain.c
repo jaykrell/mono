@@ -1450,14 +1450,15 @@ static void
 set_domain_search_path (MonoDomain *domain)
 {
 	ERROR_DECL (error);
-	MonoAppDomainSetup *setup;
-	gchar **tmp;
-	gchar *search_path = NULL;
-	gint i;
-	gint npaths = 0;
-	gchar **pvt_split = NULL;
+	MonoAppDomainSetupHandle setup;
+	char **tmp;
+	char *search_path = NULL;
+	int npaths = 1;
+	char **pvt_split = NULL;
 	GError *gerror = NULL;
-	gint appbaselen = -1;
+	int appbaselen = -1;
+
+	HANDLE_FUNCTION_ENTER ();
 
 	/* 
 	 * We use the low-level domain assemblies lock, since this is called from
@@ -1465,30 +1466,22 @@ set_domain_search_path (MonoDomain *domain)
 	 */
 	mono_domain_assemblies_lock (domain);
 
-	if (!domain->setup) {
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
+	if (!MONO_BOOL (domain->setup))
+		goto exit;
 
-	if ((domain->search_path != NULL) && !domain->setup->path_changed) {
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
-	setup = domain->setup;
-	if (!setup->application_base) {
-		mono_domain_assemblies_unlock (domain);
-		return; /* Must set application base to get private path working */
-	}
+	if (domain->search_path && !MONO_BOOL (domain->setup->path_changed))
+		goto exit;
 
-	npaths++;
+	if (!MONO_BOOL (domain->setup->application_base))
+		goto exit; // Must set application base to get private path working
+
+	setup = MONO_HANDLE_NEW (MonoAppDomainSetup, domain->setup);
 	
-	if (setup->private_bin_path) {
-		search_path = mono_string_to_utf8_checked (setup->private_bin_path, error);
+	if (MONO_BOOL (domain->setup->private_bin_path)) {
+		search_path = mono_string_handle_to_utf8 (MONO_HANDLE_NEW_GET (MonoString, setup, private_bin_path), error);
 		if (!mono_error_ok (error)) { /*FIXME maybe we should bubble up the error.*/
 			g_warning ("Could not decode AppDomain search path since it contains invalid characters");
-			mono_error_cleanup (error);
-			mono_domain_assemblies_unlock (domain);
-			return;
+			goto exit;
 		}
 	}
 	
@@ -1515,10 +1508,8 @@ set_domain_search_path (MonoDomain *domain)
 		 */
 
 #ifndef TARGET_WIN32
-		gint slen;
-
-		slen = strlen (search_path);
-		for (i = 0; i < slen; i++)
+		size_t slen = strlen (search_path);
+		for (size_t i = 0; i < slen; i++)
 			if (search_path [i] == ':')
 				search_path [i] = ';';
 #endif
@@ -1528,34 +1519,14 @@ set_domain_search_path (MonoDomain *domain)
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
 	}
 
-	if (!npaths) {
-		if (pvt_split)
-			g_strfreev (pvt_split);
-		/*
-		 * Don't do this because the first time is called, the domain
-		 * setup is not finished.
-		 *
-		 * domain->search_path = g_malloc (sizeof (char *));
-		 * domain->search_path [0] = NULL;
-		*/
-		mono_domain_assemblies_unlock (domain);
-		return;
-	}
-
-	if (domain->search_path)
-		g_strfreev (domain->search_path);
-
-	tmp = (gchar **)g_malloc ((npaths + 1) * sizeof (gchar *));
+	g_strfreev (domain->search_path);
+	tmp = g_new (char*, npaths + 1);
 	tmp [npaths] = NULL;
 
-	*tmp = mono_string_to_utf8_checked (setup->application_base, error);
+	*tmp = mono_string_handle_to_utf8 (MONO_HANDLE_NEW_GET (MonoString, setup, application_base), error);
 	if (!mono_error_ok (error)) {
-		mono_error_cleanup (error);
-		g_strfreev (pvt_split);
 		g_free (tmp);
-
-		mono_domain_assemblies_unlock (domain);
-		return;
+		goto exit;
 	}
 
 	domain->search_path = tmp;
@@ -1614,16 +1585,17 @@ set_domain_search_path (MonoDomain *domain)
 		}
 	}
 	
-	if (setup->private_bin_path_probe != NULL) {
+	if (MONO_BOOL (domain->setup->private_bin_path_probe)) {
 		g_free (tmp [0]);
 		tmp [0] = g_strdup ("");
 	}
 		
 	domain->setup->path_changed = FALSE;
-
+exit:
+	mono_error_cleanup (error);
 	g_strfreev (pvt_split);
-
 	mono_domain_assemblies_unlock (domain);
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 #ifdef DISABLE_SHADOW_COPY

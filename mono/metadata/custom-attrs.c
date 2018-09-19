@@ -667,7 +667,7 @@ mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, 
 }
 
 MonoCustomAttrInfo*
-mono_custom_attrs_from_builders (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs)
+/Invalids (MonoImage *alloc_img, MonoImage *image, MonoArray *cattrs)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 

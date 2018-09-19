@@ -522,6 +522,12 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 // Get handle->field, where field is not a pointer (an integer or non-managed pointer).
 #define MONO_HANDLE_GETVAL(HANDLE, FIELD) MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD)
 
+#define MONO_BOOL(expr)     (MONO_HANDLE_SUPPRESS (!!(expr)))
+#define MONO_HANDLE_FIELD_BOOL(HANDLE, FIELD)  (MONO_AS_BOOL (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE))->FIELD))
+
+#define MONO_HANDLE_FIELD_TO_UTF8(handle, field) \
+	mono_string_to_utf8_checked (setup->private_bin_path, error);
+
 // This would be easier to write with the gcc extension typeof,
 // but it is not widely enough implemented (i.e. Microsoft C).
 #define MONO_HANDLE_SETVAL(HANDLE, FIELD, TYPE, VALUE) do {	\
