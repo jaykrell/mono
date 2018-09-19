@@ -515,14 +515,14 @@ unlock_thread (MonoInternalThread *thread)
 	mono_coop_mutex_unlock (thread->synch_cs);
 }
 
-void
-mono_lock_thread_handle (MonoInternalThreadHandle thread)
+static void
+lock_thread_handle (MonoInternalThreadHandle thread)
 {
 	lock_thread (mono_internal_thread_handle_ptr (thread));
 }
 
-void
-mono_unlock_thread_handle (MonoInternalThreadHandle thread)
+static void
+unlock_thread_handle (MonoInternalThreadHandle thread)
 {
 	unlock_thread (mono_internal_thread_handle_ptr (thread));
 }
@@ -1410,11 +1410,11 @@ mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer 
 
 	MonoThreadObjectHandle thread = MONO_HANDLE_NEW (MonoThreadObject, create_thread_object (domain, MONO_HANDLE_RAW (internal)));
 
-	mono_lock_thread_handle (internal);
+	lock_thread_handle (internal);
 
 	res = create_thread (MONO_HANDLE_RAW (thread), MONO_HANDLE_RAW (internal), NULL, (MonoThreadStart)func, arg, flags, error);
 
-	mono_unlock_thread_handle (internal);
+	unlock_thread_handle (internal);
 
 	if (!is_ok (error))
 		internal = MONO_HANDLE_CAST (MonoInternalThread, NULL_HANDLE);
@@ -4842,7 +4842,7 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 	MonoInternalThreadHandle thread = mono_thread_internal_current_handle ();
 	MonoExceptionHandle exc = MONO_HANDLE_NEW (MonoException, NULL);
 
-	mono_lock_thread_handle (thread);
+	lock_thread_handle (thread);
 	gboolean unlock = TRUE;
 
 	/* MonoThread::interruption_requested can only be changed with atomics */
@@ -4889,7 +4889,7 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 	} else if (MONO_HANDLE_GETVAL (thread, thread_interrupt_requested)) {
 		// thread->thread_interrupt_requested = FALSE
 		MONO_HANDLE_SETVAL (thread, thread_interrupt_requested, gboolean, FALSE);
-		mono_unlock_thread_handle (thread);
+		unlock_thread_handle (thread);
 		unlock = FALSE;
 		ERROR_DECL (error);
 		exc = mono_exception_new_thread_interrupted (error);
@@ -4898,7 +4898,7 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 	}
 exit:
 	if (unlock)
-		mono_unlock_thread_handle (thread);
+		unlock_thread_handle (thread);
 
 	if (fexc)
 		MONO_HANDLE_ASSIGN (*pexc, exc);
