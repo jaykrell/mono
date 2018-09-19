@@ -1506,14 +1506,13 @@ set_domain_search_path (MonoDomain *domain)
 		 *
 		 * The issue was reported in bug #81446
 		 */
-
 #ifndef TARGET_WIN32
-		size_t slen = strlen (search_path);
-		for (size_t i = 0; i < slen; i++)
+		// FIXME g_strdelimit
+		gsize slen = strlen (search_path);
+		for (gsize i = 0; i < slen; i++)
 			if (search_path [i] == ':')
 				search_path [i] = ';';
 #endif
-		
 		pvt_split = g_strsplit (search_path, ";", 1000);
 		g_free (search_path);
 		for (tmp = pvt_split; *tmp; tmp++, npaths++);
@@ -1557,7 +1556,7 @@ set_domain_search_path (MonoDomain *domain)
 		}
 	}
 
-	for (i = 1; pvt_split && i < npaths; i++) {
+	for (gsize i = 1; pvt_split && i < npaths; i++) {
 		if (g_path_is_absolute (pvt_split [i - 1])) {
 			tmp [i] = g_strdup (pvt_split [i - 1]);
 		} else {
@@ -1595,7 +1594,7 @@ exit:
 	mono_error_cleanup (error);
 	g_strfreev (pvt_split);
 	mono_domain_assemblies_unlock (domain);
-	HANDLE_FUNCTION_RETURN_VAL (result);
+	HANDLE_FUNCTION_RETURN ();
 }
 
 #ifdef DISABLE_SHADOW_COPY
