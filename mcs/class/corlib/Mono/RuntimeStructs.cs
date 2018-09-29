@@ -55,6 +55,11 @@ namespace Mono {
 			IntPtr chunk;
 		}
 
+		// handle-decl.h TYPED_HANDLE_DECL
+		struct TypedHandle {
+			IntPtr raw;
+		}
+
 		// mono-error.h MonoError
 		struct MonoError {
 			ushort error_code;

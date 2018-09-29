@@ -35,17 +35,6 @@
 //  8. mono_object_class (handle), instead of mono_handle_class
 //
 // None of those operations were likely intended.
-//
-// FIXME Do this only on checked builds? Or certain architectures?
-// There is not runtime cost.
-// NOTE: Running this code depends on the ABI to pass a struct
-// with a pointer the same as a pointer. This is tied in with
-// marshaling. If this is not the case, turn off type-safety, perhaps per-OS per-CPU.
-#if defined (HOST_DARWIN) || defined (HOST_WIN32) || defined (HOST_ARM64) || defined (HOST_ARM) || defined (HOST_AMD64)
-#define MONO_TYPE_SAFE_HANDLES 1
-#else
-#define MONO_TYPE_SAFE_HANDLES 0 // PowerPC, S390X, SPARC, MIPS, Linux/x86, BSD/x86, etc.
-#endif
 
 /*
 Handle macros/functions
@@ -65,8 +54,6 @@ Handle macros/functions
  *
  * For example, TYPED_HANDLE_DECL(MonoObject) (see below) expands to:
  *
- * #if MONO_TYPE_SAFE_HANDLES
- *
  * typedef struct {
  *   MonoObject **__raw;
  * } MonoObjectHandlePayload,
@@ -75,16 +62,6 @@ Handle macros/functions
  *
  * Internal helper functions are also generated.
  *
- * #else
- *
- * typedef struct {
- *   MonoObject *__raw;
- * } MonoObjectHandlePayload;
- *
- * typedef MonoObjectHandlePayload* MonoObjectHandle;
- * typedef MonoObjectHandlePayload* MonoObjectHandleOut;
- *
- * #endif
  */
 
 #ifdef __cplusplus
@@ -93,7 +70,6 @@ Handle macros/functions
 #define MONO_IF_CPLUSPLUS(x) /* nothing */
 #endif
 
-#if MONO_TYPE_SAFE_HANDLES
 #define TYPED_HANDLE_DECL(TYPE)							\
 	typedef struct {							\
 		MONO_IF_CPLUSPLUS (						\
@@ -117,13 +93,6 @@ MONO_HANDLE_TYPECHECK_FOR (TYPE) (TYPE *a)			\
 {								\
 	return (MonoObject*)a;					\
 }
-
-#else
-#define TYPED_HANDLE_DECL(TYPE)						\
-	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME (TYPE) ; \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_HANDLE_NAME (TYPE); \
-	typedef TYPED_HANDLE_PAYLOAD_NAME (TYPE) * TYPED_OUT_HANDLE_NAME (TYPE);
-#endif
 
 /*
  * TYPED_VALUE_HANDLE_DECL(SomeType):
