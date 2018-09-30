@@ -6252,6 +6252,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			ret->ret = handle_type;
 		else
 			ret->ret = csig->ret;
+		//ret->ret = csig->ret;
 
 		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
 		for (int i = 0; i < csig->param_count; ++i) {
@@ -6262,6 +6263,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
 					ret->params [i] = handle_type;
+					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type(csig->params[i]));
 					break;
 				case ICALL_HANDLES_WRAP_NONE:
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
@@ -6278,6 +6280,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		call_sig = ret;
 	}
 
+	int return_handle = -1;
+
 	if (uses_handles) {
 		MonoClass *handle_stack_mark_class;
 		MonoClass *error_class;
@@ -6288,6 +6292,9 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		thread_info_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_get_intptr_class ()));
 		stack_mark_var = mono_mb_add_local (mb, m_class_get_byval_arg (handle_stack_mark_class));
 		error_var = mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
+
+		if (MONO_TYPE_IS_REFERENCE (sig->ret))
+			return_handle = mono_mb_add_local (mb, handle_type);
 
 		{
 			/* add a local var to hold the handles for each arg */
@@ -6302,6 +6309,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					case ICALL_HANDLES_WRAP_OBJ_INOUT:
 					case ICALL_HANDLES_WRAP_OBJ_OUT:
 						handles_locals [j].handle = mono_mb_add_local (mb, handle_type);
+						handles_locals [j].handle = mono_mb_add_local (mb, sig->params [i]);
 						break;
 					default:
 						g_assert_not_reached ();
@@ -6343,31 +6351,58 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 				case ICALL_HANDLES_WRAP_NONE:
 					mono_mb_emit_ldarg (mb, j);
 					break;
+#if 1
 				case ICALL_HANDLES_WRAP_OBJ:
+					/* argI = mono_handle_new (argI_raw) */
+					mono_mb_emit_ldarg (mb, j);
+					mono_mb_emit_icall (mb, mono_icall_handle_new);
+					break;
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
-					/* inout: handleI.raw = mono_handle_new (*argI_raw)
-					 * out:   handleI.raw = mono_handle_new (NULL)
-					 * in:    handleI.raw = mono_handle_new (argI_raw)
+					/* if inout:
+					 *   handleI = argI = mono_handle_new (*argI_raw)
+					 * otherwise:
+					 *   handleI = argI = mono_handle_new (NULL)
 					 */
-					mono_mb_emit_ldloc (mb, handles_locals[j].handle);
-					mono_mb_emit_ldflda (mb, 0); // FIXME, the "0"
-					switch (wrap) {
-						case ICALL_HANDLES_WRAP_OBJ:
-						case ICALL_HANDLES_WRAP_OBJ_INOUT:
-							mono_mb_emit_ldarg (mb, j);
-							if (wrap == ICALL_HANDLES_WRAP_OBJ_INOUT)
-								mono_mb_emit_byte (mb, CEE_LDIND_REF);
-							break;
-						case ICALL_HANDLES_WRAP_OBJ_OUT:
-							mono_mb_emit_byte (mb, CEE_LDNULL);
-							break;
-					}
+					if (handles_locals[j].wrap == ICALL_HANDLES_WRAP_OBJ_INOUT) {
+						mono_mb_emit_ldarg (mb, j);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+					} else
+						mono_mb_emit_byte (mb, CEE_LDNULL);
 					mono_mb_emit_icall (mb, mono_icall_handle_new);
-					mono_mb_emit_byte (mb, CEE_STIND_REF);
-					// argI = handleI
-					mono_mb_emit_ldloc (mb, handles_locals[j].handle);
+					/* tmp = argI */
+					mono_mb_emit_byte (mb, CEE_DUP);
+					/* handleI = tmp */
+					mono_mb_emit_stloc (mb, handles_locals[j].handle);
 					break;
+#else
+				/* inout: handleI = mono_handle_new (*argI_raw)
+				 * out:   handleI = mono_handle_new (NULL)
+				 * in:    handleI = mono_handle_new (argI_raw)
+				 */
+				case ICALL_HANDLES_WRAP_OBJ:
+					mono_mb_emit_ldarg (mb, j);
+					mono_mb_emit_icall (mb, mono_icall_handle_new);
+					break;
+				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					/* if inout:
+					 *   handleI = argI = mono_handle_new (*argI_raw)
+					 * otherwise:
+					 *   handleI = argI = mono_handle_new (NULL)
+					 */
+					if (handles_locals[j].wrap == ICALL_HANDLES_WRAP_OBJ_INOUT) {
+						mono_mb_emit_ldarg (mb, j);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+					} else
+						mono_mb_emit_byte (mb, CEE_LDNULL);
+					mono_mb_emit_icall (mb, mono_icall_handle_new);
+					/* tmp = argI */
+					mono_mb_emit_byte (mb, CEE_DUP);
+					/* handleI = tmp */
+					mono_mb_emit_stloc (mb, handles_locals[j].handle);
+					break;
+#endif
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 					/* (void) mono_handle_new (argI); argI */
 					mono_mb_emit_ldarg (mb, j);
@@ -6401,9 +6436,13 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 	if (uses_handles) {
 		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
+#if 0
 			// ret = ret.__raw
+			mono_mb_emit_stloc (mb, return_handle);
+			mono_mb_emit_ldloc (mb, return_handle);
 			mono_mb_emit_ldflda (mb, 0); // FIXME, the "0"
 			mono_mb_emit_byte (mb, CEE_LDIND_REF);
+#endif
 			// if (ret != NULL_HANDLE) {
 			//   ret = MONO_HANDLE_RAW(ret)
 			// }
@@ -6430,8 +6469,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 						/* handleI */
 						mono_mb_emit_ldloc (mb, handles_locals [j].handle);
 						/* handleI.raw */
+#if 1
 						mono_mb_emit_ldflda (mb, 0); // FIXME, the "0"
 						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+#endif
 						/* MONO_HANDLE_RAW(handleI) */
 						mono_mb_emit_ldflda (mb, MONO_HANDLE_PAYLOAD_OFFSET (MonoObject));
 						mono_mb_emit_byte (mb, CEE_LDIND_REF);
