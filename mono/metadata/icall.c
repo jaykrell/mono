@@ -2216,7 +2216,7 @@ void
 ves_icall_MonoField_SetValueInternal2 (MonoReflectionFieldHandle field, MonoObjectHandle obj, MonoObjectHandle value, MonoError  *error)
 // Duplicated due to multiple managed names.
 {
-	return  ves_icall_MonoField_SetValueInternal (field, obj, value, error);
+	return ves_icall_MonoField_SetValueInternal (field, obj, value, error);
 }
 
 static MonoObjectHandle
@@ -3326,7 +3326,7 @@ MonoReflectionMethodHandle
 ves_icall_MonoMethod_GetGenericMethodDefinition2 (MonoReflectionMethodHandle ref_method, MonoError *error)
 // Duplicate because exposed under two managed names and HANDLES() creates duplicate wrappers. 
 {
-	return  ves_icall_MonoMethod_GetGenericMethodDefinition (ref_method, error);
+	return ves_icall_MonoMethod_GetGenericMethodDefinition (ref_method, error);
 }
 
 ICALL_EXPORT gboolean

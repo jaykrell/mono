@@ -37,9 +37,8 @@
 //
 // None of those operations were likely intended.
 //
-// marshal-ilgen.c did not know how to marshal type safe handles, and they
-// were used then marshal-ilgen.c generated the wrappers, with ABIs
-// for which type-safe and type-unsafe did not match.
+// marshal-ilgen.c does not know how to marshal type safe handles.
+// It passes/accepts type-unsafe handles and generated wrappers in C convert.
 
 /*
 Handle macros/functions

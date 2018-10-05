@@ -61,8 +61,8 @@
  * that:
  *   (1) Updates the coop handle stack on entry and exit
  *   (2) Call the cfuncptr with a new signature:
- *     (a) All managed object reference in arguments will be wrapped in a handle
- *         (ie, MonoString* becomes MonoStringHandle)
+ *     (a) All managed object reference in arguments will be wrapped in a type-unsafe handle
+ *         (i.e., MonoString* becomes struct { MonoString* raw }* aka void*)
  *     (b) the same for the return value (MonoObject* return becomes MonoObjectHandle)
  *     (c) An additional final argument is added of type MonoError*
  *     example:    class object {
@@ -74,17 +74,15 @@
  *   (3) The wrapper will automatically call mono_error_set_pending_exception (error) and raise the resulting exception.
  * Note:  valuetypes use the same calling convention as normal.
  *
- * HANDLES() wrappers were generated dynamically by marshal-ilgen.c, using metadata to see types.
- * HANDLES() wrappers are generated statically by icall-table.h, using the signatures here.
+ * HANDLES() wrappers are generated dynamically by marshal-ilgen.c, using metadata to see types, producing type-unsafe handles (void*).
+ * HANDLES() additional small wrappers are generated statically by icall-table.h, using the signatures here, producing
+ * type-safe handles, i.e. MonoString* => void* => struct { MonoString** raw }.
  *
  */
 
-//FIXME _ref vs. _ptr needs auditing, probably
-//by running the marshal-ilgen logic over mscorlib.dll
-//and comparing with data mechanically derived from here.
-//
-// _ref means create an interior handle
-// _ptr means do nothing
+// _ref means marshal-ilgen.c created a handle for an interior pointer.
+// _ptr means marshal-ilgen.c passed the parameter through unchanged.
+// At the C level, they are the same.
 
 ICALL_TYPE(CLR_INTEROP_SYS, "Interop/Sys", CLR_INTEROP_SYS_1)
 NOHANDLES(ICALL(CLR_INTEROP_SYS_1, "DoubleToString", ves_icall_Interop_Sys_DoubleToString))
@@ -150,7 +148,7 @@ HANDLES(APPDOM_3, "GetData", ves_icall_System_AppDomain_GetData, MonoObject, 2, 
 HANDLES(APPDOM_4, "InternalGetContext", ves_icall_System_AppDomain_InternalGetContext, MonoAppContext, 0, ())
 HANDLES(APPDOM_5, "InternalGetDefaultContext", ves_icall_System_AppDomain_InternalGetDefaultContext, MonoAppContext, 0, ())
 HANDLES(APPDOM_6, "InternalGetProcessGuid", ves_icall_System_AppDomain_InternalGetProcessGuid, MonoString, 1, (MonoString))
-HANDLES(APPDOM_7, "InternalIsFinalizingForUnload", ves_icall_System_AppDomain_InternalIsFinalizingForUnload, gboolean, 1, (gint32))
+HANDLES(APPDOM_7, "InternalIsFinalizingForUnload", ves_icall_System_AppDomain_InternalIsFinalizingForUnload, MonoBoolean, 1, (gint32))
 HANDLES(APPDOM_8, "InternalPopDomainRef", ves_icall_System_AppDomain_InternalPopDomainRef, void, 0, ())
 HANDLES(APPDOM_9, "InternalPushDomainRef", ves_icall_System_AppDomain_InternalPushDomainRef, void, 1, (MonoAppDomain))
 HANDLES(APPDOM_10, "InternalPushDomainRefByID", ves_icall_System_AppDomain_InternalPushDomainRefByID, void, 1, (gint32))
@@ -361,12 +359,12 @@ NOHANDLES(ICALL(LOGCATEXTWRITER_1, "Log", ves_icall_System_IO_LogcatTextWriter_L
 ICALL_TYPE(MMAPIMPL, "System.IO.MemoryMappedFiles.MemoryMapImpl", MMAPIMPL_1)
 // FIXME rename to ves_icall...
 HANDLES(MMAPIMPL_1, "CloseMapping", mono_mmap_close, void, 1, (gpointer))
-HANDLES(MMAPIMPL_2, "ConfigureHandleInheritability", mono_mmap_configure_inheritability, void, 2, (gpointer, gboolean))
+HANDLES(MMAPIMPL_2, "ConfigureHandleInheritability", mono_mmap_configure_inheritability, void, 2, (gpointer, gint32))
 HANDLES(MMAPIMPL_3, "Flush", mono_mmap_flush, void,  1, (gpointer))
 HANDLES(MMAPIMPL_4, "MapInternal", mono_mmap_map, int, 6, (gpointer, gint64, gint64_ref, int, gpointer_ref, gpointer_ref))
 HANDLES(MMAPIMPL_5, "OpenFileInternal", mono_mmap_open_file, gpointer, 9, (const_gunichar2_ptr, int, int, const_gunichar2_ptr, int, gint64_ref, int, int, int_ref))
 HANDLES(MMAPIMPL_6, "OpenHandleInternal", mono_mmap_open_handle, gpointer, 7, (gpointer, const_gunichar2_ptr, int, gint64_ref, int, int, int_ref))
-HANDLES(MMAPIMPL_7, "Unmap", mono_mmap_unmap, gboolean, 1, (gpointer))
+HANDLES(MMAPIMPL_7, "Unmap", mono_mmap_unmap, MonoBoolean, 1, (gpointer))
 
 ICALL_TYPE(MONOIO, "System.IO.MonoIO", MONOIO_1)
 NOHANDLES(ICALL(MONOIO_1, "Close(intptr,System.IO.MonoIOError&)", ves_icall_System_IO_MonoIO_Close))
@@ -477,7 +475,7 @@ NOHANDLES(ICALL(MATHF_21, "Tanh", ves_icall_System_MathF_Tanh))
 
 ICALL_TYPE(MCATTR, "System.MonoCustomAttrs", MCATTR_1)
 HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))
-HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, mono_bool))
+HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, MonoBoolean))
 HANDLES(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal, MonoBoolean, 2, (MonoObject, MonoReflectionType))
 
 #ifndef DISABLE_SOCKETS
@@ -492,12 +490,12 @@ ICALL(MAC_IFACE_PROPS_1, "ParseRouteInfo_internal", ves_icall_System_Net_Network
 #endif
 
 ICALL_TYPE(SOCK, "System.Net.Sockets.Socket", SOCK_1)
-HANDLES(SOCK_1, "Accept_internal(intptr,int&,bool)", ves_icall_System_Net_Sockets_Socket_Accept_internal, gpointer, 3, (gsize, gint32_ref, gboolean))
+HANDLES(SOCK_1, "Accept_internal(intptr,int&,bool)", ves_icall_System_Net_Sockets_Socket_Accept_internal, gpointer, 3, (gsize, gint32_ref, MonoBoolean))
 HANDLES(SOCK_2, "Available_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Available_internal, gint32, 2, (gsize, gint32_ref))
 HANDLES(SOCK_3, "Bind_internal(intptr,System.Net.SocketAddress,int&)", ves_icall_System_Net_Sockets_Socket_Bind_internal, void, 3, (gsize, MonoObject, gint32_ref))
-HANDLES(SOCK_4, "Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal, void, 3, (gsize, gboolean, gint32_ref))
+HANDLES(SOCK_4, "Blocking_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Blocking_internal, void, 3, (gsize, MonoBoolean, gint32_ref))
 HANDLES(SOCK_5, "Close_internal(intptr,int&)", ves_icall_System_Net_Sockets_Socket_Close_internal, void, 2, (gsize, gint32_ref))
-HANDLES(SOCK_6, "Connect_internal(intptr,System.Net.SocketAddress,int&,bool)", ves_icall_System_Net_Sockets_Socket_Connect_internal, void, 4, (gsize, MonoObject, gint32_ref, gboolean))
+HANDLES(SOCK_6, "Connect_internal(intptr,System.Net.SocketAddress,int&,bool)", ves_icall_System_Net_Sockets_Socket_Connect_internal, void, 4, (gsize, MonoObject, gint32_ref, MonoBoolean))
 HANDLES(SOCK_6a, "Disconnect_internal(intptr,bool,int&)", ves_icall_System_Net_Sockets_Socket_Disconnect_internal, void, 3, (gsize, MonoBoolean, gint32_ref))
 HANDLES(SOCK_6b, "Duplicate_internal", ves_icall_System_Net_Sockets_Socket_Duplicate_internal, MonoBoolean, 4, (gpointer, gint32, gpointer_ref, gint32_ref))
 //FIXME The array is ref but the icall does not write to it.
@@ -507,20 +505,20 @@ HANDLES(SOCK_21, "IOControl_internal(intptr,int,byte[],byte[],int&)", ves_icall_
 HANDLES(SOCK_9, "Listen_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_Listen_internal, void, 3, (gsize, guint32, gint32_ref))
 HANDLES(SOCK_10, "LocalEndPoint_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_LocalEndPoint_internal, MonoObject, 3, (gsize, gint32, gint32_ref))
 HANDLES(SOCK_11, "Poll_internal", ves_icall_System_Net_Sockets_Socket_Poll_internal, MonoBoolean, 4, (gsize, int, int, gint32_ref))
-HANDLES(SOCK_13, "ReceiveFrom_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress&,int&,bool)", ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal, gint32, 7, (gsize, char_ptr, gint32, gint32, MonoObjectInOut, gint32_ref, gboolean))
-HANDLES(SOCK_11a, "Receive_internal(intptr,System.Net.Sockets.Socket/WSABUF*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Receive_array_internal, gint32, 6, (gsize, WSABUF_ptr, gint32, gint32, gint32_ref, gboolean))
-HANDLES(SOCK_12, "Receive_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Receive_internal, gint32, 6, (gsize, char_ptr, gint32, gint32, gint32_ref, gboolean))
+HANDLES(SOCK_13, "ReceiveFrom_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress&,int&,bool)", ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal, gint32, 7, (gsize, char_ptr, gint32, gint32, MonoObjectInOut, gint32_ref, MonoBoolean))
+HANDLES(SOCK_11a, "Receive_internal(intptr,System.Net.Sockets.Socket/WSABUF*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Receive_array_internal, gint32, 6, (gsize, WSABUF_ptr, gint32, gint32, gint32_ref, MonoBoolean))
+HANDLES(SOCK_12, "Receive_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Receive_internal, gint32, 6, (gsize, char_ptr, gint32, gint32, gint32_ref, MonoBoolean))
 HANDLES(SOCK_14, "RemoteEndPoint_internal(intptr,int,int&)", ves_icall_System_Net_Sockets_Socket_RemoteEndPoint_internal, MonoObject, 3, (gsize, gint32, gint32_ref))
 HANDLES(SOCK_15, "Select_internal(System.Net.Sockets.Socket[]&,int,int&)", ves_icall_System_Net_Sockets_Socket_Select_internal, void, 3, (MonoArrayInOut, gint32, gint32_ref))
-HANDLES(SOCK_15a, "SendFile_internal(intptr,string,byte[],byte[],System.Net.Sockets.TransmitFileOptions,int&,bool)", ves_icall_System_Net_Sockets_Socket_SendFile_internal, gboolean, 7, (gsize, MonoString, MonoArray, MonoArray, int, gint32_ref, gboolean))
-HANDLES(SOCK_16, "SendTo_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress,int&,bool)", ves_icall_System_Net_Sockets_Socket_SendTo_internal, gint32, 7, (gsize, char_ptr, gint32, gint32, MonoObject, gint32_ref, gboolean))
-HANDLES(SOCK_16a, "Send_internal(intptr,System.Net.Sockets.Socket/WSABUF*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Send_array_internal, gint32, 6, (gsize, WSABUF_ptr, gint32, gint32, gint32_ref, gboolean))
-HANDLES(SOCK_17, "Send_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Send_internal, gint32, 6, (gsize, char_ptr, gint32, gint32, gint32_ref, gboolean))
+HANDLES(SOCK_15a, "SendFile_internal(intptr,string,byte[],byte[],System.Net.Sockets.TransmitFileOptions,int&,bool)", ves_icall_System_Net_Sockets_Socket_SendFile_internal, MonoBoolean, 7, (gsize, MonoString, MonoArray, MonoArray, int, gint32_ref, MonoBoolean))
+HANDLES(SOCK_16, "SendTo_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,System.Net.SocketAddress,int&,bool)", ves_icall_System_Net_Sockets_Socket_SendTo_internal, gint32, 7, (gsize, char_ptr, gint32, gint32, MonoObject, gint32_ref, MonoBoolean))
+HANDLES(SOCK_16a, "Send_internal(intptr,System.Net.Sockets.Socket/WSABUF*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Send_array_internal, gint32, 6, (gsize, WSABUF_ptr, gint32, gint32, gint32_ref, MonoBoolean))
+HANDLES(SOCK_17, "Send_internal(intptr,byte*,int,System.Net.Sockets.SocketFlags,int&,bool)", ves_icall_System_Net_Sockets_Socket_Send_internal, gint32, 6, (gsize, char_ptr, gint32, gint32, gint32_ref, MonoBoolean))
 HANDLES(SOCK_18, "SetSocketOption_internal(intptr,System.Net.Sockets.SocketOptionLevel,System.Net.Sockets.SocketOptionName,object,byte[],int,int&)", ves_icall_System_Net_Sockets_Socket_SetSocketOption_internal, void, 7, (gsize, gint32, gint32, MonoObject, MonoArray, gint32, gint32_ref))
 HANDLES(SOCK_19, "Shutdown_internal(intptr,System.Net.Sockets.SocketShutdown,int&)", ves_icall_System_Net_Sockets_Socket_Shutdown_internal, void, 3, (gsize, gint32, gint32_ref))
 HANDLES(SOCK_20, "Socket_internal(System.Net.Sockets.AddressFamily,System.Net.Sockets.SocketType,System.Net.Sockets.ProtocolType,int&)", ves_icall_System_Net_Sockets_Socket_Socket_internal, gpointer, 5, (MonoObject, gint32, gint32, gint32, gint32_ref))
 //FIXME enum MonoProtocolType
-HANDLES(SOCK_20a, "SupportsPortReuse", ves_icall_System_Net_Sockets_Socket_SupportPortReuse, gboolean, 1, (MonoProtocolType))
+HANDLES(SOCK_20a, "SupportsPortReuse", ves_icall_System_Net_Sockets_Socket_SupportPortReuse, MonoBoolean, 1, (MonoProtocolType))
 HANDLES(SOCK_21a, "cancel_blocking_socket_operation", ves_icall_cancel_blocking_socket_operation, void, 1, (MonoThreadObject))
 
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
@@ -543,7 +541,7 @@ HANDLES(ASSEM_3, "GetEntryAssembly", ves_icall_System_Reflection_Assembly_GetEnt
 HANDLES(ASSEM_4, "GetExecutingAssembly", ves_icall_System_Reflection_Assembly_GetExecutingAssembly, MonoReflectionAssembly, 0, ())
 HANDLES(ASSEM_5, "GetFilesInternal", ves_icall_System_Reflection_Assembly_GetFilesInternal, MonoObject, 3, (MonoReflectionAssembly, MonoString, MonoBoolean))
 HANDLES(ASSEM_6, "GetManifestModuleInternal", ves_icall_System_Reflection_Assembly_GetManifestModuleInternal, MonoReflectionModule, 1, (MonoReflectionAssembly))
-HANDLES(ASSEM_7, "GetManifestResourceInfoInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal, gboolean, 3, (MonoReflectionAssembly, MonoString, MonoManifestResourceInfo))
+HANDLES(ASSEM_7, "GetManifestResourceInfoInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInfoInternal, MonoBoolean, 3, (MonoReflectionAssembly, MonoString, MonoManifestResourceInfo))
 HANDLES(ASSEM_8, "GetManifestResourceInternal", ves_icall_System_Reflection_Assembly_GetManifestResourceInternal, gpointer, 4, (MonoReflectionAssembly, MonoString, gint32_ref, MonoReflectionModuleOut))
 HANDLES(ASSEM_9, "GetManifestResourceNames", ves_icall_System_Reflection_Assembly_GetManifestResourceNames, MonoArray, 1, (MonoReflectionAssembly))
 HANDLES(ASSEM_10, "GetModulesInternal", ves_icall_System_Reflection_Assembly_GetModulesInternal, MonoArray, 1, (MonoReflectionAssembly))
@@ -598,7 +596,7 @@ HANDLES(MODULEB_2, "basic_init", ves_icall_ModuleBuilder_basic_init, void, 1, (M
 
 ICALL(MODULEB_3, "build_metadata", ves_icall_ModuleBuilder_build_metadata)
 HANDLES(MODULEB_5, "getMethodToken", ves_icall_ModuleBuilder_getMethodToken, gint32, 3, (MonoReflectionModuleBuilder, MonoReflectionMethod, MonoArray))
-HANDLES(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken, gint32, 3, (MonoReflectionModuleBuilder, MonoObject, gboolean))
+HANDLES(MODULEB_6, "getToken", ves_icall_ModuleBuilder_getToken, gint32, 3, (MonoReflectionModuleBuilder, MonoObject, MonoBoolean))
 HANDLES(MODULEB_7, "getUSIndex", ves_icall_ModuleBuilder_getUSIndex, guint32, 2, (MonoReflectionModuleBuilder, MonoString))
 HANDLES(MODULEB_9, "set_wrappers_type", ves_icall_ModuleBuilder_set_wrappers_type, void, 2, (MonoReflectionModuleBuilder, MonoReflectionType))
 

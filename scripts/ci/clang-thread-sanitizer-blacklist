@@ -146,6 +146,7 @@ fun:mono_method_signature_checked
 
 # marshal.c #
 
+fun:mono_icall_start
 fun:mono_marshal_get_native_wrapper
 fun:mono_marshal_get_runtime_invoke_full
 fun:mono_marshal_isinst_with_cache
