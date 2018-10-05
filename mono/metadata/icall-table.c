@@ -175,17 +175,30 @@ static const gconstpointer icall_functions [] = {
 static const gconstpointer icall_symbols [] = {
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) #func,
+#define HANDLES(inner) inner
 #define NOHANDLES(inner) inner
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
+#undef HANDLES
 #undef NOHANDLES
 	NULL
 };
 
 #endif // ENABLE_ICALL_SYMBOL_MAP
 
+static const guchar icall_uses_handles [] = {
+#define ICALL_TYPE(id,name,first)
+#define ICALL(id,name,func) 0,
+#define HANDLES(inner) 1,
+#define NOHANDLES(inner) 0,
+#include "metadata/icall-def.h"
+#undef ICALL_TYPE
+#undef ICALL
 #undef HANDLES
+#undef NOHANDLES
+};
+
 #undef HANDLES_MAYBE
 
 static int
@@ -202,6 +215,15 @@ find_slot_icall (const IcallTypeDesc *imap, const char *name)
 	if (!nameslot)
 		return -1;
 	return (nameslot - &icall_names_idx [0]);
+}
+
+static gboolean
+find_uses_handles_icall (const IcallTypeDesc *imap, const char *name)
+{
+	gsize slotnum = find_slot_icall (imap, name);
+	if (slotnum == -1)
+		return FALSE;
+	return (gboolean)icall_uses_handles [slotnum];
 }
 
 static gpointer
@@ -230,7 +252,7 @@ find_class_icalls (const char *name)
 }
 
 static gpointer
-icall_table_lookup (char *classname, char *methodname, char *sigstart)
+icall_table_lookup (char *classname, char *methodname, char *sigstart, gboolean *uses_handles)
 {
 	const IcallTypeDesc *imap = NULL;
 	gpointer res;
@@ -238,16 +260,26 @@ icall_table_lookup (char *classname, char *methodname, char *sigstart)
 	imap = find_class_icalls (classname);
 
 	/* it wasn't found in the static call tables */
-	if (!imap)
+	if (!imap) {
+		if (uses_handles)
+			*uses_handles = FALSE;
 		return NULL;
-
+	}
 	res = find_method_icall (imap, methodname);
-	if (res)
+	if (res) {
+		if (uses_handles)
+			*uses_handles = find_uses_handles_icall (imap, methodname);
 		return res;
-
+	}
 	/* try _with_ signature */
 	*sigstart = '(';
-	return find_method_icall (imap, methodname);
+	res = find_method_icall (imap, methodname);
+	if (res) {
+		if (uses_handles)
+			*uses_handles = find_uses_handles_icall (imap, methodname);
+		return res;
+	}
+	return NULL;
 }
 
 #ifdef ENABLE_ICALL_SYMBOL_MAP

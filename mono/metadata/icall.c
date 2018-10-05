@@ -8385,12 +8385,15 @@ no_icall_table (void)
 /**
  * mono_lookup_internal_call_full:
  * \param method the method to look up
+ * \param uses_handles out argument if method needs handles around managed objects.
  * \returns a pointer to the icall code for the given method.  If
+ * \p uses_handles is not NULL, it will be set to TRUE if the method
+ * needs managed objects wrapped using the infrastructure in handle.h
  *
  * If the method is not found, warns and returns NULL.
  */
 gpointer
-mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing)
+mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles)
 {
 	char *sigstart;
 	char *tmpsig;
@@ -8398,6 +8401,9 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing)
 	char *classname;
 	int typelen = 0, mlen, siglen;
 	gpointer res;
+
+	if (uses_handles)
+		*uses_handles = FALSE;
 
 	g_assert (method != NULL);
 
@@ -8472,7 +8478,7 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing)
 		else
 			return (gpointer)no_icall_table;
 	} else {
-		res = icall_table.lookup (classname, sigstart - mlen, sigstart);
+		res = icall_table.lookup (classname, sigstart - mlen, sigstart, uses_handles);
 		g_free (classname);
 
 		mono_icall_unlock ();
@@ -8500,7 +8506,7 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing)
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
 {
-	return mono_lookup_internal_call_full (method, TRUE);
+	return mono_lookup_internal_call_full (method, TRUE, NULL);
 }
 
 /*
@@ -8515,7 +8521,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 		return NULL;
 
 	gpointer func;
-	func = mono_lookup_internal_call_full (m, FALSE);
+	func = mono_lookup_internal_call_full (m, FALSE, NULL);
 	if (!func)
 		return NULL;
 	return icall_table.lookup_icall_symbol (func);
