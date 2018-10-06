@@ -128,6 +128,14 @@ typedef MonoStringHandle MonoStringOutHandle;
 typedef MonoReflectionModule MonoReflectionModuleOut;
 typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 
+typedef MonoObjectHandleUnsafe MonoObjectOutHandleUnsafe;
+typedef MonoObjectHandleUnsafe MonoObjectInOutHandleUnsafe;
+typedef MonoArrayHandleUnsafe MonoArrayOutHandleUnsafe;
+typedef MonoArrayHandleUnsafe MonoArrayInOutHandleUnsafe;
+typedef MonoStringHandleUnsafe MonoStringOutHandleUnsafe;
+typedef MonoReflectionModuleHandleUnsafe MonoReflectionModuleOutHandleUnsafe;
+
+
 // How the arguments and return value of an icall should be wrapped.
 // These names are historical, from marshal-ilgen.c.
 //
@@ -287,10 +295,10 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_DO2(macro_prefix, type) MONO_HANDLE_DO3 (macro_prefix, type)
 #define MONO_HANDLE_DO(macro_prefix, type)  MONO_HANDLE_DO2 (macro_prefix, MONO_HANDLE_TYPE_WRAP_ ## type)
 
-#define MONO_HANDLE_RETURN_BEGIN(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_BEGIN_, type)
-#define MONO_HANDLE_RETURN_BEGIN_Void				/* nothing */
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_NONE   	return
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_OBJ		return
+#define MONO_HANDLE_RETURN_BEGIN(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_BEGIN_, type) (type)
+#define MONO_HANDLE_RETURN_BEGIN_Void(type)			/* nothing */
+#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_NONE(type)  return
+#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_OBJ(type)	return (MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ (type))
 
 #define MONO_HANDLE_RETURN_END(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_END_, type);
 #define MONO_HANDLE_RETURN_END_Void				/* nothing */
@@ -315,9 +323,9 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_RAW(type)					MONO_HANDLE_DO (MONO_HANDLE_TYPE_RAW_, type) (type)
 #define MONO_HANDLE_TYPE_RAW_Void(type)					type
 #define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_NONE(type)		type
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ(type)		void*
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_OUT(type)		void*
-#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_INOUT(type)		void*
+#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ(type)		type ## HandleUnsafe
+#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_OUT(type)		type ## HandleUnsafe
+#define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_OBJ_INOUT(type)		type ## HandleUnsafe
 #define MONO_HANDLE_TYPE_RAW_ICALL_HANDLES_WRAP_VALUETYPE_REF(type)	type
 
 // Type/name in raw handle prototype and implementation.

@@ -49,6 +49,12 @@ Handle macros/functions
 #define TYPED_OUT_HANDLE_NAME(TYPE) TYPE ## HandleOut
 #define TYPED_IN_OUT_HANDLE_NAME(TYPE) TYPE ## HandleInOut
 
+// For internal purposes. Do not use.
+#define TYPED_HANDLE_PAYLOAD_NAME_UNSAFE(TYPE)	TYPE ## HandlePayloadUnsafe
+#define TYPED_HANDLE_NAME_UNSAFE(TYPE)  	TYPE ## HandleUnsafe
+#define TYPED_OUT_HANDLE_NAME_UNSAFE(TYPE) 	TYPE ## OutHandleUnsafe
+#define TYPED_IN_OUT_HANDLE_NAME_UNSAFE(TYPE) 	TYPE ## InOutHandleUnsafe
+
 // internal helpers:
 #define MONO_HANDLE_CAST_FOR(type) mono_handle_cast_##type
 #define MONO_HANDLE_TYPECHECK_FOR(type) mono_handle_typecheck_##type
@@ -73,6 +79,12 @@ Handle macros/functions
 #endif
 
 #define TYPED_HANDLE_DECL(TYPE)							\
+										\
+	typedef struct { TYPE *__raw; } TYPED_HANDLE_PAYLOAD_NAME_UNSAFE (TYPE), \
+		*TYPED_HANDLE_NAME_UNSAFE (TYPE), 				\
+		*TYPED_OUT_HANDLE_NAME_UNSAFE (TYPE), 				\
+		*TYPED_IN_OUT_HANDLE_NAME_UNSAFE (TYPE); 			\
+										\
 	typedef struct {							\
 		MONO_IF_CPLUSPLUS (						\
 			MONO_ALWAYS_INLINE					\
