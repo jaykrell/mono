@@ -39,19 +39,27 @@
 #include <mono/metadata/icall-table.h>
 
 #define NOHANDLES(inner) inner
-#define HANDLES(id, name, func, ...) 	 	 ICALL (id, name, func##_raw)
-#define HANDLES_MAYBE(cond, id, name, func, ...) ICALL (id, name, func##_raw)
+#define HANDLES(...) MONO_HANDLE_DECLARE_RAW (__VA_ARGS__);
+#define HANDLES_MAYBE(cond, ...) MONO_HANDLE_DECLARE_RAW (__VA_ARGS__);
+
+typedef union _MonoError MonoError;
 
 /*
  * icall.c defines a lot of icalls as static, to avoid having to add prototypes for
  * them, just don't include any mono headers and emit dummy prototypes.
  */
-// Generate incorrect prototypes.
+// Generate prototypes, some correct, some incorrect.
 #define ICALL_TYPE(id,name,first)
 #define ICALL(id,name,func) ICALL_EXPORT void func (void);
 #include "metadata/icall-def.h"
 #undef ICALL_TYPE
 #undef ICALL
+
+#undef HANDLES
+#undef HANDLES_MAYBE
+
+#define HANDLES(id, name, func, ...) 	 	 ICALL (id, name, func##_raw)
+#define HANDLES_MAYBE(cond, id, name, func, ...) ICALL (id, name, func##_raw)
 
 // Generate Icall_ constants
 enum {

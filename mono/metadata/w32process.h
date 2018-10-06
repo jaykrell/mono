@@ -44,7 +44,7 @@ struct MonoW32ProcessInfo
 	MonoBoolean load_user_profile;
 };
 
-typedef struct
+struct MonoW32ProcessStartInfo
 {
 	MonoObject object;
 	MonoString *filename;
@@ -71,10 +71,7 @@ typedef struct
 
 	MonoObject *unused_weak_parent_process;
 	MonoObject *unused_envVars;
-
-} MonoW32ProcessStartInfo;
-
-TYPED_HANDLE_DECL (MonoW32ProcessStartInfo);
+};
 
 typedef uint32_t gchandle_t; // FIXME use this more, make it typesafe.
 

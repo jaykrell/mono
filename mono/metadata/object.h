@@ -12,15 +12,9 @@
 
 MONO_BEGIN_DECLS
 
-typedef struct _MonoReflectionField MONO_RT_MANAGED_ATTR MonoReflectionField;
-typedef struct _MonoReflectionEvent MONO_RT_MANAGED_ATTR MonoReflectionEvent;
-typedef struct _MonoReflectionType MONO_RT_MANAGED_ATTR MonoReflectionType;
-typedef struct _MonoDelegate MONO_RT_MANAGED_ATTR MonoDelegate;
 typedef struct _MonoThreadsSync MonoThreadsSync;
-typedef struct _MonoThread MONO_RT_MANAGED_ATTR MonoThread;
 typedef struct _MonoDynamicAssembly MonoDynamicAssembly;
 typedef struct _MonoDynamicImage MonoDynamicImage;
-typedef struct _MonoReflectionMethodBody MONO_RT_MANAGED_ATTR MonoReflectionMethodBody;
 
 struct _MonoObject {
 	MonoVTable *vtable;

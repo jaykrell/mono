@@ -60,12 +60,6 @@ typedef enum {
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
 
-/* It's safe to access System.Threading.InternalThread from native code via a
- * raw pointer because all instances should be pinned.  But for uniformity of
- * icall wrapping, let's declare a MonoInternalThreadHandle anyway.
- */
-TYPED_HANDLE_DECL (MonoInternalThread);
-
 typedef void (*MonoThreadCleanupFunc) (MonoNativeThreadId tid);
 /* INFO has type MonoThreadInfo* */
 typedef void (*MonoThreadNotifyPendingExcFunc) (gpointer info);

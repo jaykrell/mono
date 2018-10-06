@@ -29,7 +29,7 @@
 extern gboolean mono_dont_free_domains;
 
 /* This is a copy of System.AppDomainSetup */
-typedef struct {
+struct MonoAppDomainSetup {
 	MonoObject object;
 	MonoString *application_base;
 	MonoString *application_name;
@@ -53,7 +53,7 @@ typedef struct {
 	MonoBoolean disallow_appbase_probe;
 	MonoArray *configuration_bytes;
 	MonoArray *serialized_non_primitives;
-} MonoAppDomainSetup;
+};
 
 typedef struct _MonoJitInfoTable MonoJitInfoTable;
 typedef struct _MonoJitInfoTableChunk MonoJitInfoTableChunk;

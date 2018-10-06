@@ -475,11 +475,6 @@ mono_handle_raw (MonoRawHandle raw_handle)
 	return handle->__raw ? *handle->__raw : NULL;
 }
 
-/* Unfortunately MonoThreadHandle is already a typedef used for something unrelated.  So
- * the coop handle for MonoThread* is MonoThreadObjectHandle.
- */
-TYPED_HANDLE_DECL (MonoThreadObject);
-
 /*
 This is the constant for a handle that points nowhere.
 Constant handles may be initialized to it, but non-constant

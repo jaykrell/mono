@@ -18,6 +18,7 @@
 #include <glib.h>
 #include <mono/metadata/object-forward.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-forward-internal.h>
 
 // Type-safe handles are a struct with a pointer to pointer.
 // The only operations allowed on them are the functions/macros in this file, and assignment
@@ -146,7 +147,84 @@ TYPED_HANDLE_DECL (MonoException);
 TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoString);
 
+/* Safely access System.AppDomain from native code */
+TYPED_HANDLE_DECL (MonoAppDomain);
+
+/* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
+TYPED_HANDLE_DECL (MonoAppDomainSetup);
+
+TYPED_HANDLE_DECL (MonoComObject);
+
+TYPED_HANDLE_DECL (MonoComInteropProxy);
+
+/* Safely access System.Delegate from native code */
+TYPED_HANDLE_DECL (MonoDelegate);
+
+/* It's safe to access System.Threading.InternalThread from native code via a
+ * raw pointer because all instances should be pinned.  But for uniformity of
+ * icall wrapping, let's declare a MonoInternalThreadHandle anyway.
+ */
+TYPED_HANDLE_DECL (MonoInternalThread);
+
+/* Safely access System.Reflection.ManifestResourceInfo from native code */
+TYPED_HANDLE_DECL (MonoManifestResourceInfo);
+
+/* Safely access System.MulticastDelegate from native code */
+TYPED_HANDLE_DECL (MonoMulticastDelegate);
+
+/* Safely access System.Reflection.Assembly from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssembly)
+
+/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
+TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
+
+/* Safely access System.Reflection.Emit.DynamicMethod from native code */
+TYPED_HANDLE_DECL (MonoReflectionDynamicMethod);
+
+/* Safely access System.Reflection.EventInfo from native code */
+TYPED_HANDLE_DECL (MonoReflectionEvent);
+
+/* Safely access System.Reflection.MonoField from native code */
+TYPED_HANDLE_DECL (MonoReflectionField);
+
+/* Safely access Systme.Reflection.MonoEvent from native code */
+TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
+
+/* Safely access System.Reflection.MonoMethod from native code */
+TYPED_HANDLE_DECL (MonoReflectionMethod);
+
+/* Safely access System.Reflection.MethodBody from native code */
+TYPED_HANDLE_DECL (MonoReflectionMethodBody);
+
 /* Safely access System.Reflection.Module from native code */
 TYPED_HANDLE_DECL (MonoReflectionModule);
+
+/* Safely access System.Reflection.ParameterInfo from native code */
+TYPED_HANDLE_DECL (MonoReflectionParameter);
+
+/* Safely access System.Reflection.MonoProperty from native code */
+TYPED_HANDLE_DECL (MonoReflectionProperty);
+
+/* Safely access System.Runtime.InteropServices.MarshalAsAttribute */
+TYPED_HANDLE_DECL (MonoReflectionMarshalAsAttribute);
+
+/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
+TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
+
+/* Safely access System.Reflection.Emit.SignatureHelper from native code */
+TYPED_HANDLE_DECL (MonoReflectionSigHelper);
+
+/* Safely access System.Type from native code */
+TYPED_HANDLE_DECL (MonoReflectionType);
+
+/* Safely access System.Reflection.Emit.TypeBuilder from native code */
+TYPED_HANDLE_DECL (MonoReflectionTypeBuilder)
+
+/* Unfortunately MonoThreadHandle is already a typedef used for something unrelated.  So
+ * the coop handle for MonoThread* is MonoThreadObjectHandle.
+ */
+TYPED_HANDLE_DECL (MonoThreadObject);
+
+TYPED_HANDLE_DECL (MonoW32ProcessStartInfo);
 
 #endif /* __MONO_HANDLE_DECL_H__ */

@@ -214,12 +214,6 @@ struct _MonoAppDomain {
 	MonoDomain *data;
 };
 
-/* Safely access System.AppDomain from native code */
-TYPED_HANDLE_DECL (MonoAppDomain);
-
-/* Safely access System.AppDomainSetup from native code.  (struct is in domain-internals.h) */
-TYPED_HANDLE_DECL (MonoAppDomainSetup);
-
 typedef struct _MonoStringBuilder MonoStringBuilder;
 
 struct _MonoStringBuilder {
@@ -319,9 +313,6 @@ struct _MonoReflectionType {
 	MonoType  *type;
 };
 
-/* Safely access System.Type from native code */
-TYPED_HANDLE_DECL (MonoReflectionType);
-
 /* This corresponds to System.RuntimeType */
 typedef struct {
 	MonoReflectionType type;
@@ -364,22 +355,18 @@ struct _MonoIUnknown
 	const MonoIUnknownVTable *vtable;
 };
 
-typedef struct {
+struct MonoComObject {
 	MonoMarshalByRefObject object;
 	MonoIUnknown *iunknown;
 	GHashTable* itf_hash;
 	MonoObject *synchronization_context;
-} MonoComObject;
+};
 
-TYPED_HANDLE_DECL (MonoComObject);
-
-typedef struct {
+struct MonoComInteropProxy {
 	MonoRealProxy real_proxy;
 	MonoComObject *com_object;
 	gint32 ref_count;
-} MonoComInteropProxy;
-
-TYPED_HANDLE_DECL (MonoComInteropProxy);
+};
 
 typedef struct {
 	MonoObject	 object;
@@ -835,9 +822,6 @@ struct _MonoReflectionMethod {
 	MonoReflectionType *reftype;
 };
 
-/* Safely access System.Reflection.MonoMethod from native code */
-TYPED_HANDLE_DECL (MonoReflectionMethod);
-
 struct _MonoDelegate {
 	MonoObject object;
 	/* The compiled code of the target method */
@@ -863,17 +847,10 @@ struct _MonoDelegate {
 	MonoBoolean method_is_virtual;
 };
 
-/* Safely access System.Delegate from native code */
-TYPED_HANDLE_DECL (MonoDelegate);
-
-typedef struct _MonoMulticastDelegate MonoMulticastDelegate;
 struct _MonoMulticastDelegate {
 	MonoDelegate delegate;
 	MonoArray *delegates;
 };
-
-/* Safely access System.MulticastDelegate from native code */
-TYPED_HANDLE_DECL (MonoMulticastDelegate);
 
 struct _MonoReflectionField {
 	MonoObject object;
@@ -884,17 +861,11 @@ struct _MonoReflectionField {
 	guint32 attrs;
 };
 
-/* Safely access System.Reflection.MonoField from native code */
-TYPED_HANDLE_DECL (MonoReflectionField);
-
 struct _MonoReflectionProperty {
 	MonoObject object;
 	MonoClass *klass;
 	MonoProperty *property;
 };
-
-/* Safely access System.Reflection.MonoProperty from native code */
-TYPED_HANDLE_DECL (MonoReflectionProperty);
 
 /*This is System.EventInfo*/
 struct _MonoReflectionEvent {
@@ -902,17 +873,11 @@ struct _MonoReflectionEvent {
 	MonoObject *cached_add_event;
 };
 
-/* Safely access System.Reflection.EventInfo from native code */
-TYPED_HANDLE_DECL (MonoReflectionEvent);
-
 struct MonoReflectionMonoEvent {
 	MonoReflectionEvent object;
 	MonoClass *klass;
 	MonoEvent *event;
 };
-
-/* Safely access Systme.Reflection.MonoEvent from native code */
-TYPED_HANDLE_DECL (MonoReflectionMonoEvent);
 
 struct MonoReflectionParameter {
 	MonoObject object;
@@ -925,9 +890,6 @@ struct MonoReflectionParameter {
 	MonoObject *MarshalAsImpl;
 };
 
-/* Safely access System.Reflection.ParameterInfo from native code */
-TYPED_HANDLE_DECL (MonoReflectionParameter);
-
 struct _MonoReflectionMethodBody {
 	MonoObject object;
 	MonoArray *clauses;
@@ -937,9 +899,6 @@ struct _MonoReflectionMethodBody {
 	guint32 local_var_sig_token;
 	guint32 max_stack;
 };
-
-/* Safely access System.Reflection.MethodBody from native code */
-TYPED_HANDLE_DECL (MonoReflectionMethodBody);
 
 struct _MonoReflectionAssembly {
 	MonoObject object;
@@ -1185,7 +1144,7 @@ typedef struct {
 	MonoString *pset;
 } MonoReflectionPermissionSet;
 
-typedef struct {
+struct MonoReflectionAssemblyBuilder {
 	MonoReflectionAssembly assembly;
 	MonoDynamicAssembly *dynamic_assembly;
 	MonoReflectionMethod *entry_point;
@@ -1213,10 +1172,7 @@ typedef struct {
 	MonoBoolean corlib_internal;
 	MonoArray *type_forwarders;
 	MonoArray *pktoken; /* as hexadecimal byte[] */
-} MonoReflectionAssemblyBuilder;
-
-/* Safely access System.Reflection.Emit.AssemblyBuilder from native code */
-TYPED_HANDLE_DECL (MonoReflectionAssemblyBuilder);
+};
 
 typedef struct {
 	MonoObject object;
@@ -1283,9 +1239,6 @@ struct _MonoReflectionModuleBuilder {
 	GHashTable *unparented_classes;
 	MonoArray *table_indexes;
 };
-
-/* Safely acess System.Reflection.Emit.ModuleBuidler from native code */
-TYPED_HANDLE_DECL (MonoReflectionModuleBuilder);
 
 typedef enum {
 	MonoTypeBuilderNew = 0,
@@ -1410,7 +1363,7 @@ typedef struct {
 	MonoArray *data;
 } MonoReflectionCustomAttr;
 
-typedef struct {
+struct MonoReflectionMarshalAsAttribute {
 	MonoObject object;
 	MonoString *marshal_cookie;
 	MonoString *marshal_type;
@@ -1422,10 +1375,7 @@ typedef struct {
 	gint32 size_const;
 	gint32 IidParameterIndex;
 	gint16 size_param_index;
-} MonoReflectionMarshalAsAttribute;
-
-/* Safely access System.Runtime.InteropServices.MarshalAsAttribute */
-TYPED_HANDLE_DECL (MonoReflectionMarshalAsAttribute);
+};
 
 typedef struct {
 	MonoObject object;
@@ -1441,7 +1391,7 @@ typedef struct {
 	MonoString *guid;
 } MonoReflectionGuidAttribute;
 
-typedef struct {
+struct MonoReflectionDynamicMethod {
 	MonoObject object;
 	MonoMethod *mhandle;
 	MonoString *name;
@@ -1457,12 +1407,9 @@ typedef struct {
 	MonoArray *refs;
 	GSList *referenced_by;
 	MonoReflectionType *owner;
-} MonoReflectionDynamicMethod;	
+};
 
-/* Safely access System.Reflection.Emit.DynamicMethod from native code */
-TYPED_HANDLE_DECL (MonoReflectionDynamicMethod);
-
-typedef struct {
+struct MonoReflectionSigHelper {
 	MonoObject object;
 	MonoReflectionModuleBuilder *module;
 	MonoArray *arguments;
@@ -1472,10 +1419,7 @@ typedef struct {
 	guint32 unmanaged_call_conv;
 	MonoArray *modreqs;
 	MonoArray *modopts;
-} MonoReflectionSigHelper;
-
-/* Safely access System.Reflection.Emit.SignatureHelper from native code */
-TYPED_HANDLE_DECL (MonoReflectionSigHelper);
+};
 
 typedef struct {
 	MonoObject object;
@@ -1488,15 +1432,12 @@ enum {
 	RESOURCE_LOCATION_IN_MANIFEST = 4
 };
 
-typedef struct {
+struct MonoManifestResourceInfo {
 	MonoObject object;
 	MonoReflectionAssembly *assembly;
 	MonoString *filename;
 	guint32 location;
-} MonoManifestResourceInfo;
-
-/* Safely access System.Reflection.ManifestResourceInfo from native code */
-TYPED_HANDLE_DECL (MonoManifestResourceInfo);
+};
 
 /* A boxed IntPtr */
 typedef struct {
