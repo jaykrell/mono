@@ -12,7 +12,6 @@
 
 MONO_BEGIN_DECLS
 
-typedef struct _MonoAssembly MonoAssembly;
 typedef struct _MonoTableInfo MonoTableInfo;
 
 typedef enum {

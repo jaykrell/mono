@@ -10,6 +10,7 @@
 
 #include <mono/utils/mono-publib.h>
 
+typedef struct _MonoAssembly MonoAssembly;
 typedef struct _MonoAssemblyName MonoAssemblyName;
 typedef struct _MonoClass MonoClass;
 typedef struct _MonoClassField MonoClassField;

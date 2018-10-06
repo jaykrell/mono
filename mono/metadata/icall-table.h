@@ -38,6 +38,7 @@ typedef struct _WSABUF WSABUF;
 
 // It helps for types to be single tokens, though this can be relaxed in some places.
 #include "utils/mono-forward-internal.h"
+#include "reflection.h"
 
 // Marshaling a "ptr" does nothing -- just pass it on unchanged.
 // Marshaling a "ref" also does nothing at this layer, but
@@ -78,11 +79,6 @@ typedef MonoIUnknown *MonoIUnknown_ptr;
 typedef unsigned *unsigned_ptr;
 typedef mono_unichar2 *mono_unichar2_ptr;
 typedef WSABUF *WSABUF_ptr;
-
-#ifndef MonoResolveTokenError
-#define MonoResolveTokenError MonoResolveTokenError
-typedef gint32 MonoResolveTokenError;
-#endif
 
 typedef gint32 MonoProtocolType;
 

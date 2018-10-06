@@ -14,7 +14,7 @@
 #else
 #define ICALL_DECL_EXPORT /* nothing */
 /* Can't be static as icall.c defines icalls referenced by icall-tables.c */
-#define ICALL_EXPORT MONO_EXTERN_C
+#define ICALL_EXPORT /* nothing */
 #endif
 
 #endif // __MONO_METADATA_ICALLS_H__
