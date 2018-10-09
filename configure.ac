@@ -5511,6 +5511,7 @@ mono/profiler/Makefile
 mono/eglib/Makefile
 mono/eglib/eglib-config.h
 mono/eglib/test/Makefile
+mono/icall-marshal/Makefile
 m4/Makefile
 ikvm-native/Makefile
 scripts/Makefile

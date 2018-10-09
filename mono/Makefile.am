@@ -40,3 +40,5 @@ SUBDIRS = $(btls_dirs) eglib arch utils cil $(sgen_dirs) metadata mini dis tests
 endif
 endif
 DIST_SUBDIRS = btls eglib arch utils cil $(sgen_dirs) metadata mini dis tests unit-tests benchmark profiler
+
+SUBDIRS += icall-marshal
