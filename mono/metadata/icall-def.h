@@ -889,7 +889,7 @@ ICALL(STRING_5, ".ctor(char[],int,int)", ves_icall_System_String_ctor_RedirectTo
 ICALL(STRING_6, ".ctor(sbyte*)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_7, ".ctor(sbyte*,int,int)", ves_icall_System_String_ctor_RedirectToCreateString)
 ICALL(STRING_8, ".ctor(sbyte*,int,int,System.Text.Encoding)", ves_icall_System_String_ctor_RedirectToCreateString)
-ICALL(STRING_9, "FastAllocateString", ves_icall_System_String_InternalAllocateStr)
+NOHANDLES(ICALL(STRING_9, "FastAllocateString", ves_icall_string_alloc_raw))
 ICALL(STRING_10, "InternalIntern", ves_icall_System_String_InternalIntern)
 ICALL(STRING_11, "InternalIsInterned", ves_icall_System_String_InternalIsInterned)
 

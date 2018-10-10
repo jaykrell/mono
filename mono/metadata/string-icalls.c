@@ -33,35 +33,21 @@ ves_icall_System_String_ctor_RedirectToCreateString (void)
 	g_assert_not_reached ();
 }
 
-MonoString *
-ves_icall_System_String_InternalAllocateStr (gint32 length)
+MonoStringHandle
+ves_icall_System_String_InternalIntern (MonoStringHandle str, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, error);
-	mono_error_set_pending_exception (error);
-
-	return str;
+	return mono_string_is_interned_lookup (str, TRUE, error);
 }
 
-MonoString  *
-ves_icall_System_String_InternalIntern (MonoString *str)
-{
-	ERROR_DECL (error);
-	MonoString *res;
+MONO_IMPLEMENT_RAW_POINTER_TO_HANDLE_WRAPPER (ves_icall_System_String_InternalIntern, MonoString, 1, (MonoString))
 
-	res = mono_string_intern_checked (str, error);
-	if (!res) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-	return res;
+MonoStringHandle
+ves_icall_System_String_InternalIsInterned (MonoStringHandle *str, MonoError *error)
+{
+	return mono_string_is_interned_lookup (str, FALSE, error);
 }
 
-MonoString * 
-ves_icall_System_String_InternalIsInterned (MonoString *str)
-{
-	return mono_string_is_interned (str);
-}
+MONO_IMPLEMENT_RAW_POINTER_TO_HANDLE_WRAPPER (ves_icall_System_String_InternalIsInterned, MonoString, 1, (MonoString))
 
 int
 ves_icall_System_String_GetLOSLimit (void)

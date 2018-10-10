@@ -1877,8 +1877,14 @@ mono_string_to_utf8_ignore (MonoString *s);
 gboolean
 mono_monitor_is_il_fastpath_wrapper (MonoMethod *method);
 
-MonoString*
-mono_string_intern_checked (MonoString *str, MonoError *error);
+MonoStringHandle
+mono_string_intern_checked (MonoStringHandle str, MonoError *error);
+
+MonoStringHandle
+mono_string_intern_handle (MonoStringHandle str, MonoError *error);
+
+MonoStringHandle
+mono_string_is_interned_lookup (MonoStringHandle str, int insert, MonoError *error);
 
 char *
 mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc);
@@ -1935,6 +1941,9 @@ MonoObjectHandle
 mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoError *error);
 
 MonoString *
+mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
+
+MonoStringHandle
 mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error);
 
 MonoString*

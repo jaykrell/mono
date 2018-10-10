@@ -287,6 +287,9 @@ mono_gc_get_range_copy_func (void);
 /* helper for the managed alloc support */
 ICALL_EXPORT
 MonoString *
+ves_icall_string_alloc_raw (int length);
+
+MonoStringHandle
 ves_icall_string_alloc (int length);
 
 /* 

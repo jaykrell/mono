@@ -654,10 +654,20 @@ mono_string_handle_pin_chars (MonoStringHandle s, uint32_t *gchandle_out);
 gpointer
 mono_object_handle_pin_unbox (MonoObjectHandle boxed_valuetype_obj, uint32_t *gchandle_out);
 
+// FIXME C++
+#define mono_handle_vtable(h) (MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoObject), vtable))
+
 static inline gpointer
 mono_handle_unbox_unsafe (MonoObjectHandle handle)
 {
-	g_assert (m_class_is_valuetype (MONO_HANDLE_GETVAL (handle, vtable)->klass));
+	g_assert (m_class_is_valuetype (mono_handle_vtable (handle)->klass));
+	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle) + 1);
+}
+
+static inline gpointer
+mono_handle_unbox_unsafe (MonoObjectHandle handle)
+{
+	g_assert (m_class_is_valuetype (mono_handle_vtable (handle)->klass));
 	return MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle) + 1);
 }
 

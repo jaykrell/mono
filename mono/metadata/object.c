@@ -1047,15 +1047,13 @@ mono_class_insecure_overlapping (MonoClass *klass)
 }
 #endif
 
-MonoString*
-ves_icall_string_alloc (int length)
+MonoStringHandle
+ves_icall_string_alloc (int length, MonoError *error)
 {
-	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (mono_domain_get (), length, error);
-	mono_error_set_pending_exception (error);
-
-	return str;
+	return mono_string_new_size_handle (mono_domain_get (), length, error);
 }
+
+MONO_IMPLEMENT_RAW_POINTER_TO_HANDLE_WRAPPER (ves_icall_string_alloc, MonoString, 1, (int))
 
 #define BITMAP_EL_SIZE (sizeof (gsize) * 8)
 
@@ -6396,30 +6394,6 @@ mono_string_new_utf16 (MonoDomain *domain, const mono_unichar2 *text, gint32 len
 }
 
 /**
- * mono_string_new_utf16_checked:
- * \param text a pointer to an utf16 string
- * \param len the length of the string
- * \param error written on error.
- * \returns A newly created string object which contains \p text.
- * On error, returns NULL and sets \p error.
- */
-MonoString *
-mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoString *s;
-	
-	error_init (error);
-	
-	s = mono_string_new_size_checked (domain, len, error);
-	if (s != NULL)
-		memcpy (mono_string_chars (s), text, len * 2);
-
-	return s;
-}
-
-/**
  * mono_string_new_utf16_handle:
  * \param text a pointer to an utf16 string
  * \param len the length of the string
@@ -6430,7 +6404,30 @@ mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32
 MonoStringHandle
 mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
 {
-	return MONO_HANDLE_NEW (MonoString, mono_string_new_utf16_checked (domain, text, len, error));
+	MONO_REQ_GC_UNSAFE_MODE;
+	
+	error_init (error);
+	
+	MonoStringHandle s = mono_string_new_size_handle (domain, len, error);
+	if (MONO_HANDLE_BOOL (s))
+		memcpy (mono_string_chars (s), text, len * sizeof (gunichar2));
+
+	return s;
+}
+
+/**
+ * mono_string_new_utf16_checked:
+ * \param text a pointer to an utf16 string
+ * \param len the length of the string
+ * \param error written on error.
+ * \returns A newly created string object which contains \p text.
+ * On error, returns NULL and sets \p error.
+ */
+MonoString *
+mono_string_new_utf16_checked (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_OBJ (MonoString, mono_string_new_utf16_handle (domain, text, len, error));
 }
 
 /**
@@ -6489,19 +6486,18 @@ mono_string_new_utf32 (MonoDomain *domain, const mono_unichar4 *text, gint32 len
 MonoString *
 mono_string_new_size (MonoDomain *domain, gint32 len)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoString *str = mono_string_new_size_checked (domain, len, error);
+	MonoStringHandle str = mono_string_new_size_handle (domain, len, error);
 	mono_error_cleanup (error);
-
-	return str;
+	HANDLE_FUNCTION_RETURN_OBJ (str);
 }
 
-MonoString *
-mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error)
+MonoStringHandle
+mono_string_new_size_handle (MonoDomain *domain, gssize len, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
-	MonoString *s;
 	MonoVTable *vtable;
 	size_t size;
 
@@ -6510,23 +6506,28 @@ mono_string_new_size_checked (MonoDomain *domain, gint32 len, MonoError *error)
 	/* check for overflow */
 	if (len < 0 || len > ((SIZE_MAX - G_STRUCT_OFFSET (MonoString, chars) - 8) / 2)) {
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", -1);
-		return NULL;
+		return NULL_HANDLE_STRING;
 	}
 
 	size = (G_STRUCT_OFFSET (MonoString, chars) + (((size_t)len + 1) * 2));
 	g_assert (size > 0);
 
 	vtable = mono_class_vtable_checked (domain, mono_defaults.string_class, error);
-	return_val_if_nok (error, NULL);
+	return_val_if_nok (error, NULL_HANDLE_STRING);
 
-	s = (MonoString *)mono_gc_alloc_string (vtable, size, len);
+	MonoStringHandle s = mono_gc_alloc_handle_string (vtable, size, len);
 
-	if (G_UNLIKELY (!s)) {
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (s)))
 		mono_error_set_out_of_memory (error, "Could not allocate %zd bytes", size);
-		return NULL;
-	}
 
 	return s;
+}
+
+MonoString *
+mono_string_new_size_checked (MonoDomain *domain, gint32 length, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_size_handle (domain, length, error));
 }
 
 /**
@@ -7197,8 +7198,8 @@ leave:
 	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
-static MonoString*
-mono_string_get_pinned (MonoString *str, MonoError *error)
+static MonoStringHandle
+mono_string_get_pinned (MonoStringHandle str, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -7207,57 +7208,63 @@ mono_string_get_pinned (MonoString *str, MonoError *error)
 	/* We only need to make a pinned version of a string if this is a moving GC */
 	if (!mono_gc_is_moving ())
 		return str;
-	int size;
-	MonoString *news;
-	size = MONO_SIZEOF_MONO_STRING + 2 * (mono_string_length (str) + 1);
-	news = (MonoString *)mono_gc_alloc_pinned_obj (((MonoObject*)str)->vtable, size);
-	if (news) {
-		memcpy (mono_string_chars (news), mono_string_chars (str), mono_string_length (str) * 2);
-		news->length = mono_string_length (str);
-	} else {
+
+	gsize length = mono_string_handle_length (str);
+
+	int size = MONO_SIZEOF_MONO_STRING + sizeof (gunichar2) * (length + 1);
+	MonoStringHandle news = MONO_HANDLE_CAST (MonoString, mono_gc_alloc_handle_pinned_obj (mono_handle_vtable (vtable), size));
+	if (!MONO_HANDLE_BOOL (news)) {
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", size);
+		return news;
 	}
+
+	uint32_t gchandle = 0;
+	memcpy (mono_string_chars (news), mono_string_handle_pin_chars (str, &gchandle), length * sizeof (gunichar2));
+	news->length = length;
+	mono_gchandle_free (gchandle);
 	return news;
 }
 
-static MonoString*
-mono_string_is_interned_lookup (MonoString *str, int insert, MonoError *error)
+MonoStringHandle
+mono_string_is_interned_lookup (MonoStringHandle str, int insert, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	error_init (error);
 
 	MonoGHashTable *ldstr_table;
-	MonoString *s, *res;
+	MonoStringHandle s;
+	MonoStringHandle res;
 	MonoDomain *domain;
 	
 	error_init (error);
 
-	domain = ((MonoObject *)str)->vtable->domain;
+	domain = MONO_HANDLE_DOMAIN (str);
 	ldstr_table = domain->ldstr_table;
 	ldstr_lock ();
-	res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, str);
-	if (res) {
-		ldstr_unlock ();
-		return res;
-	}
-	if (insert) {
-		/* Allocate outside the lock */
-		ldstr_unlock ();
-		s = mono_string_get_pinned (str, error);
-		return_val_if_nok (error, NULL);
-		if (s) {
-			ldstr_lock ();
-			res = (MonoString *)mono_g_hash_table_lookup (ldstr_table, str);
-			if (res) {
-				ldstr_unlock ();
-				return res;
-			}
-			mono_g_hash_table_insert (ldstr_table, s, s);
-			ldstr_unlock ();
-		}
-		return s;
-	}
+	res = MONO_HANDLE_NEW (MonoString, (MonoString *)mono_g_hash_table_lookup (ldstr_table, NONO_HANDLE_RAW (str)));
+	if (MONO_HANDLE_BOOL (res))
+		goto exit;
+	if (!insert)
+		goto return_null;
+
+	/* Allocate outside the lock */
 	ldstr_unlock ();
-	return NULL;
+	s = mono_string_get_pinned (str, error);
+	goto_if_nok (error, return_null);
+	if (MONO_HANDLE_BOOL (s)) {
+		ldstr_lock ();
+		res = MONO_HANDLE_NEW (MonoString, (MonoString *)mono_g_hash_table_lookup (ldstr_table, NONO_HANDLE_RAW (str)));
+		if (MONO_HANDLE_BOOL (res))
+			goto exit;
+		mono_g_hash_table_insert (ldstr_table, NONO_HANDLE_RAW (s), NONO_HANDLE_RAW (s));
+	}
+	res = s;
+	goto exit;
+return_null:
+	res = NULL_HANDLE_STRING;
+exit:
+	ldstr_unlock ();
+	return res;
 }
 
 /**
@@ -7266,13 +7273,15 @@ mono_string_is_interned_lookup (MonoString *str, int insert, MonoError *error)
  * \returns Whether the string has been interned.
  */
 MonoString*
-mono_string_is_interned (MonoString *o)
+mono_string_is_interned (MonoString *o_raw)
 {
+	HANDLE_FUNCTION_ENTER ();
 	ERROR_DECL (error);
-	MonoString *result = mono_string_is_interned_lookup (o, FALSE, error);
+	MONO_HANDLE_DCL (MonoString, o_raw);
+	MonoStringHandle result = mono_string_is_interned_lookup (o, FALSE, error);
 	/* This function does not fail. */
 	mono_error_assert_ok (error);
-	return result;
+	HANDLE_FUNCTION_RETURN_OBJ (result);
 }
 
 /**
@@ -7282,12 +7291,13 @@ mono_string_is_interned (MonoString *o)
  * \returns The interned string.
  */
 MonoString*
-mono_string_intern (MonoString *str)
+mono_string_intern (MonoString *str_raw)
 {
-	ERROR_DECL (error);
-	MonoString *result = mono_string_intern_checked (str, error);
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, str);
+	str = mono_string_intern_handle (str, error);
 	mono_error_assert_ok (error);
-	return result;
+	HANDLE_FUNCTION_RETURN_OBJ (str);
 }
 
 /**
@@ -7298,12 +7308,17 @@ mono_string_intern (MonoString *str)
  * \returns The interned string.  On failure returns NULL and sets \p error
  */
 MonoString*
-mono_string_intern_checked (MonoString *str, MonoError *error)
+mono_string_intern_checked (MonoString* str_raw, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
+	HANDLE_FUNCTION_ENTER ();
+	MONO_HANDLE_DCL (MonoObject, str);
 	error_init (error);
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_intern_handle (str, error));
+}
 
+MonoStringHandle
+mono_string_intern_handle (MonoStringHandle str, MonoError *error)
+{
 	return mono_string_is_interned_lookup (str, TRUE, error);
 }
 
