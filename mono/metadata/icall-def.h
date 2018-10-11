@@ -507,7 +507,7 @@ ICALL(NUMBER_FORMATTER_1, "GetFormatterTables", ves_icall_System_NumberFormatter
 
 ICALL_TYPE(OBJ, "System.Object", OBJ_1)
 HANDLES(ICALL(OBJ_1, "GetType", ves_icall_System_Object_GetType))
-ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash)
+ICALL(OBJ_2, "InternalGetHashCode", mono_object_hash_internal)
 ICALL(OBJ_3, "MemberwiseClone", ves_icall_System_Object_MemberwiseClone)
 
 ICALL_TYPE(ASSEM, "System.Reflection.Assembly", ASSEM_1a)

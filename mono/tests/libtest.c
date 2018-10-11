@@ -7629,14 +7629,19 @@ mono_test_init_symbols (void)
 		return;
 
 	sym_mono_install_ftnptr_eh_callback = (void (*) (MonoFtnPtrEHCallback)) (lookup_mono_symbol ("mono_install_ftnptr_eh_callback"));
+	g_assert (sym_mono_install_ftnptr_eh_callback);
 
 	sym_mono_gchandle_get_target = (MonoObject* (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_get_target"));
+	g_assert (sym_mono_gchandle_get_target);
 
 	sym_mono_gchandle_new = (guint32 (*) (MonoObject *, mono_bool)) (lookup_mono_symbol ("mono_gchandle_new"));
+	g_assert (sym_mono_gchandle_new);
 
 	sym_mono_gchandle_free = (void (*) (guint32 gchandle)) (lookup_mono_symbol ("mono_gchandle_free"));
+	g_assert (sym_mono_gchandle_free);
 
 	sym_mono_raise_exception = (void (*) (MonoException *)) (lookup_mono_symbol ("mono_raise_exception"));
+	g_assert (sym_mono_raise_exception);
 
 	sym_inited = 1;
 }

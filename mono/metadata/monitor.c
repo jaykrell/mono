@@ -331,7 +331,7 @@ mono_locks_dump (gboolean include_untaken)
 					to_recycle++;
 			} else {
 				if (!monitor_is_on_freelist ((MonoThreadsSync *)mon->data)) {
-					MonoObject *holder = (MonoObject *)mono_gchandle_get_target ((guint32)(gsize)mon->data);
+					MonoObject *holder = (MonoObject *)mono_gchandle_get_target_internal ((guint32)(gsize)mon->data);
 					if (mon_status_get_owner (mon->status)) {
 						g_print ("Lock %p in object %p held by thread %d, nest level: %d\n",
 							mon, holder, mon_status_get_owner (mon->status), mon->nest);
@@ -393,7 +393,7 @@ mon_new (gsize id)
 		new_ = NULL;
 		for (marray = monitor_allocated; marray; marray = marray->next) {
 			for (i = 0; i < marray->num_monitors; ++i) {
-				if (mono_gchandle_get_target ((guint32)(gsize)marray->monitors [i].data) == NULL) {
+				if (mono_gchandle_get_target_internal ((guint32)(gsize)marray->monitors [i].data) == NULL) {
 					new_ = &marray->monitors [i];
 					if (new_->wait_list) {
 						/* Orphaned events left by aborted threads */
@@ -403,7 +403,7 @@ mon_new (gsize id)
 							new_->wait_list = g_slist_remove (new_->wait_list, new_->wait_list->data);
 						}
 					}
-					mono_gchandle_free ((guint32)(gsize)new_->data);
+					mono_gchandle_free_internal ((guint32)(gsize)new_->data);
 					new_->data = monitor_freelist;
 					monitor_freelist = new_;
 				}
@@ -460,7 +460,7 @@ alloc_mon (MonoObject *obj, gint32 id)
 
 	mono_monitor_allocator_lock ();
 	mon = mon_new (id);
-	mon->data = (void *)(size_t)mono_gchandle_new_weakref (obj, TRUE);
+	mon->data = (void *)(size_t)mono_gchandle_new_weakref_internal (obj, TRUE);
 	mono_monitor_allocator_unlock ();
 
 	return mon;
@@ -471,7 +471,7 @@ static void
 discard_mon (MonoThreadsSync *mon)
 {
 	mono_monitor_allocator_lock ();
-	mono_gchandle_free ((guint32)(gsize)mon->data);
+	mono_gchandle_free_internal ((guint32)(gsize)mon->data);
 	mon_finalize (mon);
 	mono_monitor_allocator_unlock ();
 }
@@ -564,7 +564,7 @@ mono_monitor_inflate (MonoObject *obj)
  * Calculate a hash code for @obj that is constant while @obj is alive.
  */
 int
-mono_object_hash (MonoObject* obj)
+mono_object_hash_internal (MonoObject* obj)
 {
 #ifdef HAVE_MOVING_COLLECTOR
 	LockWord lw;
@@ -632,6 +632,12 @@ mono_object_hash (MonoObject* obj)
  */
 	return (GPOINTER_TO_UINT (obj) >> MONO_OBJECT_ALIGNMENT_SHIFT) * 2654435761u;
 #endif
+}
+
+int
+mono_object_hash (MonoObject* obj)
+{
+	MONO_EXTERNAL_ONLY (int, mono_object_hash_internal (obj));
 }
 
 static gboolean

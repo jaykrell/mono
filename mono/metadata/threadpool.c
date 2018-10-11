@@ -372,7 +372,7 @@ worker_callback (void)
 				else
 					mono_error_cleanup (error);
 				mono_thread_internal_unhandled_exception (exc);
-			} else if (res && *(MonoBoolean*) mono_object_unbox (res) == FALSE) {
+			} else if (res && *(MonoBoolean*) mono_object_unbox_internal (res) == FALSE) {
 				retire = TRUE;
 			}
 
@@ -434,23 +434,23 @@ mono_threadpool_begin_invoke (MonoDomain *domain, MonoObject *target, MonoMethod
 
 	error_init (error);
 
-	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL, error);
+	message = mono_method_call_message_new (method, params, mono_get_delegate_invoke_internal (method->klass), (params != NULL) ? (&async_callback) : NULL, (params != NULL) ? (&state) : NULL, error);
 	return_val_if_nok (error, NULL);
 
 	async_call = (MonoAsyncCall*) mono_object_new_checked (domain, async_call_klass, error);
 	return_val_if_nok (error, NULL);
 
-	MONO_OBJECT_SETREF (async_call, msg, message);
-	MONO_OBJECT_SETREF (async_call, state, state);
+	MONO_OBJECT_SETREF_INTERNAL (async_call, msg, message);
+	MONO_OBJECT_SETREF_INTERNAL (async_call, state, state);
 
 	if (async_callback) {
-		MONO_OBJECT_SETREF (async_call, cb_method, mono_get_delegate_invoke (((MonoObject*) async_callback)->vtable->klass));
-		MONO_OBJECT_SETREF (async_call, cb_target, async_callback);
+		MONO_OBJECT_SETREF_INTERNAL (async_call, cb_method, mono_get_delegate_invoke_internal (((MonoObject*) async_callback)->vtable->klass));
+		MONO_OBJECT_SETREF_INTERNAL (async_call, cb_target, async_callback);
 	}
 
 	async_result = mono_async_result_new (domain, NULL, async_call->state, NULL, (MonoObject*) async_call, error);
 	return_val_if_nok (error, NULL);
-	MONO_OBJECT_SETREF (async_result, async_delegate, target);
+	MONO_OBJECT_SETREF_INTERNAL (async_result, async_delegate, target);
 
 	mono_threadpool_enqueue_work_item (domain, (MonoObject*) async_result, error);
 	return_val_if_nok (error, NULL);
@@ -496,7 +496,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 				mono_w32event_close (wait_event);
 				return NULL;
 			}
-			MONO_OBJECT_SETREF (ares, handle, (MonoObject*) wait_handle);
+			MONO_OBJECT_SETREF_INTERNAL (ares, handle, (MonoObject*) wait_handle);
 		}
 		mono_monitor_exit ((MonoObject*) ares);
 #ifdef HOST_WIN32

@@ -69,8 +69,8 @@ typedef void	    (*MonoMainThreadFunc)    (void* user_data);
 		mono_gc_wbarrier_arrayref_copy (__p, __s, (count));	\
 	} while (0)
 
-MONO_API mono_unichar2 *mono_string_chars  (MonoString *s);
-MONO_API int            mono_string_length (MonoString *s);
+MONO_API MONO_RT_EXTERNAL_ONLY mono_unichar2 *mono_string_chars  (MonoString *s);
+MONO_API MONO_RT_EXTERNAL_ONLY int            mono_string_length (MonoString *s);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_object_new		    (MonoDomain *domain, MonoClass *klass);
@@ -109,13 +109,13 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoArray*
 mono_array_clone	    (MonoArray *array);
 
-MONO_API char*
+MONO_API MONO_RT_EXTERNAL_ONLY char*
 mono_array_addr_with_size   (MonoArray *array, int size, uintptr_t idx);
 
 MONO_API MONO_RT_EXTERNAL_ONLY uintptr_t
 mono_array_length           (MonoArray *array);
 
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString*
 mono_string_empty	      (MonoDomain *domain);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -134,7 +134,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoString*
 mono_ldstr		    (MonoDomain *domain, MonoImage *image, uint32_t str_index);
 
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString*
 mono_string_is_interned	    (MonoString *str);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -145,7 +145,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoString*
 mono_string_new		    (MonoDomain *domain, const char *text);
 
-MONO_API MonoString*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoString*
 mono_string_new_wrapper	    (const char *text);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -160,13 +160,13 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 char *
 mono_string_to_utf8	    (MonoString *string_obj);
 
-MONO_API char *
+MONO_API MONO_RT_EXTERNAL_ONLY char *
 mono_string_to_utf8_checked (MonoString *string_obj, MonoError *error);
 
-MONO_API mono_unichar2 *
+MONO_API MONO_RT_EXTERNAL_ONLY mono_unichar2 *
 mono_string_to_utf16	    (MonoString *string_obj);
 
-MONO_API mono_unichar4 *
+MONO_API MONO_RT_EXTERNAL_ONLY mono_unichar4 *
 mono_string_to_utf32	    (MonoString *string_obj);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
@@ -175,13 +175,13 @@ mono_string_from_utf16	    (/*const*/ mono_unichar2 *data);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoString *
 mono_string_from_utf32	    (/*const*/ mono_unichar4 *data);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_string_equal           (MonoString *s1, MonoString *s2);
 
-MONO_API unsigned int
+MONO_API MONO_RT_EXTERNAL_ONLY unsigned int
 mono_string_hash            (MonoString *s);
 
-MONO_API int
+MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_object_hash            (MonoObject* obj);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -191,22 +191,22 @@ mono_object_to_string (MonoObject *obj, MonoObject **exc);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
 mono_value_box		    (MonoDomain *domain, MonoClass *klass, void* val);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_value_copy             (void* dest, /*const*/ void* src, MonoClass *klass);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_value_copy_array       (MonoArray *dest, int dest_idx, void* src, int count);
 
-MONO_API MonoVTable *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoVTable*
 mono_object_get_vtable      (MonoObject *obj);
 
-MONO_API MonoDomain*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoDomain*
 mono_object_get_domain      (MonoObject *obj);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoClass*
 mono_object_get_class       (MonoObject *obj);
 
-MONO_API void*
+MONO_API MONO_RT_EXTERNAL_ONLY void*
 mono_object_unbox	    (MonoObject *obj);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject *
@@ -230,7 +230,7 @@ mono_monitor_enter           (MonoObject *obj);
 MONO_API void
 mono_monitor_enter_v4        (MonoObject *obj, char *lock_taken);
 
-MONO_API unsigned int
+MONO_API MONO_RT_EXTERNAL_ONLY unsigned int
 mono_object_get_size         (MonoObject *o);
 
 MONO_API void 
@@ -251,26 +251,26 @@ mono_runtime_object_init    (MonoObject *this_obj);
 MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_runtime_class_init	    (MonoVTable *vtable);
 
-MONO_API MonoDomain *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoDomain*
 mono_vtable_domain          (MonoVTable *vtable);
 
-MONO_API MonoClass *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass*
 mono_vtable_class           (MonoVTable *vtable);
 
-MONO_API MonoMethod*
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod*
 mono_object_get_virtual_method (MonoObject *obj, MonoMethod *method);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
 mono_runtime_invoke	    (MonoMethod *method, void *obj, void **params,
 			     MonoObject **exc);
 
-MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod*
 mono_get_delegate_invoke    (MonoClass *klass);
 
-MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod*
 mono_get_delegate_begin_invoke (MonoClass *klass);
 
-MONO_API MonoMethod *
+MONO_API MONO_RT_EXTERNAL_ONLY MonoMethod*
 mono_get_delegate_end_invoke (MonoClass *klass);
 
 MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*
@@ -287,7 +287,7 @@ mono_method_get_unmanaged_thunk (MonoMethod *method);
 MONO_API MONO_RT_EXTERNAL_ONLY MonoArray*
 mono_runtime_get_main_args  (void);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_runtime_exec_managed_code (MonoDomain *domain,
 				MonoMainThreadFunc main_func,
 				void* main_args);
@@ -300,7 +300,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_runtime_exec_main	    (MonoMethod *method, MonoArray *args,
 			     MonoObject **exc);
 
-MONO_API int
+MONO_API MONO_RT_EXTERNAL_ONLY int
 mono_runtime_set_main_args  (int argc, char* argv[]);
 
 /* The following functions won't be available with mono was configured with remoting disabled. */
@@ -319,10 +319,10 @@ mono_store_remote_field_new (MonoObject *this_obj, MonoClass *klass, MonoClassFi
 
 /* #endif */
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_unhandled_exception    (MonoObject *exc);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_print_unhandled_exception (MonoObject *exc);
 
 MONO_API MONO_RT_EXTERNAL_ONLY
@@ -330,13 +330,13 @@ void*
 mono_compile_method	   (MonoMethod *method);
 
 /* accessors for fields and properties */
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_field_set_value (MonoObject *obj, MonoClassField *field, void *value);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_field_static_set_value (MonoVTable *vt, MonoClassField *field, void *value);
 
-MONO_API void
+MONO_API MONO_RT_EXTERNAL_ONLY void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value);
 
 MONO_API MONO_RT_EXTERNAL_ONLY void
@@ -365,10 +365,10 @@ mono_property_get_value (MonoProperty *prop, void *obj, void **params, MonoObjec
  * mono_gchandle_get_target () can be used to get the object referenced by both kinds
  * of handle: for a weakref handle, if an object has been collected, it will return NULL.
  */
-MONO_API uint32_t      mono_gchandle_new         (MonoObject *obj, mono_bool pinned);
-MONO_API uint32_t      mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection);
-MONO_API MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
-MONO_API void         mono_gchandle_free        (uint32_t gchandle);
+MONO_API MONO_RT_EXTERNAL_ONLY uint32_t     mono_gchandle_new         (MonoObject *obj, mono_bool pinned);
+MONO_API MONO_RT_EXTERNAL_ONLY uint32_t     mono_gchandle_new_weakref (MonoObject *obj, mono_bool track_resurrection);
+MONO_API MONO_RT_EXTERNAL_ONLY MonoObject*  mono_gchandle_get_target  (uint32_t gchandle);
+MONO_API MONO_RT_EXTERNAL_ONLY void         mono_gchandle_free        (uint32_t gchandle);
 
 /* Reference queue support
  *
@@ -382,25 +382,20 @@ MONO_API void         mono_gchandle_free        (uint32_t gchandle);
 typedef void (*mono_reference_queue_callback) (void *user_data);
 typedef struct _MonoReferenceQueue MonoReferenceQueue;
 
-MONO_API MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback callback);
-MONO_API void mono_gc_reference_queue_free (MonoReferenceQueue *queue);
-MONO_API mono_bool mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data);
-
-#define mono_gc_reference_queue_add_handle(queue, obj, user_data) \
-	(mono_gc_reference_queue_add ((queue), MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, obj)), (user_data)))
-
+MONO_API MONO_RT_EXTERNAL_ONLY MonoReferenceQueue* mono_gc_reference_queue_new (mono_reference_queue_callback callback);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_reference_queue_free (MonoReferenceQueue *queue);
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data);
 
 /* GC write barriers support */
-MONO_API void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
-MONO_API void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
-MONO_API void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
-MONO_API void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
-MONO_API void mono_gc_wbarrier_generic_store_atomic (void *ptr, MonoObject *value);
-MONO_API void mono_gc_wbarrier_generic_nostore (void* ptr);
-MONO_API void mono_gc_wbarrier_value_copy    (void* dest, /*const*/ void* src, int count, MonoClass *klass);
-MONO_API void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_set_field     (MonoObject *obj, void* field_ptr, MonoObject* value);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_set_arrayref  (MonoArray *arr, void* slot_ptr, MonoObject* value);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_arrayref_copy (void* dest_ptr, void* src_ptr, int count);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_store (void* ptr, MonoObject* value);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_store_atomic (void *ptr, MonoObject *value);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_generic_nostore (void* ptr);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_value_copy    (void* dest, /*const*/ void* src, int count, MonoClass *klass);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_gc_wbarrier_object_copy   (MonoObject* obj, MonoObject *src);
 
 MONO_END_DECLS
 
 #endif
-

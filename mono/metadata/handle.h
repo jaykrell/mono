@@ -380,14 +380,14 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_SETRAW(HANDLE, FIELD, VALUE) do {			\
 		MONO_HANDLE_SUPPRESS_SCOPE(1);				\
 		MonoObject *__val = MONO_HANDLE_SUPPRESS ((MonoObject*)(MONO_HANDLE_UNSUPPRESS (VALUE))); \
-		MONO_OBJECT_SETREF (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, __val); \
+		MONO_OBJECT_SETREF_INTERNAL (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, __val); \
 	} while (0)
 
 #define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {			\
 		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
 		do {							\
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
-			MONO_OBJECT_SETREF (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, MONO_HANDLE_RAW (__val)); \
+			MONO_OBJECT_SETREF_INTERNAL (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, MONO_HANDLE_RAW (__val)); \
 		} while (0);						\
 	} while (0)
 
@@ -443,7 +443,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		{	/* FIXME scope needed by Centrinel */		\
 			/* FIXME mono_array_set is not an expression. */ \
 			MONO_HANDLE_SUPPRESS_SCOPE(1);			\
-			mono_array_set (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), TYPE, __idx, __val); \
+			mono_array_set_internal (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), TYPE, __idx, __val); \
 		}							\
 	} while (0)
 
@@ -458,7 +458,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_ARRAY_GETVAL(DEST, HANDLE, TYPE, IDX) do {		\
 		MonoArrayHandle __arr = (HANDLE);			\
 		uintptr_t __idx = (IDX);				\
-		TYPE __result = MONO_HANDLE_SUPPRESS (mono_array_get (MONO_HANDLE_RAW(__arr), TYPE, __idx)); \
+		TYPE __result = MONO_HANDLE_SUPPRESS (mono_array_get_internal (MONO_HANDLE_RAW(__arr), TYPE, __idx)); \
 		(DEST) =  __result;					\
 	} while (0)
 
@@ -490,7 +490,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		MonoObjectHandle __obj = MONO_HANDLE_CAST (MonoObject, (HANDLE)); \
 		MonoClassField *__field = (FIELD);			\
 		MonoObjectHandle __value = MONO_HANDLE_CAST (MonoObject, (VALH)); \
-		MONO_HANDLE_SUPPRESS (mono_gc_wbarrier_generic_store (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value))); \
+		MONO_HANDLE_SUPPRESS (mono_gc_wbarrier_generic_store_internal (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value))); \
 	} while (0)
 
 /* Baked typed handles we all want */
@@ -593,16 +593,12 @@ mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_
 uintptr_t
 mono_array_handle_length (MonoArrayHandle arr);
 
-static inline void
-mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index)
-{
-#if MONO_TYPE_SAFE_HANDLES
-	MONO_HANDLE_SUPPRESS (g_assert (dest.__raw));
-	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)mono_array_get(MONO_HANDLE_RAW (array), gpointer, index));
-#else
-	MONO_HANDLE_SUPPRESS (dest->__raw = (MonoObject *)mono_array_get(MONO_HANDLE_RAW (array), gpointer, index));
-#endif
-}
+// FIXME This should be inline in the header.
+// 1. object-internals.h is not usable here without more refactoring.
+// 2. This function was not previously entirely header-only, because mono_array_get
+//    was not in a header, so no loss of performance. But it could be better.
+void
+mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index);
 
 #define mono_handle_class(o) MONO_HANDLE_SUPPRESS (mono_object_class (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (o))))
 
@@ -614,24 +610,13 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle);
 
-static inline gboolean
-mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
-{
-	// This function serves to reduce coop handle creation.
-	MONO_HANDLE_SUPPRESS_SCOPE (1);
-	return mono_gchandle_get_target (gchandle) == MONO_HANDLE_RAW (equal);
-}
+//FIXME should be inline
+gboolean
+mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal);
 
-static inline void
-mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null,
-	gboolean *is_equal)
-{
-	// This function serves to reduce coop handle creation.
-	MONO_HANDLE_SUPPRESS_SCOPE (1);
-	MonoObject *target = mono_gchandle_get_target (gchandle);
-	*is_null = target == NULL;
-	*is_equal = target == MONO_HANDLE_RAW (equal);
-}
+//FIXME should be inline
+void
+mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null, gboolean *is_equal);
 
 void
 mono_gchandle_set_target_handle (guint32 gchandle, MonoObjectHandle obj);
@@ -670,23 +655,17 @@ mono_context_get_handle (void);
 void
 mono_context_set_handle (MonoAppContextHandle new_context);
 
-static inline guint32
-mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle)
-{
-	return mono_gchandle_new_weakref (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), FALSE);
-}
+// FIXME should be inline
+guint32
+mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle);
 
-static inline int
-mono_handle_hash (MonoObjectHandle object)
-{
-	return mono_object_hash (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (object)));
-}
+// FIXME should be inline
+int
+mono_handle_hash (MonoObjectHandle object);
 
-static inline guint32
-mono_gchandle_new_weakref_from_handle_track_resurrection (MonoObjectHandle handle)
-{
-	return mono_gchandle_new_weakref (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), TRUE);
-}
+// FIXME should be inline
+guint32
+mono_gchandle_new_weakref_from_handle_track_resurrection (MonoObjectHandle handle);
 
 G_END_DECLS
 
