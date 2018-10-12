@@ -3028,7 +3028,7 @@ mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass
 	static MonoMethod *bzero_method;
 
 	/* FIXME: Optimize this for the case when dest is an LDADDR */
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 	if (mini_is_gsharedvt_klass (klass)) {
 		size_ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_VALUE_SIZE);
 		bzero_ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_BZERO);
@@ -4613,7 +4613,7 @@ mini_emit_ldelema_1_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	if (mini_is_gsharedvt_variable_klass (klass)) {
 		size = -1;
 	} else {
-		mono_class_init (klass);
+		mono_class_init_internal (klass);
 		size = mono_class_array_element_size (klass);
 	}
 
@@ -4678,7 +4678,7 @@ mini_emit_ldelema_2_ins (MonoCompile *cfg, MonoClass *klass, MonoInst *arr, Mono
 	MonoInst *ins;
 	guint32 size;
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 	size = mono_class_array_element_size (klass);
 
 	index1 = index_ins1->dreg;
@@ -7741,7 +7741,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 
 			if (!m_class_is_inited (cmethod->klass))
-				if (!mono_class_init (cmethod->klass))
+				if (!mono_class_init_internal (cmethod->klass))
 					TYPE_LOAD_ERROR (cmethod->klass);
 
 			fsig = mono_method_signature_internal (cmethod);
@@ -9286,7 +9286,7 @@ calli_end:
 
 			mono_save_token_info (cfg, image, token, cmethod);
 
-			if (!mono_class_init (cmethod->klass))
+			if (!mono_class_init_internal (cmethod->klass))
 				TYPE_LOAD_ERROR (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
@@ -9750,7 +9750,7 @@ calli_end:
 			}
 			if (!dont_verify && !cfg->skip_visibility && !mono_method_can_access_field (method, field))
 				FIELD_ACCESS_FAILURE (method, field);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 
 			/* if the class is Critical then transparent code cannot access it's fields */
 			if (!is_instance && mono_security_core_clr_enabled ())
@@ -10452,7 +10452,7 @@ field_access_end:
 			if (il_op == MONO_CEE_LDELEM) {
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
-				mono_class_init (klass);
+				mono_class_init_internal (klass);
 			}
 			else
 				klass = array_access_to_klass (il_op);
@@ -10500,7 +10500,7 @@ field_access_end:
 			if (il_op == MONO_CEE_STELEM) {
 				klass = mini_get_class (method, token, generic_context);
 				CHECK_TYPELOAD (klass);
-				mono_class_init (klass);
+				mono_class_init_internal (klass);
 			}
 			else
 				klass = array_access_to_klass (il_op);
@@ -10632,7 +10632,7 @@ field_access_end:
 			}
 			if (!handle)
 				LOAD_ERROR;
-			mono_class_init (handle_class);
+			mono_class_init_internal (handle_class);
 			if (cfg->gshared) {
 				if (mono_metadata_token_table (n) == MONO_TABLE_TYPEDEF ||
 						mono_metadata_token_table (n) == MONO_TABLE_TYPEREF) {
@@ -10683,7 +10683,7 @@ field_access_end:
 					(strcmp (cmethod->name, "GetTypeFromHandle") == 0)) {
 					MonoClass *tclass = mono_class_from_mono_type_internal ((MonoType *)handle);
 
-					mono_class_init (tclass);
+					mono_class_init_internal (tclass);
 					if (context_used) {
 						ins = mini_emit_get_rgctx_klass (cfg, context_used,
 							tclass, MONO_RGCTX_INFO_REFLECTION_TYPE);
@@ -11050,7 +11050,7 @@ mono_ldptr:
 			MonoInst *iargs [2];
 
 			klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 			NEW_DOMAINCONST (cfg, iargs [0]);
 			MONO_ADD_INS (cfg->cbb, iargs [0]);
 			NEW_CLASSCONST (cfg, iargs [1], klass);
@@ -11078,7 +11078,7 @@ mono_ldptr:
 			--sp;
 			klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
 			g_assert (m_class_is_valuetype (klass));
-			mono_class_init (klass);
+			mono_class_init_internal (klass);
 
 			{
 				MonoInst *src, *dest, *temp;
@@ -11457,7 +11457,7 @@ mono_ldptr:
 			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
-			mono_class_init (cmethod->klass);
+			mono_class_init_internal (cmethod->klass);
 
 			mono_save_token_info (cfg, image, n, cmethod);
 
@@ -11530,7 +11530,7 @@ mono_ldptr:
 			cmethod = mini_get_method (cfg, method, n, NULL, generic_context);
 			CHECK_CFG_ERROR;
 
-			mono_class_init (cmethod->klass);
+			mono_class_init_internal (cmethod->klass);
 
 			context_used = mini_method_check_context_used (cfg, cmethod);
 
