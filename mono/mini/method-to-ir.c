@@ -8938,6 +8938,9 @@ calli_end:
 			ins_flag = 0;
 			break;
 		case MONO_CEE_STIND_REF:
+#ifdef TARGET_ARM64
+			ins_flag |= MONO_INST_VOLATILE;
+#endif
 		case MONO_CEE_STIND_I1:
 		case MONO_CEE_STIND_I2:
 		case MONO_CEE_STIND_I4:
@@ -8946,7 +8949,6 @@ calli_end:
 		case MONO_CEE_STIND_R8:
 		case MONO_CEE_STIND_I: {
 			sp -= 2;
-
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
@@ -9726,6 +9728,10 @@ calli_end:
 				if (il_op == MONO_CEE_STFLD) {
 					sp -= 2;
 					store_val = sp [1];
+#ifdef TARGET_ARM64
+					if (store_val->type == STACK_OBJ)
+						ins_flag |= MONO_INST_VOLATILE;
+#endif
 				} else {
 					--sp;
 				}
@@ -10153,7 +10159,6 @@ calli_end:
 			}
 
 			/* Generate IR to do the actual load/store operation */
-
 			if ((il_op == MONO_CEE_STFLD || il_op == MONO_CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
