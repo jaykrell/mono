@@ -8947,7 +8947,10 @@ calli_end:
 		case MONO_CEE_STIND_I: {
 			sp -= 2;
 
-			if (ins_flag & MONO_INST_VOLATILE) {
+#ifndef TARGET_ARM64
+			if (ins_flag & MONO_INST_VOLATILE)
+#endif
+			{
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
@@ -9173,7 +9176,10 @@ calli_end:
 				ins->flags |= ins_flag;
 				il_op = (MonoOpcodeEnum)next_ip [0];
 				next_ip += stloc_len;
-				if (ins_flag & MONO_INST_VOLATILE) {
+#ifndef TARGET_ARM64
+				if (ins_flag & MONO_INST_VOLATILE)
+#endif
+				{
 					/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 					mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 				}
@@ -9835,7 +9841,10 @@ calli_end:
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
-					if (ins_flag & MONO_INST_VOLATILE) {
+#ifndef TARGET_ARM64
+					if (ins_flag & MONO_INST_VOLATILE)
+#endif
+					{
 						/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 						mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 					}
@@ -10154,7 +10163,10 @@ calli_end:
 
 			/* Generate IR to do the actual load/store operation */
 
-			if ((il_op == MONO_CEE_STFLD || il_op == MONO_CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+#ifndef TARGET_ARM64
+			if ((il_op == MONO_CEE_STFLD || il_op == MONO_CEE_STSFLD) && (ins_flag & MONO_INST_VOLATILE))
+#endif
+			{
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 			}
@@ -10264,7 +10276,10 @@ calli_end:
 			}
 
 field_access_end:
-			if ((il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
+#ifndef TARGET_ARM64
+			if ((il_op == MONO_CEE_LDFLD || il_op == MONO_CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE))
+#endif
+			{
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
 			}
