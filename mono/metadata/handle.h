@@ -277,6 +277,7 @@ Handle macros/functions
 // It should only be a problem for a moving/compacting GC.
 //
 // To fix that we'd have to give up on a macro-free conversion.
+#if 0 // requires pinning
 #define MONO_HANDLE_SETRAW(handle, field, value) ((handle)->field = (value))
 #define MONO_HANDLE_SET(handle, field, value) 	 ((handle)->field = (value))
 #ifndef MONO_HANDLE_TRACK_OWNER
@@ -288,6 +289,24 @@ Handle macros/functions
 #define MONO_HANDLE_NEW_GET(type, handle, field) ((handle)->field.NewHandle ())
 #define MONO_HANDLE_GETVAL(handle, field) 	((handle)->field)
 #define MONO_HANDLE_SETVAL(handle, field, type, value) (((handle)->field) = (type)value)
+#else
+
+// Pinning not needed, but HANDLE_FIELD must be used and wrecks idioms.
+
+#define MONO_HANDLE_SETRAW(handle, field, value) (HANDLE_FIELD (handle, field) = (value))
+#define MONO_HANDLE_SET(handle, field, value) 	 (HANDLE_FIELD (handle, field) = (value))
+#ifndef MONO_HANDLE_TRACK_OWNER
+#define MONO_HANDLE_NEW(type, object) (MonoHandle<type>().New (object))
+#else
+#define MONO_HANDLE_NEW(type, object) (MonoHandle<type>().New ((object), HANDLE_OWNER))
+#endif
+#define MONO_HANDLE_GET(result, handle, field)	 ((result) = HANDLE_FIELD (handle, field))
+#define MONO_HANDLE_NEW_GET(type, handle, field) (HANDLE_FIELD (handle, field).NewHandle ())
+#define MONO_HANDLE_GETVAL(handle, field) 	 HANDLE_FIELD (handle, field)
+//#define MONO_HANDLE_SETVAL(handle, field, type, value) ((HANDLE_FIELD (handle, field)) = (type)value)
+#define MONO_HANDLE_SETVAL(handle, field, type, value) (HANDLE_FIELD (handle, field) = (value))
+
+#endif
 
 #else // Keep C working for profiler.
 

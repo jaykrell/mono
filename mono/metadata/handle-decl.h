@@ -236,6 +236,13 @@ private:
 	MonoThreadInfo *threadinfo;
 };
 
+#if 1
+
+template <typename T> struct IsMonoPtr { enum { value = 0 }; };
+template <typename T> struct IsMonoPtr<MonoPtr(T)> { enum { value = 1 }; };
+
+#endif
+
 template <typename t>
 struct MonoHandle
 {
@@ -318,16 +325,135 @@ struct MonoHandle
 	MonoHandle& operator=(MonoPtr<T> p) { return operator = (p.GetRaw ()); }
 	MonoHandle& operator=(T* p) { g_assert (__raw); *__raw = p; return *this; }
 
+#if 0 // old version -- floats a pointer and requires pinning
 /******************************************************************************************
 Note. This is both the point and the danger.
 The safety of this, depends on T* itself not having raw pointers, but only MonoPtr().
 The unsafety shouldn't go unnoticed though, as something will be using raw pointers.
 ******************************************************************************************/
 	T* operator-> () { g_assert (__raw); return *__raw; }
+#endif
 
 //private: // FIXME
 	T G_MAY_ALIAS * G_MAY_ALIAS * __raw;
 };
+
+template <typename Root, typename Member, Member Root::*Pointer>
+struct MonoHandleField
+{
+	MonoHandle<Root> root;
+	explicit MonoHandleField(MonoHandle<Root> r) : root(r) { }
+
+	//FIXME return type/value
+	//FIXME more operators
+	//void operator++() { ++GetRaw(); }
+	//void operator++(int) { GetRaw()++; }
+	//void operator--() { --GetRaw(); }
+	//void operator--(int) { GetRaw()--; }
+
+	auto NewHandle () { return GetRaw ().NewHandle (); }
+
+	bool GetBool () const { return !!GetRaw (); }
+	explicit operator bool () const { return !!GetRaw (); }
+
+	template <typename U>
+	bool operator== (MonoHandle <U> q) const { return GetRaw () == q.GetRaw (); }
+
+	template <typename U>
+	bool operator!= (MonoHandle <U> q) const { return GetRaw () != q.GetRaw (); }
+
+	template <typename U>
+	bool operator== (MonoPtr <U> q) const { return GetRaw () == q.GetRaw (); }
+
+	template <typename U>
+	bool operator!= (MonoPtr <U> q) const { return GetRaw () != q.GetRaw (); }
+
+	//bool operator== (std::nullptr_t) const { return GetRaw () == nullptr; }
+	//bool operator!= (std::nullptr_t) const  { return GetRaw () != nullptr; }
+
+	bool operator== (const void* q) const { return GetRaw () == q; }
+	bool operator!= (const void* q) const  { return GetRaw () != q; }
+	//friend bool operator== (const void* q, const MonoHandle<Member> p) { return p.GetRaw () == q; }
+	//friend bool operator!= (const void* q, const MonoHandle<Member> p) { return p.GetRaw () != q; }
+
+	bool operator! () const { return !GetRaw (); }
+
+	template <class T>
+	auto operator [ ] (T index)
+	{
+		return GetRaw () [index];
+	} 
+
+	Member& GetRaw() { return root.GetRaw()->*Pointer; }
+	const Member& GetRaw() const { return root.GetRaw()->*Pointer; }
+
+#if 1
+
+	template <typename = std::enable_if<!IsMonoPtr<Member>::value>>
+	operator Member& ()
+	{
+		return GetRaw ();
+	}
+
+	template <typename = std::enable_if<std::is_same<Member, unsigned long>::value>>
+	operator unsigned long long ()
+	{
+		return GetRaw ();
+	}
+
+//FIXME
+	template <typename = std::enable_if<std::is_same<Member, unsigned long long>::value>>
+	operator unsigned long ()
+	{
+		return GetRaw ();
+	}
+
+	template <typename = std::enable_if<!IsMonoPtr<Member>::value>>
+	Member operator -> ()
+	{
+		return GetRaw ();
+	}
+
+#endif
+
+	template <typename T>
+	MonoHandleField& operator = (T a)
+	{
+		GetRaw () = a;
+		return *this;
+	}
+
+	template <typename T>
+	MonoHandleField& operator = (MonoHandle<T> h)
+	{
+		GetRaw () = h.GetRaw ();
+		return *this;
+	}
+
+	template <typename T>
+	MonoHandleField& operator = (MonoPtr<T>& p)
+	{
+		GetRaw () = p.GetRaw ();
+		return *this;
+	}
+
+	template <typename Root2, typename Member2, Member2 Root::*Pointer2>
+	MonoHandleField& operator = (MonoHandleField<Root2, Member2, Pointer2> f)
+	{
+		GetRaw () = f.GetRaw ();
+		return *this;
+	}
+
+	template <typename T = Member, typename std::enable_if<IsMonoPtr<T>::value>::value>
+	MonoHandleField& operator = (std::nullptr_t)
+	{
+		GetRaw () = nullptr;
+		return *this;
+	}
+};
+
+#define HANDLE_FIELD(handle, field) \
+(MonoHandleField<decltype(handle)::T, decltype(decltype(handle)::T().field), &decltype(handle)::T::field> {handle})
 
 #define TYPED_HANDLE_DECL(TYPE)							\
 	typedef MonoHandle<TYPE> 						\

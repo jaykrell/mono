@@ -954,11 +954,19 @@ extern MonoDefaults mono_defaults;
 #define mono_class_is_real_proxy(klass) ((klass) == mono_defaults.real_proxy_class)
 #endif
 
+#ifndef mono_object_class
+#define mono_object_class mono_object_class // FIXME duplication
+
 #ifndef __cplusplus
 static
 #endif
-MonoClass*
-mono_object_class (void* obj); // FIXME should be MonoObject
+inline MonoClass*
+mono_object_class (void* obj) // FIXME should be MonoObject
+{
+	return ((MonoObject*)obj)->vtable->klass;
+}
+
+#endif
 
 #ifdef __cplusplus
 inline bool

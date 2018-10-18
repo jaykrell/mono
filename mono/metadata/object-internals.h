@@ -167,6 +167,9 @@ mono_object_domain (void* obj) // FIXME should be MonoObject
 	return MONO_HANDLE_SUPPRESS (((MonoObject*)obj)->vtable->domain);
 }
 
+#ifndef mono_object_class
+#define mono_object_class mono_object_class // FIXME duplication
+
 #ifndef __cplusplus
 static
 #endif
@@ -175,6 +178,8 @@ mono_object_class (void* obj) // FIXME should be MonoObject
 {
 	return MONO_HANDLE_SUPPRESS (((MonoObject*)obj)->vtable->klass);
 }
+
+#endif
 
 #ifdef __cplusplus
 template <typename T>
@@ -310,13 +315,13 @@ mono_array_addr_with_size (MonoPtr<MonoArray> array, int size, uintptr_t index)
 static inline gboolean
 mono_handle_array_has_bounds (MonoArrayHandle arr)
 {
-	return MONO_HANDLE_GETVAL (arr, bounds) != NULL;
+	return MONO_HANDLE_GETVAL (arr, bounds).GetBool ();
 }
 
 static inline void
 mono_handle_array_get_bounds_dim (MonoArrayHandle arr, gint32 dim, MonoArrayBounds *bounds)
 {
-	*bounds = MONO_HANDLE_GETVAL (arr, bounds [dim]);
+	*bounds = MONO_HANDLE_GETVAL (arr, bounds) [dim];
 }
 
 typedef struct {

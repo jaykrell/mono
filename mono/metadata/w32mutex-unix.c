@@ -527,7 +527,7 @@ mono_w32mutex_abandon (MonoInternalThread *internal_raw)
 	}
 
 	g_ptr_array_free (MONO_HANDLE_GETVAL (internal, owned_mutexes), TRUE);
-	MONO_HANDLE_SETVAL(internal, owned_mutexes, GPtrArray*, NULL);
+	MONO_HANDLE_SETVAL(internal, owned_mutexes, GPtrArray*, nullptr);
 
 exit:
 	HANDLE_FUNCTION_RETURN ();
