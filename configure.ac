@@ -1008,8 +1008,7 @@ AC_ARG_ENABLE(cxx, [  --enable-cxx   compile some code as C++])
 # mono/corefx/native has a lot of invalid C++98 in its headers
 # dotnet/corefx/native looks a lot better, i.e. 44e5bdafb8d989a220c9cf1b94f31a64a6e4f052
 #CXXFLAGS_COMMON=' -std=gnu++98 -fno-exceptions -fno-rtti '
-CXXFLAGS_COMMON=' -std=gnu++0x -fno-exceptions -fno-rtti '
-# "c++0x" instead of C++11, for compat with Centos6/gcc4.4
+CXXFLAGS_COMMON=' -std=gnu++14 -fno-exceptions -fno-rtti '
 
 AC_SUBST(CXXFLAGS_COMMON)
 
