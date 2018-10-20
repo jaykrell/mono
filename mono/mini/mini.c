@@ -2031,13 +2031,13 @@ mono_compile_create_vars (MonoCompile *cfg)
 	cfg->args = (MonoInst **)mono_mempool_alloc0 (cfg->mempool, (sig->param_count + sig->hasthis) * sizeof (MonoInst*));
 
 	if (sig->hasthis) {
-		cfg->args [0] = mono_compile_create_var (cfg, m_class_get_this_arg (cfg->method->klass), OP_ARG);
-		cfg->this_arg = cfg->args [0];
+		MonoInst* arg = mono_compile_create_var (cfg, m_class_get_this_arg (cfg->method->klass), OP_ARG);
+		cfg->args [0] = arg;
+		cfg->this_arg = arg;
 	}
 
-	for (i = 0; i < sig->param_count; ++i) {
+	for (i = 0; i < sig->param_count; ++i)
 		cfg->args [i + sig->hasthis] = mono_compile_create_var (cfg, sig->params [i], OP_ARG);
-	}
 
 	if (cfg->verbose_level > 2) {
 		if (cfg->ret) {
@@ -2066,6 +2066,8 @@ mono_compile_create_vars (MonoCompile *cfg)
 		if (cfg->verbose_level > 2)
 			g_print ("\tlocal [%d]: ", i);
 		cfg->locals [i] = mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
+		if (header->volatile_locals)
+			cfg->locals [i]->flags |= MONO_INST_VOLATILE;
 	}
 
 	if (cfg->verbose_level > 2)

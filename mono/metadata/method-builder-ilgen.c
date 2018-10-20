@@ -141,6 +141,8 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 	header->init_locals = mb->init_locals;
+	//header->volatile_args = mb->volatile_args;
+	header->volatile_locals = mb->volatile_locals;
 
 	header->num_clauses = mb->num_clauses;
 	header->clauses = mb->clauses;
