@@ -6234,8 +6234,6 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		MonoMethodSignature *ret;
 		MonoMethodSignature *generic_sig = NULL;
 
-		mb->volatile_args = TRUE; // FIXME This is overkill. Per arg/local flags?
-
 		if (method->is_inflated) {
 			ERROR_DECL (error);
 			MonoMethod *generic_method = ((MonoMethodInflated*)method)->declaring;
@@ -6258,7 +6256,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 				case ICALL_HANDLES_WRAP_NONE:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+					ret->params [i] = csig->params [i];
+					break;
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+					mb->volatile_args = TRUE; // FIXME This is overkill. Per arg/local flags?
 					ret->params [i] = csig->params [i];
 					break;
 				case ICALL_HANDLES_WRAP_OBJ:
