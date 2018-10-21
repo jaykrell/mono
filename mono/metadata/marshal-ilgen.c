@@ -6168,10 +6168,6 @@ typedef enum {
 	ICALL_HANDLES_WRAP_VALUETYPE_REF,
 } IcallHandlesWrap;
 
-typedef struct {
-	IcallHandlesWrap wrap;
-}  IcallHandlesLocal;
-
 /*
  * Describes how to wrap the given parameter.
  *
@@ -6222,7 +6218,6 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	// FIXME:
 	MonoMethodSignature *call_sig = csig;
 	gboolean uses_handles = FALSE;
-	IcallHandlesLocal *handles_locals = NULL;
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 	(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles);
@@ -6230,8 +6225,20 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	/* If it uses handles and MonoError, it had better check exceptions */
 	g_assert (!uses_handles || check_exceptions);
 
+	if (sig->hasthis) {
+		int pos;
+
+		/*
+		 * Add a null check since public icalls can be called with 'call' which
+		 * does no such check.
+		 */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
+		mono_mb_patch_branch (mb, pos);
+	}
+
 	if (uses_handles) {
-		MonoMethodSignature *ret;
 		MonoMethodSignature *generic_sig = NULL;
 
 		if (method->is_inflated) {
@@ -6243,67 +6250,31 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 		// Determine which args need to be wrapped in handles.
 		// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
-		ret = mono_metadata_signature_alloc (get_method_image (method), csig->param_count);
-		ret->param_count = csig->param_count;
-		ret->ret = csig->ret;
-		ret->pinvoke = csig->pinvoke;
-
-		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
-		for (int i = 0; i < csig->param_count; ++i) {
-			IcallHandlesWrap w = signature_param_uses_handles (csig, generic_sig, i);
-			handles_locals [i].wrap = w;
-			switch (w) {
-				case ICALL_HANDLES_WRAP_NONE:
-				case ICALL_HANDLES_WRAP_OBJ_OUT:
-				case ICALL_HANDLES_WRAP_OBJ_INOUT:
-					ret->params [i] = csig->params [i];
-					break;
-				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
-					mb->volatile_args = TRUE; // FIXME This is overkill. Per arg/local flags?
-					ret->params [i] = csig->params [i];
-					break;
-				case ICALL_HANDLES_WRAP_OBJ:
-					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
-					break;
-				default:
-					g_assert_not_reached ();
-			}
-		}
-
-		call_sig = ret;
+		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count);
+		call_sig->param_count = csig->param_count;
+		call_sig->ret = csig->ret;
+		call_sig->pinvoke = csig->pinvoke;
 
 		/* TODO support adding wrappers to non-static struct methods */
 		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
-	}
 
-	if (sig->hasthis) {
-		int pos;
-
-		/*
-		 * Add a null check since public icalls can be called with 'call' which
-		 * does no such check.
-		 */
-		mono_mb_emit_byte (mb, CEE_LDARG_0);			
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
-		mono_mb_patch_branch (mb, pos);
-	}
-
-	if (uses_handles) {
 		for (int i = 0; i < csig->param_count; i++) {
 			/* load each argument. references into the managed heap get wrapped in handles */
-			switch (handles_locals [i].wrap) {
+			switch (signature_param_uses_handles (csig, generic_sig, i)) {
 				case ICALL_HANDLES_WRAP_NONE:
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 					// argI = argI
+					call_sig->params [i] = csig->params [i];
 					mono_mb_emit_ldarg (mb, i);
 					break;
 				case ICALL_HANDLES_WRAP_OBJ:
 					// argI = &argI_raw
+					call_sig->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
 					mono_mb_emit_ldarg_addr (mb, i);
 					break;
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
 					// *argI = NULL; argI
+					call_sig->params [i] = csig->params [i];
 					mono_mb_emit_ldarg (mb, i);
 					mono_mb_emit_byte (mb, CEE_DUP);
 					mono_mb_emit_byte (mb, CEE_LDNULL);
@@ -6311,6 +6282,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					break;
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 					// argI = argI
+					mb->volatile_args = TRUE; // FIXME This is overkill. Per arg/local flags?
+					call_sig->params [i] = csig->params [i];
 					mono_mb_emit_ldarg (mb, i);
 #if 0
 					fprintf (stderr, " Method %s.%s.%s has byref valuetype argument %d\n", method->klass->name_space, method->klass->name, method->name, i);
@@ -6320,9 +6293,6 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					g_assert_not_reached ();
 			}
 		}
-
-		g_free (handles_locals);
-
 	} else {
 		for (int i = 0; i < csig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i);
