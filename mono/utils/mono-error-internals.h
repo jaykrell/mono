@@ -11,7 +11,7 @@
 /*Keep in sync with MonoError*/
 typedef struct {
 	unsigned short error_code;
-    unsigned short flags;
+	unsigned short flags;
 
 	/*These name are suggestions of their content. MonoError internals might use them for something else.*/
 	const char *type_name;
@@ -32,8 +32,6 @@ typedef struct {
 	const char *full_message;
 	const char *full_message_with_fields;
 	const char *first_argument;
-
-	void *padding [3];
 } MonoErrorInternal;
 
 /* Invariant: the error strings are allocated in the mempool of the given image */

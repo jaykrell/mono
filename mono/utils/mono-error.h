@@ -57,7 +57,7 @@ typedef union _MonoError {
 	struct {
 		uint16_t error_code;
 		uint16_t private_flags; /*DON'T TOUCH */
-		void *hidden_1 [12]; /*DON'T TOUCH */
+		void *hidden_1 [9]; /*DON'T TOUCH */
 	};
 } MonoError;
 
