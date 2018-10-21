@@ -330,6 +330,14 @@ func (MONO_HANDLE_FOREACH_TYPE_TYPED_ ## n argtypes MONO_HANDLE_COMMA_ ## n Mono
 ICALL_EXPORT MONO_HANDLE_TYPE_RAW (rettype)				\
 func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes) \
 
+// Workaround precise GC assumption in
+// external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe
+typedef struct MonoErrorPreciseGcWorkaround {
+	MonoError error;
+	gpointer extra0;
+	gpointer extra1;
+} MonoErrorPreciseGcWorkaround;
+
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
 
@@ -341,7 +349,10 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 										\
 	HANDLE_FUNCTION_ENTER ();						\
 										\
-	ERROR_DECL (error);							\
+	MonoErrorPreciseGcWorkaround error_precise_gc_workaround;		\
+	MonoError *error = &error_precise_gc_workaround.error;			\
+	error_precise_gc_workaround.extra1 = 0;					\
+	error_init (error);							\
 										\
 	MONO_HANDLE_RETURN_BEGIN (rettype)					\
 										\
