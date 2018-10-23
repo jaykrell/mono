@@ -72,6 +72,12 @@ free_ilgen (MonoMethodBuilder *mb)
 	g_free (mb);
 }
 
+static gsize
+mono_bitset_get_alloc_size (MonoBitSet *set)
+{
+	return set ? mono_bitset_alloc_size (set->size, 0) : 0;
+}
+
 static MonoMethod *
 create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
 {
@@ -141,8 +147,6 @@ create_method_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *signature, int 
 	header->code_size = mb->pos;
 	header->num_locals = mb->locals;
 	header->init_locals = mb->init_locals;
-	//header->volatile_args = mb->volatile_args;
-	header->volatile_locals = mb->volatile_locals;
 
 	header->num_clauses = mb->num_clauses;
 	header->clauses = mb->clauses;

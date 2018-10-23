@@ -230,15 +230,15 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_DO2(macro_prefix, type) MONO_HANDLE_DO3 (macro_prefix, type)
 #define MONO_HANDLE_DO(macro_prefix, type)  MONO_HANDLE_DO2 (macro_prefix, MONO_HANDLE_TYPE_WRAP_ ## type)
 
-#define MONO_HANDLE_RETURN_BEGIN(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_BEGIN_, type)
-#define MONO_HANDLE_RETURN_BEGIN_Void				/* nothing */
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_NONE   	return
-#define MONO_HANDLE_RETURN_BEGIN_ICALL_HANDLES_WRAP_OBJ		return
+#define MONO_HANDLE_RESULT(type)                         MONO_HANDLE_DO (MONO_HANDLE_RESULT_, type) (type)
+#define MONO_HANDLE_RESULT_Void(type)                    /* nothing */
+#define MONO_HANDLE_RESULT_ICALL_HANDLES_WRAP_NONE(type)  type icall_result =
+#define MONO_HANDLE_RESULT_ICALL_HANDLES_WRAP_OBJ(type)   type ## Handle icall_result =
 
-#define MONO_HANDLE_RETURN_END(type)				MONO_HANDLE_DO (MONO_HANDLE_RETURN_END_, type);
-#define MONO_HANDLE_RETURN_END_Void				/* nothing */
-#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_NONE   	/* nothing */
-#define MONO_HANDLE_RETURN_END_ICALL_HANDLES_WRAP_OBJ		.__raw
+#define MONO_HANDLE_RETURN(type)                   	MONO_HANDLE_DO (MONO_HANDLE_RETURN_, type)
+#define MONO_HANDLE_RETURN_Void                     HANDLE_FUNCTION_RETURN ()
+#define MONO_HANDLE_RETURN_ICALL_HANDLES_WRAP_NONE  HANDLE_FUNCTION_RETURN_VAL (icall_result)
+#define MONO_HANDLE_RETURN_ICALL_HANDLES_WRAP_OBJ	HANDLE_FUNCTION_RETURN_OBJ (icall_result)
 
 #define MONO_HANDLE_MARSHAL(type, n)					MONO_HANDLE_DO (MONO_HANDLE_MARSHAL_, type) (type, n)
 #define MONO_HANDLE_MARSHAL_ICALL_HANDLES_WRAP_NONE(type, n)     	a ## n
@@ -323,12 +323,12 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 // Declare the function that takes/returns typed handles.
 #define MONO_HANDLE_DECLARE(id, name, func, rettype, n, argtypes)	\
 MONO_HANDLE_TYPE_TYPED (rettype)					\
-func (MONO_HANDLE_FOREACH_TYPE_TYPED_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error)	\
+func (MONO_HANDLE_FOREACH_TYPE_TYPED_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *xerror)	\
 
 // Declare the function wrapper that takes/returns raw handles.
 #define MONO_HANDLE_DECLARE_RAW(id, name, func, rettype, n, argtypes)	\
 ICALL_EXPORT MONO_HANDLE_TYPE_RAW (rettype)				\
-func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *error) \
+func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## n MonoError *xerror) \
 
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
@@ -339,11 +339,17 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 {										\
 	g_assert (cond);							\
 										\
-	MONO_HANDLE_RETURN_BEGIN (rettype)					\
+	ERROR_DECL (error);							\
 										\
-	func (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error)	\
+	HANDLE_FUNCTION_ENTER ();						\
 										\
-	MONO_HANDLE_RETURN_END (rettype)					\
+	MONO_HANDLE_RESULT (rettype)						\
+										\
+	func (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error);	\
+										\
+	mono_error_set_pending_exception (error);				\
+										\
+	MONO_HANDLE_RETURN (rettype);						\
 }										\
 
 #define MONO_HANDLE_IMPLEMENT(id, name, func, rettype, n, argtypes)			\

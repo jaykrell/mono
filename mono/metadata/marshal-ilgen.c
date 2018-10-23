@@ -6237,9 +6237,16 @@ static void
 emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
 {
 	// FIXME:
-	MonoClass *handle_stack_mark_class;
+	//MonoClass *handle_stack_mark_class;
+	//int thread_info_var = -1;
+	//int stack_mark_var = -1;
+
+	// FIXME MonoError is left in managed due to extreme test sensitivity
+	// to stack layout. i.e. external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe
+	// with conservative GC. The efficiency lost is minimal.
 	MonoClass *error_class;
-	int thread_info_var = -1, stack_mark_var = -1, error_var = -1;
+
+	int error_var = -1;
 	MonoMethodSignature *call_sig = csig;
 	gboolean uses_handles = FALSE;
 	gboolean save_handles_to_locals = FALSE;
@@ -6292,20 +6299,21 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 		call_sig = ret;
 
-		handle_stack_mark_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/HandleStackMark");
+		//handle_stack_mark_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/HandleStackMark");
 		error_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
 
-		thread_info_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_get_intptr_class ()));
-		stack_mark_var = mono_mb_add_local (mb, m_class_get_byval_arg (handle_stack_mark_class));
+		//FIXME Depending on if sensitive Linux x64 acceptance tests pass.
+		//thread_info_var = mono_mb_add_local (mb, m_class_get_byval_arg (mono_get_intptr_class ()));
+		//stack_mark_var = mono_mb_add_local (mb, m_class_get_byval_arg (handle_stack_mark_class));
 		error_var = mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
 
 		/* TODO support adding wrappers to non-static struct methods */
 		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
 
-		mono_mb_emit_ldloc_addr (mb, stack_mark_var);
-		mono_mb_emit_ldloc_addr (mb, error_var);
-		mono_mb_emit_icall (mb, mono_icall_start);
-		mono_mb_emit_stloc (mb, thread_info_var);
+		//mono_mb_emit_ldloc_addr (mb, stack_mark_var);
+		//mono_mb_emit_ldloc_addr (mb, error_var);
+		//mono_mb_emit_icall (mb, mono_icall_start);
+		//mono_mb_emit_stloc (mb, thread_info_var);
 
 		for (int i = 0; i < csig->param_count; i++) {
 			/* load each argument. references into the managed heap get wrapped in handles */
@@ -6318,17 +6326,12 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					break;
 				case ICALL_HANDLES_WRAP_OBJ:
 					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
-					handles_locals [i].handle = mono_mb_add_local (mb, csig->params [i]);
-					// Handle could be pointer to arg, which
-					// should effectively make it volatile, unless
-					// some extreme optimization works.
-					//mb->volatile_args = TRUE;
-					// To have fewer mechanisms, pointer to local instead.
-					mb->volatile_locals = TRUE;
-					// locI = argI; &locI
-					mono_mb_emit_ldarg (mb, i);
-					mono_mb_emit_stloc (mb, handles_locals[i].handle);
-					mono_mb_emit_ldloc_addr (mb, handles_locals[i].handle);
+					// Parameter is pointer to arg, which
+					// should effectively make it volatile,
+					// unless some extreme optimization works (whole program compilation).
+					//mono_bitset_set_safe (&mb->volatile_args, i);
+					// &argI
+					mono_mb_emit_ldarg_addr (mb, i);
 					break;
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
@@ -6337,11 +6340,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					// Therefore copy parameter to local, pass its
 					// address as a handle, and copy back after the call.
 					// Passing the address should make it volatile,
-					// unless some extreme optimization works.
+					// unless some extreme optimization works (whole program compilation).
 					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
 					handles_locals [i].handle = mono_mb_add_local (mb, csig->params [i]);
-					save_handles_to_locals = TRUE;
-					mb->volatile_locals = TRUE;
+					//mono_bitset_set_safe (&mb->volatile_locals, handles_locals [i].handle);
 					if (w == ICALL_HANDLES_WRAP_OBJ_INOUT) {
 						// locI = *argI_raw; &locI
 						mono_mb_emit_ldarg (mb, i);
@@ -6358,19 +6360,11 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					break;
 				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 					// Parameter is passed through. Its presence in managed
-					// frame serves to keep it alive. To be extra certain,
-					// also store it in a volatile local, though a volatile
-					// arg should also work, or passing parameter address
-					// as an additional parameter -- which would imply,
-					// given uncertain signatures, passing an extra parameter
-					// for every parameter, usually null.
-					mb->volatile_locals = TRUE;
+					// frame serves to keep it alive -- make it volatile to ensure that.
+					//mono_bitset_set_safe (&mb->volatile_args, i);
 					ret->params [i] = csig->params [i];
-					handles_locals [i].handle = mono_mb_add_local (mb, csig->params [i]);
-					// locI = argI; argI
+					// argI
 					mono_mb_emit_ldarg (mb, i);
-					mono_mb_emit_byte (mb, CEE_DUP);
-					mono_mb_emit_stloc (mb, handles_locals [i].handle);
 #if 0
 					fprintf (stderr, " Method %s.%s.%s has byref valuetype argument %d\n", method->klass->name_space, method->klass->name, method->name, i);
 #endif
@@ -6381,8 +6375,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		}
 		mono_mb_emit_ldloc_addr (mb, error_var);
 	} else {
-		for (int i = 0; i < csig->param_count; i++)
-			mono_mb_emit_ldarg (mb, i);
+		if (sig->hasthis)
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+		for (int i = 0; i < sig->param_count; i++)
+			mono_mb_emit_ldarg (mb, i + sig->hasthis);
 	}
 
 	if (aot) {
@@ -6395,15 +6391,6 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	}
 
 	if (uses_handles) {
-		if (MONO_TYPE_IS_REFERENCE (sig->ret)) {
-			// if (ret != NULL_HANDLE) {
-			//   ret = MONO_HANDLE_RAW(ret)
-			// }
-			mono_mb_emit_byte (mb, CEE_DUP);
-			int pos = mono_mb_emit_branch (mb, CEE_BRFALSE);
-			mono_emit_handle_raw (mb);
-			mono_mb_patch_branch (mb, pos);
-		}
 
 		if (save_handles_to_locals) {
 			for (int i = 0; i < csig->param_count; i++) {
@@ -6433,10 +6420,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 		g_free (handles_locals);
 
-		mono_mb_emit_ldloc (mb, thread_info_var);
-		mono_mb_emit_ldloc_addr (mb, stack_mark_var);
-		mono_mb_emit_ldloc_addr (mb, error_var);
-		mono_mb_emit_icall (mb, mono_icall_end);
+		//mono_mb_emit_ldloc (mb, thread_info_var);
+		//mono_mb_emit_ldloc_addr (mb, stack_mark_var);
+		//mono_mb_emit_ldloc_addr (mb, error_var);
+		//mono_mb_emit_icall (mb, mono_icall_end);
 	}
 
 	if (check_exceptions)

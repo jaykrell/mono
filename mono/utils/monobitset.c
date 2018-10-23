@@ -25,6 +25,12 @@ mono_bitset_alloc_size (guint32 max_size, guint32 flags) {
 	return sizeof (MonoBitSet) + sizeof (gsize) * (real_size - MONO_ZERO_LEN_ARRAY);
 }
 
+gsize
+mono_bitset_get_alloc_size (MonoBitSet *set)
+{
+	return set ? mono_bitset_alloc_size (set->size, 0) : 0;
+}
+
 /**
  * mono_bitset_new:
  * \param max_size The numer of bits you want to hold
@@ -41,6 +47,18 @@ mono_bitset_new (guint32 max_size, guint32 flags) {
 	result->size = real_size * BITS_PER_CHUNK;
 	result->flags = flags;
 	return result;
+}
+
+void
+mono_bitset_resize (MonoBitSet **set, guint32 max_size)
+{
+	if (*set && (*set)->size >= max_size)
+		return;
+	g_assert (!*set || !((*set)->flags & MONO_BITSET_DONT_FREE));
+	MonoBitSet *new_set = mono_bitset_new (max_size, *set ? (*set)->flags : 0);
+	mono_bitset_copyto (*set, new_set);
+	mono_bitset_free (*set);
+	*set = new_set;
 }
 
 /**
@@ -73,7 +91,7 @@ mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
  */
 void
 mono_bitset_free (MonoBitSet *set) {
-	if (!(set->flags & MONO_BITSET_DONT_FREE))
+	if (set && !(set->flags & MONO_BITSET_DONT_FREE))
 		g_free (set);
 }
 
@@ -94,6 +112,13 @@ mono_bitset_set (MonoBitSet *set, guint32 pos) {
 	set->data [j] |= (gsize)1 << bit;
 }
 
+void
+mono_bitset_set_safe (MonoBitSet **set, guint32 pos)
+{
+	mono_bitset_resize (set, pos + 1);
+	mono_bitset_set (*set, pos);
+}
+
 /**
  * mono_bitset_test:
  * \param set bitset ptr
@@ -109,6 +134,12 @@ mono_bitset_test (const MonoBitSet *set, guint32 pos) {
 	g_return_val_if_fail (pos < set->size, 0);
 
 	return (set->data [j] & ((gsize)1 << bit)) > 0;
+}
+
+gboolean
+mono_bitset_test_safe (const MonoBitSet *set, guint32 pos)
+{
+	return set && set->size > pos && mono_bitset_test (set, pos);
 }
 
 /**

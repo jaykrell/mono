@@ -63,8 +63,6 @@ typedef struct _HandleChunk HandleChunk;
  * to ensure that when a new handle is allocated the previous newest handle is not lower in the stack.
  * This is useful to catch missing HANDLE_FUNCTION_ENTER / HANDLE_FUNCTION_RETURN pairs which could cause
  * handle leaks.
- *
- * If defined, keep HandleStackMark in sync in RuntimeStructs.cs
  */
 /*#define MONO_HANDLE_TRACK_SP*/
 
