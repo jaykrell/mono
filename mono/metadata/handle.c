@@ -403,6 +403,12 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
+	// FIXME This used to check for out of scope handles.
+	// Stack-based handles coming from icall wrappers do not
+	// work with that. This functionality can be largely restored
+	// by introducing a tag bit in handles -- 0 for managed stack-based,
+	// 1 for native TLS-based, having MONO_HANDLE_RAW clear it, and only
+	// doing the former checking for native TLS-based handles.
 	return mono_gchandle_new (MONO_HANDLE_RAW (handle), pinned);
 }
 

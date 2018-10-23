@@ -1218,7 +1218,7 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
  *      return;
  *    }
  */
-// Call mono_error_set_pending_exception instead.
+// For efficiency, call mono_error_set_pending_exception instead of mono_error_set_pending_exception_slow.
 gboolean
 mono_error_set_pending_exception_slow (MonoError *error)
 {
