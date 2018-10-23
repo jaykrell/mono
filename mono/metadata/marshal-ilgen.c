@@ -6170,6 +6170,10 @@ typedef enum {
 
 typedef struct {
 	IcallHandlesWrap wrap;
+	// If wrap is OBJ_OUT or OBJ_INOUT this holds the referenced managed object,
+	// in case the actual parameter refers to a native frame.
+	// Otherwise it is not meaningful.
+	int handle;
 }  IcallHandlesLocal;
 
 /*
@@ -6200,7 +6204,7 @@ signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *gen
 	 * for both valuetypes and reference types.
 	 */
 	if (generic_sig && mono_type_is_byref (generic_sig->params [param]) &&
-	    (generic_sig->params [param]->type == MONO_TYPE_VAR  || generic_sig->params [param]->type == MONO_TYPE_MVAR))
+	    (generic_sig->params [param]->type == MONO_TYPE_VAR || generic_sig->params [param]->type == MONO_TYPE_MVAR))
 		return ICALL_HANDLES_WRAP_VALUETYPE_REF;
 
 	if (MONO_TYPE_IS_REFERENCE (sig->params [param])) {
@@ -6230,11 +6234,21 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	/* If it uses handles and MonoError, it had better check exceptions */
 	g_assert (!uses_handles || check_exceptions);
 
-	if (uses_handles) {
-		MonoMethodSignature *ret;
-		MonoMethodSignature *generic_sig = NULL;
+	if (sig->hasthis) {
+		int pos;
 
-		mb->volatile_args = TRUE; // FIXME This is overkill. Per arg/local flags?
+		/*
+		 * Add a null check since public icalls can be called with 'call' which
+		 * does no such check.
+		 */
+		mono_mb_emit_byte (mb, CEE_LDARG_0);
+		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
+		mono_mb_patch_branch (mb, pos);
+	}
+
+	if (uses_handles) {
+		MonoMethodSignature *generic_sig = NULL;
 
 		if (method->is_inflated) {
 			ERROR_DECL (error);
@@ -6243,57 +6257,68 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 			mono_error_assert_ok (error);
 		}
 
-		// Determine which args need to be wrapped in handles.
+		// Add a MonoError argument (due to a fragile test external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe),
+		// vs. on the native side.
 		// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
-		ret = mono_metadata_signature_alloc (get_method_image (method), csig->param_count);
-		ret->param_count = csig->param_count;
-		ret->ret = csig->ret;
-		ret->pinvoke = csig->pinvoke;
+		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count + 1);
+		call_sig->param_count = csig->param_count + 1;
+		call_sig->ret = csig->ret;
+		call_sig->pinvoke = csig->pinvoke;
+
+		/* TODO support adding wrappers to non-static struct methods */
+		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
+
+		MonoClass * const error_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
+		int const error_var = mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
+		call_sig->params [csig->param_count] = mono_class_get_byref_type (error_class);
 
 		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
+
 		for (int i = 0; i < csig->param_count; ++i) {
-			IcallHandlesWrap w = signature_param_uses_handles (csig, generic_sig, i);
+			// Determine which args need to be wrapped in handles and adjust icall signature.
+			// Here, a handle is a pointer to a volatile local in a managed frame -- which is sufficient and efficient.
+			const IcallHandlesWrap w = signature_param_uses_handles (csig, generic_sig, i);
 			handles_locals [i].wrap = w;
+			int local = -1;
+
 			switch (w) {
-				case ICALL_HANDLES_WRAP_NONE:
-				case ICALL_HANDLES_WRAP_OBJ_OUT:
-				case ICALL_HANDLES_WRAP_OBJ_INOUT:
-				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
-					ret->params [i] = csig->params [i];
-					break;
 				case ICALL_HANDLES_WRAP_OBJ:
-					ret->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
+				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					call_sig->params [i] = mono_class_get_byref_type (mono_class_from_mono_type_internal (csig->params[i]));
+					break;
+				case ICALL_HANDLES_WRAP_NONE:
+				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+					call_sig->params [i] = csig->params [i];
 					break;
 				default:
 					g_assert_not_reached ();
 			}
-		}
 
-		call_sig = ret;
-
-		/* TODO support adding wrappers to non-static struct methods */
-		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
-	}
-
-	if (sig->hasthis) {
-		int pos;
-
-		/*
-		 * Add a null check since public icalls can be called with 'call' which
-		 * does no such check.
-		 */
-		mono_mb_emit_byte (mb, CEE_LDARG_0);			
-		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
-		mono_mb_patch_branch (mb, pos);
-	}
-
-	if (uses_handles) {
-		for (int i = 0; i < csig->param_count; i++) {
-			/* load each argument. references into the managed heap get wrapped in handles */
-			switch (handles_locals [i].wrap) {
-				case ICALL_HANDLES_WRAP_NONE:
+			// Add a local var to hold the references for each out arg.
+			switch (w) {
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
+				case ICALL_HANDLES_WRAP_OBJ_OUT:
+					// FIXME better type
+					local = mono_mb_add_local (mb, mono_get_object_type ());
+					mono_bitset_set_safe (&mb->volatile_locals, local);
+					break;
+				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
+				case ICALL_HANDLES_WRAP_OBJ:
+					mono_bitset_set_safe (&mb->volatile_args, i);
+					break;
+				case ICALL_HANDLES_WRAP_NONE:
+					break;
+				default:
+					g_assert_not_reached ();
+			}
+			handles_locals [i].handle = local;
+
+			// Load each argument. References into the managed heap get wrapped in handles.
+			// Again, handles here are just pointers to managed volatile locals.
+			switch (w) {
+				case ICALL_HANDLES_WRAP_NONE:
+				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
 					// argI = argI
 					mono_mb_emit_ldarg (mb, i);
 					break;
@@ -6301,27 +6326,30 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					// argI = &argI_raw
 					mono_mb_emit_ldarg_addr (mb, i);
 					break;
+				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
-					// *argI = NULL; argI
-					mono_mb_emit_ldarg (mb, i);
-					mono_mb_emit_byte (mb, CEE_DUP);
-					mono_mb_emit_byte (mb, CEE_LDNULL);
-					mono_mb_emit_byte (mb, CEE_STIND_REF);
-					break;
-				case ICALL_HANDLES_WRAP_VALUETYPE_REF:
-					// argI = argI
-					mono_mb_emit_ldarg (mb, i);
-#if 0
-					fprintf (stderr, " Method %s.%s.%s has byref valuetype argument %d\n", method->klass->name_space, method->klass->name, method->name, i);
-#endif
+					// If parameter guaranteeably referred to a managed frame,
+					// then could just be passthrough and volatile. Since
+					// that cannot be guaranteed, use a managed volatile local intermediate.
+					// ObjOut:
+					//   localI = NULL
+					// ObjInOut:
+					//   localI = *argI_raw
+					// &localI
+					if (w == ICALL_HANDLES_WRAP_OBJ_OUT) {
+						mono_mb_emit_byte (mb, CEE_LDNULL);
+					} else {
+						mono_mb_emit_ldarg (mb, i);
+						mono_mb_emit_byte (mb, CEE_LDIND_REF);
+					}
+					mono_mb_emit_stloc (mb, local);
+					mono_mb_emit_ldloc_addr (mb, local);
 					break;
 				default:
 					g_assert_not_reached ();
 			}
 		}
-
-		g_free (handles_locals);
-
+		mono_mb_emit_ldloc_addr (mb, error_var);
 	} else {
 		for (int i = 0; i < csig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i);
@@ -6335,6 +6363,21 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		g_assert (piinfo->addr);
 		mono_mb_emit_native_call (mb, call_sig, piinfo->addr);
 	}
+
+	// Copy back ObjIn and ObjInOut from locals through parameters.
+	if (mb->volatile_locals) {
+		g_assert (handles_locals);
+		for (int i = 0; i < csig->param_count; i++) {
+			const int local = handles_locals [i].handle;
+			if (local >= 0) {
+				// *argI_raw = localI
+				mono_mb_emit_ldarg (mb, i);
+				mono_mb_emit_ldloc (mb, local);
+				mono_mb_emit_byte (mb, CEE_STIND_REF);
+			}
+		}
+	}
+	g_free (handles_locals);
 
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);

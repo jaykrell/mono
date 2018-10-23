@@ -2010,6 +2010,12 @@ mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg
 }
 
 static void
+mono_apply_volatile (MonoInst *inst, MonoBitSet *set, gsize index)
+{
+	inst->flags |= mono_bitset_test_safe (set, index) ? MONO_INST_VOLATILE : 0;
+}
+
+static void
 mono_compile_create_vars (MonoCompile *cfg)
 {
 	MonoMethodSignature *sig;
@@ -2032,16 +2038,14 @@ mono_compile_create_vars (MonoCompile *cfg)
 
 	if (sig->hasthis) {
 		MonoInst* arg = mono_compile_create_var (cfg, m_class_get_this_arg (cfg->method->klass), OP_ARG);
-		if (header->volatile_args)
-			arg->flags |= MONO_INST_VOLATILE;
+		mono_apply_volatile (arg, header->volatile_args, 0);
 		cfg->args [0] = arg;
 		cfg->this_arg = arg;
 	}
 
 	for (i = 0; i < sig->param_count; ++i) {
 		MonoInst* arg = mono_compile_create_var (cfg, sig->params [i], OP_ARG);
-		if (header->volatile_args)
-			arg->flags |= MONO_INST_VOLATILE;
+		mono_apply_volatile (arg, header->volatile_args, i + sig->hasthis);
 		cfg->args [i + sig->hasthis] = arg;
 	}
 
@@ -2072,7 +2076,14 @@ mono_compile_create_vars (MonoCompile *cfg)
 		if (cfg->verbose_level > 2)
 			g_print ("\tlocal [%d]: ", i);
 		cfg->locals [i] = mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
+		mono_apply_volatile (cfg->locals [i], header->volatile_locals, i);
 	}
+
+	mono_bitset_free (header->volatile_locals);
+	header->volatile_locals = NULL;
+
+	mono_bitset_free (header->volatile_args);
+	header->volatile_args = NULL;
 
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");

@@ -24,13 +24,14 @@ struct _MonoMethodBuilder {
 	gboolean dynamic;
 	gboolean skip_visibility;
 	gboolean init_locals;
-	gboolean volatile_args;
 	guint32 code_size;
 	guint32 pos;
 	guchar *code;
 	gint num_clauses;
 	MonoExceptionClause *clauses;
 	const gchar **param_names;
+	MonoBitSet *volatile_args;
+	MonoBitSet *volatile_locals;
 };
 
 #endif
