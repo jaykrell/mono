@@ -4,20 +4,17 @@
  * Each type that has internal call methods must be declared here
  * with the ICALL_TYPE macro as follows:
  *
- * 	ICALL_TYPE(typeid, typename, first_icall_id)
+ * 	ICALL_TYPE(typeid, typename, ignored)
  *
  * typeid must be a C symbol name unique to the type, don't worry about namespace
  * 	pollution, since it will be automatically prefixed to avoid it.
  * typename is a C string containing the full name of the type
- * first_icall_id is the symbol ID of the first internal call of the declared
- * 	type (see below)
  *
  * The list of internal calls of the methods of a type must follow the
  * type declaration. Each internal call is defined by the following macro:
  *
- * 	ICALL(icallid, methodname, cfuncptr)
+ * 	ICALL(ignored, methodname, cfuncptr)
  *
- * icallid must be a C symbol, unique for each icall defined in this file and
  * typically equal to the typeid + '_' + a sequential number.
  * methodname is a C string defining the method name and the optional signature
  * (the signature is required only when several internal calls in the type
@@ -31,11 +28,7 @@
  * ICALL_TYPE declaration. The same happens for ICALL declarations, but only
  * limited to the icall list of each type. The sorting is based on the type or
  * method name.
- * When adding a new icall, make sure it is inserted correctly in the list and
- * that it defines a unique ID. ID are currently numbered and ordered, but if
- * you need to insert a method in the middle, don't bother renaming all the symbols.
- * Remember to change also the first_icall_id argument in the ICALL_TYPE
- * declaration if you add a new icall at the beginning of a type's icall list.
+ * When adding a new icall, make sure it is inserted correctly in the list.
  *
  *
  * *** (Experimental) Cooperative GC support via Handles and MonoError ***
