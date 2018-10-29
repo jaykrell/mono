@@ -71,8 +71,8 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 }
 
 
-static inline MonoObjectHandle
-cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObjectHandle o)
+static inline void
+cache_object_handle (MonoObjectHandleInOut obj, MonoDomain *domain, MonoClass *klass, gpointer item, MonoObjectHandle o)
 {
 	ReflectedEntry pe;
 	pe.item = item;
@@ -82,7 +82,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	if (!domain->refobject_hash)
 		domain->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
+	mono_handle_assign_raw (obj, mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
 		ReflectedEntry *e = alloc_reflected_entry (domain);
 		e->item = item;
@@ -91,45 +91,45 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 		MONO_HANDLE_ASSIGN (obj, o);
 	}
 	mono_domain_unlock (domain);
-	return obj;
 }
 
 #define CACHE_OBJECT(t,p,o,k) ((t) (cache_object (domain, (k), (p), (o))))
-#define CACHE_OBJECT_HANDLE(t,p,o,k) (MONO_HANDLE_CAST (t, cache_object_handle (domain, (k), (p), (o))))
+#define CACHE_OBJECT_HANDLE(res,p,o,k) (cache_object_handle (MONO_HANDLE_CAST (MonoObject, (res)), domain, (k), (p), (o)))
 
 static inline MonoObjectHandle
-check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
+check_object_handle (MonoObjectHandleInOut handle, MonoDomain* domain, MonoClass *klass, gpointer item)
 {
 	ReflectedEntry e;
 	e.item = item;
 	e.refclass = klass;
 	MonoConcGHashTable *hash = domain->refobject_hash;
-	if (!hash)
-		return MONO_HANDLE_NEW (MonoObject, NULL);
+	if (!hash) {
+		mono_handle_assign_raw (handle, NULL);
+		return;
+	}
 
-	return MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (hash, &e));
+	mono_handle_assign_raw (handle, mono_conc_g_hash_table_lookup (hash, &e));
 }
-
 
 typedef MonoObjectHandle (*ReflectionCacheConstructFunc_handle) (MonoDomain*, MonoClass*, gpointer, gpointer, MonoError *);
 
-static inline MonoObjectHandle
-check_or_construct_handle (MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
+static inline void
+check_or_construct_handle (MonoObjectHandleInOut obj, MonoDomain *domain, MonoClass *klass, gpointer item, gpointer user_data, MonoError *error, ReflectionCacheConstructFunc_handle construct)
 {
 	error_init (error);
-	MonoObjectHandle obj = check_object_handle (domain, klass, item);
+	check_object_handle (handle, domain, klass, item);
 	if (!MONO_HANDLE_IS_NULL (obj))
-		return obj;
+		return;
 	MONO_HANDLE_ASSIGN (obj, construct (domain, klass, item, user_data, error));
-	return_val_if_nok (error, NULL_HANDLE);
+	return_if_nok (error);
 	if (MONO_HANDLE_IS_NULL (obj))
-		return obj;
+		return;
 	/* note no caching if there was an error in construction */
 	return cache_object_handle (domain, klass, item, obj);
 }
 
-#define CHECK_OR_CONSTRUCT_HANDLE(t,p,k,construct,ud) \
-	(MONO_HANDLE_CAST (t, check_or_construct_handle ( \
-		domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct))))
+#define CHECK_OR_CONSTRUCT_HANDLE(res,p,k,construct,ud) \
+	(check_or_construct_handle ( \
+		MONO_HANDLE_CAST (MonoObject, (res)), domain, (k), (p), (ud), error, (ReflectionCacheConstructFunc_handle) (construct)))
 
 #endif /*__MONO_METADATA_REFLECTION_CACHE_H__*/

@@ -116,6 +116,12 @@ mono_method_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoClass
 MonoReflectionProperty*
 mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
 
+void
+mono_property_get_object_assign (MonoReflectionPropertyHandleInOut, MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
+
+void
+mono_property_get_object_assign (MonoReflectionPropertyHandleInOut obj, MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
+
 MonoReflectionPropertyHandle
 mono_property_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error);
 

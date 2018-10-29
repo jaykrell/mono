@@ -172,13 +172,15 @@ mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 #endif
 }
 
+extern MonoThreadInfo * const mono_thread_info_current_var;
+
 /*
 Icall macros
 */
 #define SETUP_ICALL_COMMON	\
 	do { \
 		ERROR_DECL (error);	\
-		MonoThreadInfo *__info = mono_thread_info_current ();	\
+		MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ();	\
 		error_init (error);	\
 
 #define CLEAR_ICALL_COMMON	\
@@ -186,18 +188,18 @@ Icall macros
 
 #define SETUP_ICALL_FRAME	\
 	HandleStackMark __mark;	\
-	mono_stack_mark_init (__info, &__mark);
+	mono_stack_mark_init (mono_thread_info_current_var, &__mark);
 
 #define CLEAR_ICALL_FRAME	\
-	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
-	mono_stack_mark_pop (__info, &__mark);
+	mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__);	\
+	mono_stack_mark_pop (mono_thread_info_current_var, &__mark);
 
 #define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
-	mono_stack_mark_record_size (__info, &__mark, __FUNCTION__);	\
-	(RESULT) = g_cast (mono_stack_mark_pop_value (__info, &__mark, (HANDLE)));
+	mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__);	\
+	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_thread_info_current_var, &__mark, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
-	MonoThreadInfo *__info = mono_thread_info_current ();	\
+	MonoThreadInfo *mono_thread_info_current_var = mono_thread_info_current ();	\
 	SETUP_ICALL_FRAME					\
 
 #define HANDLE_FUNCTION_RETURN()		\
@@ -245,10 +247,10 @@ mono_thread_info_push_stack_mark (MonoThreadInfo *info, void *mark)
 #define SETUP_STACK_WATERMARK	\
 	int __dummy;	\
 	__builtin_unwind_init ();	\
-	void *__old_stack_mark = mono_thread_info_push_stack_mark (__info, &__dummy);
+	void *__old_stack_mark = mono_thread_info_push_stack_mark (mono_thread_info_current_var, &__dummy);
 
 #define CLEAR_STACK_WATERMARK	\
-	mono_thread_info_pop_stack_mark (__info, __old_stack_mark);
+	mono_thread_info_pop_stack_mark (mono_thread_info_current_var, __old_stack_mark);
 
 #else
 #define SETUP_STACK_WATERMARK
@@ -420,6 +422,9 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 #define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
 	mono_handle_assign (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_CAST(MonoObject, (SRCH)))
 
+#define MONO_HANDLE_ASSIGN_RAW(DESTH, SRCP)				\
+	(mono_handle_assign_raw (MONO_HANDLE_CAST (MonoObject, (DESTH)), MONO_HANDLE_RAW (srcp)))
+
 #define MONO_HANDLE_DOMAIN(HANDLE) MONO_HANDLE_SUPPRESS (mono_object_domain (MONO_HANDLE_RAW (MONO_HANDLE_CAST (MonoObject, MONO_HANDLE_UNSUPPRESS (HANDLE)))))
 
 /* Given an object and a MonoClassField, return the value (must be non-object)
@@ -494,10 +499,17 @@ extern const MonoObjectHandle mono_null_value_handle;
 #define NULL_HANDLE_ARRAY  (MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
 
 static inline void
+mono_handle_assign_raw (MonoObjectHandleInOut dest, void *src)
+{
+	g_assert (dest.__raw);
+	MONO_HANDLE_SUPPRESS (*dest.__raw = src);
+}
+
+static inline void
 mono_handle_assign (MonoObjectHandleOut dest, MonoObjectHandle src)
 {
 	g_assert (dest.__raw);
-	MONO_HANDLE_SUPPRESS (*dest.__raw = src.__raw ? *src.__raw : NULL);
+	MONO_HANDLE_SUPPRESS (mono_handle_assign_raw (dest, MONO_HANDLE_RAW (src)));
 }
 
 /* It is unsafe to call this function directly - it does not pin the handle!  Use MONO_HANDLE_GET_FIELD_VAL(). */

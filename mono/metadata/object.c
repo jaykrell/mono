@@ -5623,6 +5623,18 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 	return o;
 }
 
+MonoObjectHandle
+mono_object_new_assign (MonoObjectHandleInOut obj, MonoDomain *domain, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
+
+	return_if_nok (error);
+
+	mono_object_new_by_vtable_assign (obj, vtable, error);
+}
+
 /**
  * mono_object_new_handle:
  * \param klass the class of the object that we want to create
@@ -5746,14 +5758,12 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 }
 
 static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
+mono_object_new_by_vtable_assign (MonoObjectHandleInOut o, MonoVTable *vtable, MonoError *error)
 {
 	// This function handles remoting and COM.
 	// mono_object_new_alloc_by_vtable does not.
 
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	error_init (error);
 
@@ -5769,27 +5779,39 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 				mono_class_init (klass);
 
 			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, mono_new_null ());
+			goto_of_nok (error, return_null);
 			if (!im) {
 				mono_error_set_not_supported (error, "Linked away.");
-				return MONO_HANDLE_NEW (MonoObject, NULL);
+				goto return_null;
 			}
 			vtable->domain->create_proxy_for_type_method = im;
 		}
 
 		// FIXMEcoop
 		gpointer pa[ ] = { mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error) };
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		goto_of_nok (error, return_null);
 
 		// FIXMEcoop
-		o = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (im, NULL, pa, error));
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		mono_handle_assign_raw (o, mono_runtime_invoke_checked (im, NULL, pa, error));
+		goto_of_nok (error, return_null);
 
 		if (!MONO_HANDLE_IS_NULL (o))
-			return o;
+			return;
 	}
 
-	return mono_object_new_alloc_by_vtable (vtable, error);
+	mono_object_new_alloc_by_vtable_assign (o, vtable, error);
+	return;
+
+return_null:
+	mono_handle_assign_raw (o, NULL);
+}
+
+static MonoObjectHandle
+mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
+{
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, NULL);
+	mono_object_new_by_vtable_assign (obj, vtable, error);
+	return obj;
 }
 
 MonoObject *
@@ -5850,17 +5872,25 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 	return object_new_common_tail (o, vtable->klass, error);
 }
 
-MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
+void
+mono_object_new_alloc_by_vtable_assign (MonoObjectHandleInOut o, MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClass* const klass = vtable->klass;
 	int const size = m_class_get_instance_size (klass);
 
-	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
+	mono_gc_alloc_handle_obj_assign (o, vtable, size);
 
-	return object_new_handle_common_tail (o, klass, error);
+	object_new_handle_common_tail (o, klass, error);
+}
+
+MonoObjectHandle
+mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
+{
+	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
+	mono_object_new_alloc_by_vtable_assign (o, vtable, error);
+	return o;
 }
 
 /**
@@ -6746,35 +6776,42 @@ leave:
 }
 
 /**
- * mono_string_new_wtf8_len_checked:
+ * mono_string_new_wtf8:
  * \param text a pointer to an wtf8 string (see https://simonsapin.github.io/wtf-8/)
  * \param length number of bytes in \p text to consider
  * \param merror set on error
  * \returns A newly created string object which contains \p text.
  * On error returns NULL and sets \p merror.
  */
-MonoString*
-mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+MonoStringHandle
+mono_string_new_wtf8 (MonoDomain *domain, const char *text, guint length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	error_init (error);
 
 	GError *eg_error = NULL;
-	MonoString *o = NULL;
+	MonoStringHandle o = NULL_HANDLE;
 	gunichar2 *ut = NULL;
 	glong items_written;
 
 	ut = eg_wtf8_to_utf16 (text, length, NULL, &items_written, &eg_error);
 
 	if (!eg_error)
-		o = mono_string_new_utf16_checked (domain, ut, items_written, error);
+		o = mono_string_new_utf16_handle (domain, ut, items_written, error);
 	else
 		g_error_free (eg_error);
 
 	g_free (ut);
 
 	return o;
+}
+
+MonoString*
+mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error)
+{
+	HANDLE_FUNCTION_ENTER ();
+	HANDLE_FUNCTION_RETURN_OBJ (mono_string_new_wtf8 (domain, text, length, error));
 }
 
 MonoString*
@@ -6892,6 +6929,7 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 MonoObject *
 mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, MonoError *error)
 {
+	// FIXMEcoop? Call mono_value_box_handle?
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoObject *res;
 	int size;
@@ -6938,10 +6976,9 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 		}
 #endif
 	}
-	if (m_class_has_finalize (klass)) {
-		mono_object_register_finalizer (res);
-		return_val_if_nok (error, NULL);
-	}
+	if (m_class_has_finalize (klass))
+		mono_object_register_finalizer_handle (res);
+
 	return res;
 }
 

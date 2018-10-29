@@ -1999,6 +1999,9 @@ mono_string_new_len_checked (MonoDomain *domain, const char *text, guint length,
 MONO_PROFILER_API MonoString*
 mono_string_new_checked (MonoDomain *domain, const char *text, MonoError *merror);
 
+MonoStringHandle
+mono_string_new_wtf8 (MonoDomain *domain, const char *text, guint length, MonoError *error);
+
 MonoString*
 mono_string_new_wtf8_len_checked (MonoDomain *domain, const char *text, guint length, MonoError *error);
 

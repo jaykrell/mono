@@ -1399,7 +1399,9 @@ register_assembly (MonoDomain *domain, MonoReflectionAssembly *res, MonoAssembly
 static MonoReflectionModuleBuilderHandle
 register_module (MonoDomain *domain, MonoReflectionModuleBuilderHandle res, MonoDynamicImage *module)
 {
-	return CACHE_OBJECT_HANDLE (MonoReflectionModuleBuilder, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	MonoReflectionModuleBuilderHandle handle = MONO_HANDLE_NEW (MonoReflectionModuleBuilder, NULL);
+	CACHE_OBJECT_HANDLE (handle, module, MONO_HANDLE_CAST (MonoObject, res), NULL);
+	return handle;
 }
 
 static gboolean

@@ -247,7 +247,9 @@ MonoReflectionAssemblyHandle
 mono_assembly_get_object_handle (MonoDomain *domain, MonoAssembly *assembly, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssembly, assembly, NULL, assembly_object_construct, NULL);
+	MonoReflectionAssemblyHandle obj = MONO_HANDLE_NEW (MonoReflectionAssembly, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, assembly, NULL, assembly_object_construct, NULL);
+	return obj;
 }
 
 /**
@@ -313,7 +315,9 @@ MonoReflectionModuleHandle
 mono_module_get_object_handle (MonoDomain *domain, MonoImage *image, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModule, image, NULL, module_object_construct, NULL);
+	MonoReflectionModuleHandle obj = MONO_HANDLE_NEW (MonoReflectionModule, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, image, NULL, module_object_construct, NULL);
+	return obj;
 }
 
 /**
@@ -477,13 +481,12 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 
 	mono_loader_lock (); /*FIXME mono_class_init and mono_class_vtable acquire it*/
 	mono_domain_lock (domain);
+
 	if (!domain->type_hash)
 		domain->type_hash = mono_g_hash_table_new_type ((GHashFunc)mono_metadata_type_hash, 
 				(GCompareFunc)mono_metadata_type_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Type Table");
 	if ((res = (MonoReflectionType *)mono_g_hash_table_lookup (domain->type_hash, type))) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return res;
+		goto exit;
 	}
 
 	/*Types must be normalized so a generic instance of the GTD get's the same inner type.
@@ -497,14 +500,11 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	if (norm_type != type) {
 		res = mono_type_get_object_checked (domain, norm_type, error);
 		if (!mono_error_ok (error)) {
-			mono_domain_unlock (domain);
-			mono_loader_unlock ();
-			return NULL;
+			res = NULL;
+			goto exit;
 		}
 		mono_g_hash_table_insert (domain->type_hash, type, res);
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return res;
+		goto exit;
 	}
 
 	if ((type->type == MONO_TYPE_GENERICINST) && type->data.generic_class->is_dynamic && !m_class_was_typebuilder (type->data.generic_class->container_class)) {
@@ -525,9 +525,8 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 		/* I would have expected ReflectionTypeLoadException, but evidently .NET throws TLE in this case. */
 		mono_error_set_type_load_class (error, klass, "TypeBuilder.CreateType() not called for generic class %s", full_name);
 		g_free (full_name);
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return NULL;
+		res = NULL;
+		goto exit;
 	}
 
 	if (mono_class_has_ref_info (klass) && !m_class_was_typebuilder (klass) && !type->byref) {
@@ -538,9 +537,8 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 	/* This is stored in vtables/JITted code so it has to be pinned */
 	res = (MonoReflectionType *)mono_object_new_pinned (domain, mono_defaults.runtimetype_class, error);
 	if (!mono_error_ok (error)) {
-		mono_domain_unlock (domain);
-		mono_loader_unlock ();
-		return NULL;
+		res = NULL;
+		goto exit;
 	}
 
 	res->type = type;
@@ -548,7 +546,7 @@ mono_type_get_object_checked (MonoDomain *domain, MonoType *type, MonoError *err
 
 	if (type->type == MONO_TYPE_VOID)
 		domain->typeof_void = (MonoObject*)res;
-
+exit;
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 	return res;
@@ -637,7 +635,9 @@ mono_method_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoClass
 	if (!refclass)
 		refclass = method->klass;
 
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethod, method, refclass, method_object_construct, NULL);
+	MonoReflectionMethodHandle obj = MONO_HANDLE_NEW (MonoReflectionMethod, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, method, refclass, method_object_construct, NULL);
+	return obj;
 }
 /*
  * mono_method_get_object_checked:
@@ -740,7 +740,9 @@ MonoReflectionFieldHandle
 mono_field_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoClassField *field, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionField, field, klass, field_object_construct, NULL);
+	MonoReflectionFieldHandle obj = MONO_HANDLE_NEW (MonoReflectionField, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, field, klass, field_object_construct, NULL);
+	return obj;
 }
 
 
@@ -795,6 +797,12 @@ fail:
 	return MONO_HANDLE_CAST (MonoReflectionProperty, NULL_HANDLE);
 }
 
+void
+mono_property_get_object_assign (MonoReflectionPropertyHandleInOut obj, MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error)
+{
+	CHECK_OR_CONSTRUCT_HANDLE (obj, property, klass, property_object_construct, NULL);
+}
+
 /**
  * mono_property_get_object_handle:
  * \param domain an app domain
@@ -808,7 +816,9 @@ fail:
 MonoReflectionPropertyHandle
 mono_property_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error)
 {
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionProperty, property, klass, property_object_construct, NULL);
+	MonoReflectionPropertyHandle obj = MONO_HANDLE_NEW (MonoReflectionProperty, NULL);
+	mono_property_get_object_assign (obj, property, klass, property_object_construct, NULL);
+	return obj;
 }
 
 /**
@@ -872,7 +882,9 @@ MonoReflectionEventHandle
 mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *event, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionEvent, event, klass, event_object_construct, NULL);
+	MonoReflectionEventHandle obj = MONO_HANDLE_NEW (MonoReflectionEventMonoReflectionEventHandle, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, event, klass, event_object_construct, NULL);
+	return obj;
 }
 
 
@@ -1110,9 +1122,11 @@ mono_param_get_objects_internal (MonoDomain *domain, MonoMethod *method, MonoCla
 	/* Note: the cache is based on the address of the signature into the method
 	 * since we already cache MethodInfos with the method as keys.
 	 */
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoArray, &method->signature, refclass, param_objects_construct, method);
+	MonoArrayHandle obj = MONO_HANDLE_NEW (MonoArray, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, &method->signature, refclass, param_objects_construct, method);
+	return obj;
 fail:
-	return MONO_HANDLE_NEW (MonoArray, NULL);
+	return NULL_HANDLE_ARRAY;
 }
 
 /**
@@ -1305,9 +1319,10 @@ MonoReflectionMethodBodyHandle
 mono_method_body_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	error_init (error);
-	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionMethodBody, method, NULL, method_body_object_construct, NULL);
+	MonoReflectionMethodBodyHandle obj = MONO_HANDLE_NEW (MonoReflectionMethodBody, NULL);
+	CHECK_OR_CONSTRUCT_HANDLE (obj, method, NULL, method_body_object_construct, NULL);
+	return obj;
 }
-
 
 /**
  * mono_get_dbnull_object:

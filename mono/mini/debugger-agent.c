@@ -7472,12 +7472,21 @@ buffer_add_cattr_arg (Buffer *buf, MonoType *t, MonoDomain *domain, MonoObject *
 static ErrorCode
 buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass *attr_klass, MonoCustomAttrInfo *cinfo)
 {
+	ErrorCode error_code;
+
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArrayHandle typed_args = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoArrayHandle named_args = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoObjectHandle val = MONO_HANDLE_NEW (MonoObject, NULL);
+
 	int i, j;
 	int nattrs = 0;
 
 	if (!cinfo) {
 		buffer_add_int (buf, 0);
-		return ERR_NONE;
+		error_code = ERR_NONE;
+		goto exit;
 	}
 
 	for (i = 0; i < cinfo->num_attrs; ++i) {
@@ -7489,7 +7498,6 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 	for (i = 0; i < cinfo->num_attrs; ++i) {
 		MonoCustomAttrEntry *attr = &cinfo->attrs [i];
 		if (!attr_klass || mono_class_has_parent (attr->ctor->klass, attr_klass)) {
-			MonoArray *typed_args, *named_args;
 			MonoType *t;
 			CattrNamedArg *arginfo = NULL;
 			ERROR_DECL (error);
@@ -7498,16 +7506,17 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			if (!mono_error_ok (error)) {
 				DEBUG_PRINTF (2, "[dbg] mono_reflection_create_custom_attr_data_args () failed with: '%s'\n", mono_error_get_message (error));
 				mono_error_cleanup (error);
-				return ERR_LOADER_ERROR;
+				error_code = ERR_LOADER_ERROR;
+				goto exit;
 			}
 
 			buffer_add_methodid (buf, domain, attr->ctor);
 
 			/* Ctor args */
-			if (typed_args) {
-				buffer_add_int (buf, mono_array_length_internal (typed_args));
-				for (j = 0; j < mono_array_length_internal (typed_args); ++j) {
-					MonoObject *val = mono_array_get_internal (typed_args, MonoObject*, j);
+			if (MONO_HANDLE_BOOL (typed_args)) {
+				buffer_add_int (buf, mono_array_handle_length (typed_args));
+				for (j = 0; j < mono_array_handle_length (typed_args); ++j) {
+					MONO_HANDLE_ARRAY_GETVAL (val, typed_args, MonoObject, j);
 
 					t = mono_method_signature_internal (attr->ctor)->params [j];
 
@@ -7518,11 +7527,11 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 			}
 
 			/* Named args */
-			if (named_args) {
-				buffer_add_int (buf, mono_array_length_internal (named_args));
+			if (MONO_HANDLE_BOOL (named_args)) {
+				buffer_add_int (buf, mono_array_handle_length (named_args));
 
-				for (j = 0; j < mono_array_length_internal (named_args); ++j) {
-					MonoObject *val = mono_array_get_internal (named_args, MonoObject*, j);
+				for (j = 0; j < mono_array_handle_length (named_args); ++j) {
+					MONO_HANDLE_ARRAY_GETVAL (val, named_args, MonoObject, j);
 
 					if (arginfo [j].prop) {
 						buffer_add_byte (buf, 0x54);
@@ -7543,7 +7552,9 @@ buffer_add_cattrs (Buffer *buf, MonoDomain *domain, MonoImage *image, MonoClass 
 		}
 	}
 
-	return ERR_NONE;
+	error_code = ERR_NONE;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (error_code);
 }
 
 /* FIXME: Code duplication with icall.c */
