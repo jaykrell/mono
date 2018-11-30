@@ -6461,6 +6461,22 @@ branch_target:
 	return info;
 }
 
+static void
+ins_strengthen_memory_model (MonoInst *ins)
+{
+	int opcode = ins->opcode;
+	switch (opcode)
+	{
+	case OP_STORE_MEMBASE_REG:
+		g_print ("%s %d\n", __func__,  __LINE__);
+		opcode = (SIZEOF_VOID_P == 4) ? OP_ATOMIC_STORE_I4 : OP_ATOMIC_STORE_I8);
+		break;
+	default:
+		return;
+	}
+	ins->opcode = opcode;
+}
+
 /*
  * mono_method_to_ir:
  *
@@ -8847,13 +8863,19 @@ calli_end:
 		case CEE_STIND_I: {
 			sp -= 2;
 
+			// On ARM and ARM64 strengthen the store of pointers,
+			// if not already strengthened.
+			gboolean strengthen_memory_model = cfg->backend->strengthen_memory_model;
+
 			if (ins_flag & MONO_INST_VOLATILE) {
 				/* Volatile stores have release semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+				strengthen_memory_model = FALSE;
 			}
 
 			if (il_op == CEE_STIND_R4 && sp [1]->type == STACK_R8)
 				sp [1] = convert_value (cfg, m_class_get_byval_arg (mono_defaults.single_class), sp [1]);
+
 			NEW_STORE_MEMBASE (cfg, ins, stind_to_store_membase (il_op), sp [0]->dreg, 0, sp [1]->dreg);
 			ins->flags |= ins_flag;
 			ins_flag = 0;
@@ -8864,8 +8886,13 @@ calli_end:
 				/* stind.ref must only be used with object references. */
 				if (sp [1]->type != STACK_OBJ)
 					UNVERIFIED;
-				if (cfg->gen_write_barriers && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1]))
+
+				else if (strengthen_memory_model)
+					ins_strengthen_memory_model (ins);
+
+				if (cfg->gen_write_barriers && method->wrapper_type != MONO_WRAPPER_WRITE_BARRIER && !MONO_INS_IS_PCONST_NULL (sp [1])) {
 					mini_emit_write_barrier (cfg, sp [0], sp [1]);
+				}
 			}
 
 			inline_costs += 1;
@@ -9642,6 +9669,12 @@ calli_end:
 				}
 			}
 
+			// On ARM and ARM64 strengthen the store of pointers, if not already strengthened.
+			gboolean strengthen_memory_model = cfg->backend->strengthen_memory_model
+				&&  (il_op == MONO_CEE_STSFLD || il_op == MONO_CEE_STFLD)
+				&& store_val->type == STACK_OBJ
+				&& !(ins_flag & MONO_INST_VOLATILE);
+
 			if (method->wrapper_type != MONO_WRAPPER_NONE) {
 				field = (MonoClassField *)mono_method_get_wrapper_data (method, token);
 				klass = field->parent;
@@ -9722,6 +9755,8 @@ calli_end:
 					} else {
 						mono_emit_method_call (cfg, stfld_wrapper, iargs, NULL);
 					}
+					if (strengthen_memory_model)
+						mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
 				} else
 #endif
 				{
@@ -9767,6 +9802,8 @@ calli_end:
 							mini_emit_write_barrier (cfg, ptr, sp [1]);
 						}
 					}
+					else if (strengthen_memory_model)
+						ins_strengthen_memory_model (ins);
 
 					store->flags |= ins_flag;
 				}
@@ -10159,6 +10196,7 @@ field_access_end:
 			if ((il_op == CEE_LDFLD || il_op == CEE_LDSFLD) && (ins_flag & MONO_INST_VOLATILE)) {
 				/* Volatile loads have acquire semantics, see 12.6.7 in Ecma 335 */
 				mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_ACQ);
+				strengthen_memory_model = false;
 			}
 
 			ins_flag = 0;

@@ -52,7 +52,11 @@ typedef struct {
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 
+G_BEGIN_DECLS // sdks/wasm/driver.c is C and uses this
+
 void mono_wasm_debugger_init (void);
+
+G_END_DECLS
 
 void mono_wasm_enable_debugging (void);
 void mono_wasm_breakpoint_hit (void);

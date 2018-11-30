@@ -159,7 +159,9 @@ mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
 }
 
 
+G_BEGIN_DECLS
 extern void schedule_background_exec (void);
+G_END_DECLS
 
 static GSList *jobs;
 
@@ -173,6 +175,7 @@ mono_threads_schedule_background_job (background_job_cb cb)
 		jobs = g_slist_prepend (jobs, cb);
 }
 
+MONO_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
