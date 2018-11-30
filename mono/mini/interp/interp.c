@@ -1230,6 +1230,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	g_free (margs->fargs);
 	g_free (margs);
 #endif
+	goto exit_pinvoke; // prevent unused label warning in some configurations
 exit_pinvoke:
 	return;
 }
@@ -1896,7 +1897,7 @@ do_icall (ThreadContext *context, MonoMethodSignature *sig, int op, stackval *sp
 
 	interp_pop_lmf (&ext);
 
-
+	goto exit_icall; // prevent unused label warning in some configurations
 exit_icall:
 	return sp;
 }
