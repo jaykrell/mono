@@ -8,11 +8,12 @@
 #include <config.h>
 #include <glib.h>
 
-#if defined(HOST_WIN32)
+#if defined (HOST_WIN32)
 #include <winsock2.h>
 #include <windows.h>
 #include <objbase.h>
 #include "mono/metadata/marshal-windows-internals.h"
+#include "icall-decl.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 void*
