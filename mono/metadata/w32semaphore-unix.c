@@ -185,7 +185,7 @@ sem_create (gint32 initial, gint32 max)
 }
 
 static gpointer
-namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
+namedsem_create (gint32 initial, gint32 max, const gunichar2 *name, gint32 name_length, MonoError *error)
 {
 	gpointer handle;
 	gchar *utf8_name;
@@ -196,8 +196,8 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	glong utf8_len = 0;
-	utf8_name = g_utf16_to_utf8 (name, -1, NULL, &utf8_len, NULL);
+	utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	return_val_if_nok (error, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
 
@@ -215,6 +215,10 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 		/* A new named semaphore */
 		MonoW32HandleNamedSemaphore namedsem_handle;
 
+		// FIXME? Silent truncation?
+		// Does not matter, unless there are other names
+		// that truncate to the same.
+		const gsize utf8_len = strlen (name);
 		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
 		memcpy (&namedsem_handle.sharedns.name [0], utf8_name, len);
 		namedsem_handle.sharedns.name [len] = '\0';
@@ -222,17 +226,20 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name)
 		handle = sem_handle_create ((MonoW32HandleSemaphore*) &namedsem_handle, MONO_W32TYPE_NAMEDSEM, initial, max);
 	}
 
-	g_free (utf8_name);
-
 	mono_w32handle_namespace_unlock ();
+
+	g_free (utf8_name);
 
 	return handle;
 }
 
 gpointer
-ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCount, gint32 maximumCount, MonoString *name, gint32 *error)
+ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
+	const gunichar2 *name, gint32 name_length, gint32 *error, MonoError *mono_error)
 { 
 	gpointer sem;
+
+	// FIXME check for embedded nuls in name.
 
 	if (maximumCount <= 0) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: maximumCount <= 0", __func__);
@@ -257,7 +264,7 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_internal (gint32 initialCou
 	if (!name)
 		sem = sem_create (initialCount, maximumCount);
 	else
-		sem = namedsem_create (initialCount, maximumCount, mono_string_chars_internal (name));
+		sem = namedsem_create (initialCount, maximumCount, name, name_length, mono_error);
 
 	*error = mono_w32error_get_last ();
 
@@ -319,17 +326,22 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 }
 
 gpointer
-ves_icall_System_Threading_Semaphore_OpenSemaphore_internal (MonoString *name, gint32 rights, gint32 *error)
+ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name, gint32 name_length,
+	gint32 rights, gint32 *error, MonoError *mono_error)
 {
-	gpointer handle;
+	g_assert (name);
+	gpointer handle = NULL;
 	gchar *utf8_name;
+
+	// FIXME check for embedded nuls in name.
 
 	*error = ERROR_SUCCESS;
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	utf8_name = g_utf16_to_utf8 (mono_string_chars_internal (name), -1, NULL, NULL, NULL);
+	utf8_name = mono_utf16_to_utf8 (name, name_length, mono_error);
+	return_val_if_nok (mono_error, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Opening named sem [%s]", __func__, utf8_name);
 

@@ -32,9 +32,6 @@ struct MonoW32HandleNamedMutex {
 	MonoW32HandleNamespace sharedns;
 };
 
-gpointer
-mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *error);
-
 static void
 thread_own_mutex (MonoInternalThreadHandle internal, gpointer handle, MonoW32Handle *handle_data)
 {
@@ -312,8 +309,6 @@ static gpointer namedmutex_create (gboolean owned, const gchar *utf8_name)
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	glong utf8_len = strlen (utf8_name);
-
 	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDMUTEX, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
@@ -341,10 +336,9 @@ static gpointer namedmutex_create (gboolean owned, const gchar *utf8_name)
 }
 
 gpointer
-ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoStringHandle name, MonoBoolean *created, MonoError *error)
+ves_icall_System_Threading_Mutex_CreateMutex_icall (MonoBoolean owned, const gunichar2 *name,
+	gint32 name_length, MonoBoolean *created, MonoError *error)
 {
-	gpointer mutex;
-
 	*created = TRUE;
 
 	/* Need to blow away any old errors here, because code tests
@@ -352,20 +346,17 @@ ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoSt
 	 * was freshly created */
 	mono_w32error_set_last (ERROR_SUCCESS);
 
-	if (MONO_HANDLE_IS_NULL (name)) {
-		mutex = mutex_create (owned);
-	} else {
-		gchar *utf8_name = mono_string_handle_to_utf8 (name, error);
-		return_val_if_nok (error, NULL);
+	if (!name)
+		return mutex_create (owned);
 
-		mutex = namedmutex_create (owned, utf8_name);
+	gchar *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	return_val_if_nok (error, NULL);
 
-		if (mono_w32error_get_last () == ERROR_ALREADY_EXISTS)
-			*created = FALSE;
-		g_free (utf8_name);
-	}
+	gpointer mutex = namedmutex_create (owned, utf8_name);
 
-	return mutex;
+	if (mono_w32error_get_last () == ERROR_ALREADY_EXISTS)
+		*created = FALSE;
+	g_free (utf8_name);
 }
 
 MonoBoolean
@@ -429,18 +420,8 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 	return ret;
 }
 
-gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights G_GNUC_UNUSED, gint32 *err, MonoError *error)
-{
-	gchar *utf8_name = mono_string_handle_to_utf8 (name, error);
-	return_val_if_nok (error, NULL);
-	gpointer handle = mono_w32mutex_open (utf8_name, rights, err);
-	g_free (utf8_name);
-	return handle;
-}
-
-gpointer
-mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *error)
+static gpointer
+mono_w32mutex_open (const gchar* utf8_name, gint32 *error)
 {
 	gpointer handle;
 
@@ -469,6 +450,16 @@ mono_w32mutex_open (const gchar* utf8_name, gint32 right G_GNUC_UNUSED, gint32 *
 cleanup:
 	mono_w32handle_namespace_unlock ();
 
+	return handle;
+}
+
+gpointer
+ves_icall_System_Threading_Mutex_OpenMutex_internal (const gunichar2 *name, gint32 name_length, gint32 rights G_GNUC_UNUSED, gint32 *err, MonoError *error)
+{
+	gchar *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	return_val_if_nok (error, NULL);
+	gpointer handle = mono_w32mutex_open (utf8_name, err);
+	g_free (utf8_name);
 	return handle;
 }
 

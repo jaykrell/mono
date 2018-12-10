@@ -1675,7 +1675,7 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 }
 
 void
-ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
+ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms)
 {
 	THREAD_DEBUG (g_message ("%s: Sleeping for %d ms", __func__, ms));
 
@@ -1708,12 +1708,12 @@ ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error)
 }
 
 void
-ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error)
+ves_icall_System_Threading_Thread_SpinWait_nop (void)
 {
 }
 
 gint32
-ves_icall_System_Threading_Thread_GetDomainID (MonoError *error)
+ves_icall_System_Threading_Thread_GetDomainID (void)
 {
 	return mono_domain_get()->domain_id;
 }

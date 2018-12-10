@@ -122,7 +122,7 @@ ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThre
 
 ICALL_EXPORT
 void
-ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
+ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms);
 
 ICALL_EXPORT
 MonoBoolean
@@ -130,7 +130,7 @@ ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_h
 
 ICALL_EXPORT
 gint32
-ves_icall_System_Threading_Thread_GetDomainID (MonoError *error);
+ves_icall_System_Threading_Thread_GetDomainID (void);
 
 ICALL_EXPORT
 MonoStringHandle ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle this_obj, MonoError *error);
@@ -383,7 +383,7 @@ ves_icall_System_Threading_Thread_Interrupt_internal (MonoThreadObjectHandle thr
 
 ICALL_EXPORT
 void
-ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error);
+ves_icall_System_Threading_Thread_SpinWait_nop (void);
 
 void
 mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);

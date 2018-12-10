@@ -387,10 +387,10 @@ ICALL_TYPE(FAMW, "System.IO.FAMWatcher", FAMW_1)
 ICALL(FAMW_1, "InternalFAMNextEvent", ves_icall_System_IO_FAMW_InternalFAMNextEvent)
 
 ICALL_TYPE(FILEW, "System.IO.FileSystemWatcher", FILEW_4)
-ICALL(FILEW_4, "InternalSupportsFSW", ves_icall_System_IO_FSW_SupportsFSW)
+NOHANDLES(ICALL(FILEW_4, "InternalSupportsFSW", ves_icall_System_IO_FSW_SupportsFSW))
 
 ICALL_TYPE(KQUEM, "System.IO.KqueueMonitor", KQUEM_1)
-ICALL(KQUEM_1, "kevent_notimeout", ves_icall_System_IO_KqueueMonitor_kevent_notimeout)
+NOHANDLES(ICALL(KQUEM_1, "kevent_notimeout", ves_icall_System_IO_KqueueMonitor_kevent_notimeout))
 
 ICALL_TYPE(LOGCATEXTWRITER, "System.IO.LogcatTextWriter", LOGCATEXTWRITER_1)
 NOHANDLES(ICALL(LOGCATEXTWRITER_1, "Log", ves_icall_System_IO_LogcatTextWriter_Log))
@@ -571,7 +571,7 @@ HANDLES(SOCK_21a, "cancel_blocking_socket_operation", ves_icall_cancel_blocking_
 
 #ifndef DISABLE_SOCKETS
 ICALL_TYPE(SOCKEX, "System.Net.Sockets.SocketException", SOCKEX_1)
-ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal)
+NOHANDLES(ICALL(SOCKEX_1, "WSAGetLastError_internal", ves_icall_System_Net_Sockets_SocketException_WSAGetLastError_internal))
 #endif /* !DISABLE_SOCKETS */
 
 ICALL_TYPE(NUMBER_FORMATTER, "System.NumberFormatter", NUMBER_FORMATTER_1)
@@ -750,7 +750,7 @@ HANDLES(RUNH_1, "GetObjectValue", ves_icall_System_Runtime_CompilerServices_Runt
 HANDLES(RUNH_3, "InitializeArray", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray, void, 2, (MonoArray, MonoClassField_ptr))
 HANDLES(RUNH_4, "RunClassConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunClassConstructor, void, 1, (MonoType_ptr))
 HANDLES(RUNH_5, "RunModuleConstructor", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_RunModuleConstructor, void, 1, (MonoImage_ptr))
-ICALL(RUNH_5h, "SufficientExecutionStack", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack)
+NOHANDLES(ICALL(RUNH_5h, "SufficientExecutionStack", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack))
 NOHANDLES(ICALL(RUNH_6, "get_OffsetToStringData", ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData))
 
 ICALL_TYPE(GCH, "System.Runtime.InteropServices.GCHandle", GCH_1)
@@ -785,7 +785,7 @@ HANDLES(MARSHAL_52, "GetHRForException_WinRT", ves_icall_System_Runtime_InteropS
 HANDLES(MARSHAL_45, "GetIDispatchForObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal, gpointer, 1, (MonoObject))
 HANDLES(MARSHAL_46, "GetIUnknownForObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal, gpointer, 1, (MonoObject))
 #endif
-ICALL(MARSHAL_11, "GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error)
+NOHANDLES(ICALL(MARSHAL_11, "GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error))
 #ifndef DISABLE_COM
 HANDLES(MARSHAL_53, "GetNativeActivationFactory", ves_icall_System_Runtime_InteropServices_Marshal_GetNativeActivationFactory, MonoObject, 1, (MonoObject))
 HANDLES(MARSHAL_47, "GetObjectForCCW", ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW, MonoObject, 1, (gpointer))
@@ -1018,23 +1018,21 @@ ICALL(MONIT_7, "Monitor_wait", ves_icall_System_Threading_Monitor_Monitor_wait)
 ICALL(MONIT_9, "try_enter_with_atomic_var", ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var)
 
 ICALL_TYPE(MUTEX, "System.Threading.Mutex", MUTEX_1)
-HANDLES(MUTEX_1, "CreateMutex_internal(bool,string,bool&)", ves_icall_System_Threading_Mutex_CreateMutex_internal, gpointer, 3, (MonoBoolean, MonoString, MonoBoolean_ref))
-HANDLES(MUTEX_2, "OpenMutex_internal(string,System.Security.AccessControl.MutexRights,System.IO.MonoIOError&)", ves_icall_System_Threading_Mutex_OpenMutex_internal, gpointer, 3, (MonoString, gint32, gint32_ref))
+HANDLES(MUTEX_1, "CreateMutex_icall", ves_icall_System_Threading_Mutex_CreateMutex_internal, gpointer, 3, (MonoBoolean, MonoString, MonoBoolean_ref))
+HANDLES(MUTEX_2, "OpenMutex_icall", ves_icall_System_Threading_Mutex_OpenMutex_internal, gpointer, 3, (MonoString, gint32, gint32_ref))
 NOHANDLES(ICALL(MUTEX_3, "ReleaseMutex_internal(intptr)", ves_icall_System_Threading_Mutex_ReleaseMutex_internal))
 
 ICALL_TYPE(NATIVEC, "System.Threading.NativeEventCalls", NATIVEC_1)
-ICALL(NATIVEC_1, "CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal)
-HANDLES(NATIVEC_2, "CreateEvent_internal(bool,bool,string,int&)", ves_icall_System_Threading_Events_CreateEvent_internal, gpointer, 4, (MonoBoolean, MonoBoolean, MonoString, gint32_ref))
-HANDLES(NATIVEC_3, "OpenEvent_internal(string,System.Security.AccessControl.EventWaitHandleRights,int&)", ves_icall_System_Threading_Events_OpenEvent_internal, gpointer, 3, (MonoString, gint32, gint32_ref))
-//FIXME HANDLES(NATIVEC_4, "ResetEvent_internal", ves_icall_System_Threading_Events_ResetEvent_internal, MonoBoolean, 1, (gpointer))
+NOHANDLES(ICALL(NATIVEC_1, "CloseEvent_internal", ves_icall_System_Threading_Events_CloseEvent_internal))
+NOHANDLES(ICALL(NATIVEC_2, "CreateEvent_icall", ves_icall_System_Threading_Events_CreateEvent_internal))
+NOHANDLES(ICALL(NATIVEC_3, "OpenEvent_icall", ves_icall_System_Threading_Events_OpenEvent_internal))
 NOHANDLES(ICALL(NATIVEC_4, "ResetEvent_internal",  ves_icall_System_Threading_Events_ResetEvent_internal))
-//HANDLES(NATIVEC_5, "SetEvent_internal", ves_icall_System_Threading_Events_SetEvent_internal, MonoBoolean, 1, (gpointer))
 NOHANDLES(ICALL(NATIVEC_5, "SetEvent_internal",    ves_icall_System_Threading_Events_SetEvent_internal))
 
 ICALL_TYPE(SEMA, "System.Threading.Semaphore", SEMA_1)
-ICALL(SEMA_1, "CreateSemaphore_internal(int,int,string,int&)", ves_icall_System_Threading_Semaphore_CreateSemaphore_internal)
-ICALL(SEMA_2, "OpenSemaphore_internal(string,System.Security.AccessControl.SemaphoreRights,int&)", ves_icall_System_Threading_Semaphore_OpenSemaphore_internal)
-ICALL(SEMA_3, "ReleaseSemaphore_internal(intptr,int,int&)", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal)
+NOHANDLES(ICALL(SEMA_1, "CreateSemaphore_icall", ves_icall_System_Threading_Semaphore_CreateSemaphore_internal))
+NOHANDLES(ICALL(SEMA_2, "OpenSemaphore_icall", ves_icall_System_Threading_Semaphore_OpenSemaphore_internal))
+NOHANDLES(ICALL(SEMA_3, "ReleaseSemaphore_internal", ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal))
 
 ICALL_TYPE(THREAD, "System.Threading.Thread", THREAD_1)
 HANDLES(THREAD_1, "Abort_internal(System.Threading.InternalThread,object)", ves_icall_System_Threading_Thread_Abort, void, 2, (MonoInternalThread, MonoObject))
@@ -1044,7 +1042,7 @@ HANDLES(THREAD_2, "ClrState(System.Threading.InternalThread,System.Threading.Thr
 HANDLES(THREAD_2a, "ConstructInternalThread", ves_icall_System_Threading_Thread_ConstructInternalThread, void, 1, (MonoThreadObject))
 HANDLES(THREAD_55, "GetAbortExceptionState", ves_icall_System_Threading_Thread_GetAbortExceptionState, MonoObject, 1, (MonoThreadObject))
 HANDLES(THREAD_60, "GetCurrentThread", ves_icall_System_Threading_Thread_GetCurrentThread, MonoThreadObject, 0, ())
-HANDLES(THREAD_7, "GetDomainID", ves_icall_System_Threading_Thread_GetDomainID, gint32, 0, ())
+NOHANDLES(ICALL(THREAD_7, "GetDomainID", ves_icall_System_Threading_Thread_GetDomainID))
 HANDLES(THREAD_8, "GetName_internal(System.Threading.InternalThread)", ves_icall_System_Threading_Thread_GetName_internal, MonoString, 1, (MonoInternalThread))
 HANDLES(THREAD_57, "GetPriorityNative", ves_icall_System_Threading_Thread_GetPriority, int, 1, (MonoThreadObject))
 
@@ -1060,8 +1058,8 @@ HANDLES(THREAD_15, "ResumeInternal", ves_icall_System_Threading_Thread_Resume, v
 ICALL(THREAD_18, "SetName_internal(System.Threading.InternalThread,string)", ves_icall_System_Threading_Thread_SetName_internal)
 HANDLES(THREAD_58, "SetPriorityNative", ves_icall_System_Threading_Thread_SetPriority, void, 2, (MonoThreadObject, int))
 HANDLES(THREAD_21, "SetState(System.Threading.InternalThread,System.Threading.ThreadState)", ves_icall_System_Threading_Thread_SetState, void, 2, (MonoInternalThread, guint32))
-HANDLES(THREAD_22, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal, void, 1, (gint32))
-HANDLES(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop, void, 0, ())
+NOHANDLES(ICALL(THREAD_22, "SleepInternal", ves_icall_System_Threading_Thread_Sleep_internal))
+NOHANDLES(ICALL(THREAD_54, "SpinWait_nop", ves_icall_System_Threading_Thread_SpinWait_nop))
 
 HANDLES(THREAD_23, "SuspendInternal", ves_icall_System_Threading_Thread_Suspend, void, 1, (MonoThreadObject))
 // FIXME SystemMaxStackStize should be SystemMaxStackSize
