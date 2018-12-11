@@ -1313,10 +1313,10 @@ mono_gc_alloc_handle_pinned_obj (MonoVTable *vtable, gsize size)
 	return MONO_HANDLE_NEW (MonoObject, mono_gc_alloc_pinned_obj (vtable, size));
 }
 
-MonoObjectHandle
-mono_gc_alloc_handle_obj (MonoVTable *vtable, gsize size)
+void
+mono_gc_alloc_handle_obj (MonoObjectHandleOut o, MonoVTable *vtable, gsize size)
 {
-	return MONO_HANDLE_NEW (MonoObject, mono_gc_alloc_obj (vtable, size));
+	MONO_HANDLE_ASSIGN_RAW (o, mono_gc_alloc_obj (vtable, size));
 }
 
 MonoArrayHandle
