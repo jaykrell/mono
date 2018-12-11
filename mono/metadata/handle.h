@@ -350,6 +350,7 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		MONO_OBJECT_SETREF_INTERNAL (MONO_HANDLE_RAW (MONO_HANDLE_UNSUPPRESS (HANDLE)), FIELD, __val); \
 	} while (0)
 
+// handle->field = value for managed pointer
 #define MONO_HANDLE_SET(HANDLE, FIELD, VALUE) do {			\
 		MonoObjectHandle __val = MONO_HANDLE_CAST (MonoObject, VALUE);	\
 		do {							\
@@ -427,11 +428,9 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		mono_handle_array_getref (MONO_HANDLE_CAST(MonoObject, (DEST)), (HANDLE), (IDX)); \
 	} while (0)
 
-// FIXME return DESTH, but only evaluate it once.
 #define MONO_HANDLE_ASSIGN_RAW(DESTH, SRCP)				\
 	(mono_handle_assign_raw (MONO_HANDLE_CAST (MonoObject, (DESTH)), (SRCP)))
 
-// FIXME return DESTH, but only evaluate it once.
 #define MONO_HANDLE_ASSIGN(DESTH, SRCH)				\
 	(MONO_HANDLE_ASSIGN_RAW ((DESTH), MONO_HANDLE_RAW (SRCH)))
 
@@ -508,12 +507,11 @@ extern const MonoObjectHandle mono_null_value_handle;
 #define NULL_HANDLE_STRING (MONO_HANDLE_CAST (MonoString, NULL_HANDLE))
 #define NULL_HANDLE_ARRAY  (MONO_HANDLE_CAST (MonoArray,  NULL_HANDLE))
 
-static inline MonoObjectHandleOut
+static inline void
 mono_handle_assign_raw (MonoObjectHandleOut dest, void *source)
 {
 	g_assert (dest.__raw);
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)source);
-	return dest;
 }
 
 /* It is unsafe to call this function directly - it does not pin the handle!  Use MONO_HANDLE_GET_FIELD_VAL(). */

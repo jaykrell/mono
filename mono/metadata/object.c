@@ -5515,9 +5515,8 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 	}
 }
 
-// FIXME these will move to header soon
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error);
+static void
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error);
 
 /**
  * object_new_common_tail:
@@ -5551,14 +5550,14 @@ object_new_common_tail (MonoObject *o, MonoClass *klass, MonoError *error)
  * This function centralizes post-processing of objects upon creation.
  * i.e. calling mono_object_register_finalizer and mono_gc_register_obj_with_weak_fields.
  */
-static MonoObjectHandle
+static void
 object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *error)
 {
 	error_init (error);
 
 	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (o))) {
 		mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (klass));
-		return o;
+		return;
 	}
 
 	if (G_UNLIKELY (m_class_has_finalize (klass)))
@@ -5566,8 +5565,6 @@ object_new_handle_common_tail (MonoObjectHandle o, MonoClass *klass, MonoError *
 
 	if (G_UNLIKELY (m_class_has_weak_fields (klass)))
 		mono_gc_register_object_with_weak_fields (o);
-
-	return o;
 }
 
 /**
@@ -5632,6 +5629,27 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 }
 
 /**
+ * mono_object_new_assign:
+ * \param o the handle to assign new object to
+ * \param klass the class of the object that we want to create
+ * \param error set on error
+ * \returns a newly created object whose definition is
+ * looked up using \p klass.   This will not invoke any constructors,
+ * so the consumer of this routine has to invoke any constructors on
+ * its own to initialize the object.
+ *
+ * It returns NULL on failure and sets \p error.
+ */
+void
+mono_object_new_assign (MonoObjectHandleOut o, MonoDomain *domain, MonoClass *klass, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
+	return_if_nok (error);
+	mono_object_new_by_vtable (o, vtable, error);
+}
+
+/**
  * mono_object_new_handle:
  * \param klass the class of the object that we want to create
  * \param error set on error
@@ -5646,12 +5664,9 @@ MonoObjectHandle
 mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
-
-	return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
-
-	return mono_object_new_by_vtable (vtable, error);
+	MonoObjectHandle o = mono_new_null ();
+	mono_object_new_assign (o, domain, klass, error);
+	return o;
 }
 
 /**
@@ -5673,8 +5688,8 @@ mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *
 	int const size = mono_class_instance_size (klass);
 
 	MonoObjectHandle o = mono_gc_alloc_handle_pinned_obj (vtable, size);
-
-	return object_new_handle_common_tail (o, klass, error);
+	object_new_handle_common_tail (o, klass, error);
+	return o;
 }
 
 MonoObject *
@@ -5753,15 +5768,13 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 	return mono_object_new_alloc_specific_checked (vtable, error);
 }
 
-static MonoObjectHandle
-mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
+void
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error)
 {
 	// This function handles remoting and COM.
-	// mono_object_new_alloc_by_vtable does not.
+	// mono_object_new_alloc_by_vtable_assign does not.
 
 	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoObjectHandle o = MONO_HANDLE_NEW (MonoObject, NULL);
 
 	error_init (error);
 
@@ -5777,27 +5790,27 @@ mono_object_new_by_vtable (MonoVTable *vtable, MonoError *error)
 				mono_class_init_internal (klass);
 
 			im = mono_class_get_method_from_name_checked (klass, "CreateProxyForType", 1, 0, error);
-			return_val_if_nok (error, mono_new_null ());
+			return_if_nok (error);
 			if (!im) {
 				mono_error_set_not_supported (error, "Linked away.");
-				return MONO_HANDLE_NEW (MonoObject, NULL);
+				return;
 			}
 			vtable->domain->create_proxy_for_type_method = im;
 		}
 
 		// FIXMEcoop
 		gpointer pa[ ] = { mono_type_get_object_checked (mono_domain_get (), m_class_get_byval_arg (vtable->klass), error) };
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		return_if_nok (error);
 
 		// FIXMEcoop
-		o = MONO_HANDLE_NEW (MonoObject, mono_runtime_invoke_checked (im, NULL, pa, error));
-		return_val_if_nok (error, MONO_HANDLE_NEW (MonoObject, NULL));
+		MONO_HANDLE_ASSIGN_RAW (o, mono_runtime_invoke_checked (im, NULL, pa, error));
+		return_if_nok (error);
 
 		if (!MONO_HANDLE_IS_NULL (o))
-			return o;
+			return;
 	}
 
-	return mono_object_new_alloc_by_vtable (vtable, error);
+	mono_object_new_alloc_by_vtable (o, vtable, error);
 }
 
 MonoObject *
@@ -5858,17 +5871,16 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 	return object_new_common_tail (o, vtable->klass, error);
 }
 
-MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error)
+void
+mono_object_new_alloc_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoClass* const klass = vtable->klass;
 	int const size = m_class_get_instance_size (klass);
 
-	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
-
-	return object_new_handle_common_tail (o, klass, error);
+	mono_gc_alloc_handle_obj (o, vtable, size);
+	object_new_handle_common_tail (o, klass, error);
 }
 
 /**
@@ -5932,8 +5944,8 @@ mono_object_new_handle_mature (MonoVTable *vtable, MonoError *error)
 	int const size = m_class_get_instance_size (klass);
 
 	MonoObjectHandle o = mono_gc_alloc_handle_mature (vtable, size);
-
-	return object_new_handle_common_tail (o, klass, error);
+	object_new_handle_common_tail (o, klass, error);
+	return o;
 }
 
 /**
@@ -6001,14 +6013,16 @@ mono_object_clone_handle (MonoObjectHandle obj, MonoError *error)
 
 	int const size = m_class_get_instance_size (klass);
 
-	MonoObjectHandle o = mono_gc_alloc_handle_obj (vtable, size);
+	MonoObjectHandle o = mono_new_null ();
+	mono_gc_alloc_handle_obj (o, vtable, size);
 
 	if (G_LIKELY (!MONO_HANDLE_IS_NULL (o))) {
 		/* If the object doesn't contain references this will do a simple memmove. */
 		mono_gc_wbarrier_object_copy_handle (o, obj);
 	}
 
-	return object_new_handle_common_tail (o, klass, error);
+	object_new_handle_common_tail (o, klass, error);
+	return o;
 }
 
 /**
@@ -6629,11 +6643,11 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 
 /**
  * mono_string_new_utf8_assign:
+ * \param o    handle to assign to
  * \param text a pointer to an utf8 string
  * \param length number of bytes in \p text to consider
  * \param error set on error
- * \returns A newly created string object which contains \p text. On
- * failure returns NULL and sets \p error.
+ * \returns o NULL_HANDLE_STRING and sets \p error.
  */
 MonoStringHandle
 mono_string_new_utf8_assign (MonoStringHandle o, MonoDomain *domain, const char *text, gsize length, MonoError *error)
@@ -6661,6 +6675,19 @@ mono_string_new_utf8_assign (MonoStringHandle o, MonoDomain *domain, const char 
 	g_free (ut);
 
 	return o;
+}
+
+/**
+ * mono_string_new_utf8_assign:
+ * \param o    handle to assign to
+ * \param text a pointer to a nul (z for zero) terminated utf8 string
+ * \param error set on error
+ * \returns o NULL_HANDLE_STRING and sets \p error.
+ */
+MonoStringHandle
+mono_string_new_utf8z_assign (MonoStringHandle o, MonoDomain *domain, const char *text, MonoError *error)
+{
+	return mono_string_new_utf8_assign (o, domain, text, strlen (text), error);
 }
 
 /**
@@ -6877,7 +6904,8 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 
 	int size = mono_class_instance_size (klass);
 
-	MonoObjectHandle res_handle = mono_object_new_alloc_by_vtable (vtable, error);
+	MonoObjectHandle res_handle = mono_new_null ();
+	mono_object_new_alloc_by_vtable (res_handle, vtable, error);
 	return_val_if_nok (error, NULL_HANDLE);
 
 	size -= MONO_ABI_SIZEOF (MonoObject);

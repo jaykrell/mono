@@ -1771,7 +1771,9 @@ ves_icall_System_ComObject_CreateRCW (MonoReflectionTypeHandle ref_type, MonoErr
 	 */
 	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
-	return mono_object_new_alloc_by_vtable (vtable, error);
+	MonoObjectHandle o = mono_new_null ();
+	mono_object_new_alloc_by_vtable (o, vtable, error);
+	return o;
 }
 
 static gboolean    

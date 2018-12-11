@@ -588,6 +588,8 @@ typedef struct {
 	MonoArray *ShortestDayNames;
 } MonoDateTimeFormatInfo;
 
+TYPED_HANDLE_DECL (MonoDateTimeFormatInfo);
+
 typedef struct 
 {
 	MonoObject obj;
@@ -621,12 +623,16 @@ typedef struct
 	gint32 percentDecimalDigits;
 } MonoNumberFormatInfo;
 
+TYPED_HANDLE_DECL (MonoNumberFormatInfo);
+
 typedef struct {
 	MonoObject obj;
 	gint32 lcid;
 	MonoString *icu_name;
 	gpointer ICU_collator;
 } MonoCompareInfo;
+
+TYPED_HANDLE_DECL (MonoCompareInfo);
 
 typedef struct {
 	MonoObject obj;
@@ -648,6 +654,8 @@ typedef struct {
 	MonoArray *GenitiveAbbreviatedMonthNames;
 } MonoCalendarData;
 
+TYPED_HANDLE_DECL (MonoCalendarData);
+
 typedef struct {
 	MonoObject obj;
 	MonoString *AMDesignator;
@@ -658,6 +666,8 @@ typedef struct {
 	guint32 FirstDayOfWeek;
 	guint32 CalendarWeekRule;
 } MonoCultureData;
+
+TYPED_HANDLE_DECL (MonoCultureData);
 
 typedef struct {
 	MonoObject obj;
@@ -683,6 +693,8 @@ typedef struct {
 	const void* text_info_data;
 } MonoCultureInfo;
 
+TYPED_HANDLE_DECL (MonoCultureInfo);
+
 typedef struct {
 	MonoObject obj;
 	gint32 geo_id;
@@ -697,6 +709,8 @@ typedef struct {
 	MonoString *currency_native_name;
 } MonoRegionInfo;
 
+TYPED_HANDLE_DECL (MonoRegionInfo);
+
 typedef struct {
 	MonoObject obj;
 	MonoString *str;
@@ -704,6 +718,8 @@ typedef struct {
 	MonoArray *key;
 	gint32 lcid;
 } MonoSortKey;
+
+TYPED_HANDLE_DECL (MonoSortKey);
 
 typedef struct {
 	MonoObject object;
@@ -1976,13 +1992,16 @@ mono_glist_to_array (GList *list, MonoClass *eclass, MonoError *error);
 MonoObject *
 mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
+void
+mono_object_new_assign (MonoObjectHandleOut o, MonoDomain *domain, MonoClass *klass, MonoError *error);
+
 MonoObjectHandle
 mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 // This function skips handling of remoting and COM.
 // "alloc" means "less".
-MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoVTable *vtable, MonoError *error);
+void
+mono_object_new_alloc_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error);
 
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable, MonoError *error);
@@ -2033,10 +2052,13 @@ MonoStringHandle
 mono_string_new_utf16_handle (MonoDomain *domain, const gunichar2 *text, gint32 len, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf16_assign (MonoStringHandleInOut handle, MonoDomain *domain, const gunichar2 *text, gsize length, MonoError *error);
+mono_string_new_utf16_assign (MonoStringHandleOut handle, MonoDomain *domain, const gunichar2 *text, gsize length, MonoError *error);
 
 MonoStringHandle
-mono_string_new_utf8_assign (MonoStringHandleInOut handle, MonoDomain *domain, const char *text, gsize length, MonoError *error);
+mono_string_new_utf8_assign (MonoStringHandleOut handle, MonoDomain *domain, const char *text, gsize length, MonoError *error);
+
+MonoStringHandle
+mono_string_new_utf8z_assign (MonoStringHandleOut handle, MonoDomain *domain, const char *text, MonoError *error);
 
 MonoStringHandle
 mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
