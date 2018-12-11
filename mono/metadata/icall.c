@@ -5517,8 +5517,8 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 {
 	error_init (error);
 	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL_VALUE (klass_error);
-	MonoClass *klass = mono_class_get_checked (image, table_idx | MONO_TOKEN_TYPE_DEF, &klass_error);
+	ERROR_DECL (klass_error);
+	MonoClass *klass = mono_class_get_checked (image, table_idx | MONO_TOKEN_TYPE_DEF, klass_error);
 
 	if (klass) {
 		MonoReflectionTypeHandle rt = mono_type_get_object_handle (domain, m_class_get_byval_arg (klass), error);
@@ -5526,8 +5526,8 @@ image_get_type (MonoDomain *domain, MonoImage *image, MonoTableInfo *tdef, int t
 
 		MONO_HANDLE_ARRAY_SETREF (res, count, rt);
 	} else {
-		MonoException *ex = mono_error_convert_to_exception (&klass_error);
-		MONO_HANDLE_ARRAY_SETRAW (exceptions, count, ex);
+		MonoExceptionHandle ex = mono_error_convert_to_exception_handle (klass_error);
+		MONO_HANDLE_ARRAY_SETREF (exceptions, count, ex);
 	}
 	HANDLE_FUNCTION_RETURN ();
 }
@@ -5660,7 +5660,7 @@ ves_icall_System_Reflection_Assembly_GetTypes (MonoReflectionAssemblyHandle asse
 				/* keep the class in the list */
 				list = g_list_append (list, klass);
 				/* and replace Type with NULL */
-				MONO_HANDLE_ARRAY_SETRAW (res, i, NULL);
+				MONO_HANDLE_ARRAY_SETREF (res, i, NULL_HANDLE);
 			}
 		} else {
 			ex_count ++;
