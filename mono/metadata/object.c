@@ -7608,11 +7608,9 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 }
 
 char *
-mono_string_to_utf8_checked_internal (MonoString *s, MonoError *error)
+mono_string_to_utf8len (MonoString *s, gsize *utf8_length, MonoError *error)
 {
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	error_init (error);
+	*utf8_length = 0;
 
 	if (s == NULL)
 		return NULL;
@@ -7620,7 +7618,16 @@ mono_string_to_utf8_checked_internal (MonoString *s, MonoError *error)
 	if (!s->length)
 		return g_strdup ("");
 
-	return mono_utf16_to_utf8 (mono_string_chars_internal (s), s->length, error);
+	return mono_utf16_to_utf8len (mono_string_chars_internal (s), s->length, utf8_length, error);
+}
+
+char *
+mono_string_to_utf8_checked_internal (MonoString *s, MonoError *error)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	error_init (error);
+	gsize utf8_length = 0;
+	return mono_string_to_utf8len (s, &utf8_length, error);
 }
 
 /**

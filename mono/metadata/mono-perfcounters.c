@@ -231,6 +231,8 @@ typedef struct {
 	unsigned short num_counters;
 	unsigned short counters_data_size;
 	int num_instances;
+	int name_length;
+	int help_length;
 	/* variable length data follows */
 	char name [1];
 	// string name
@@ -241,6 +243,7 @@ typedef struct {
 typedef struct {
 	SharedHeader header;
 	unsigned int category_offset;
+	int instance_name_length;
 	/* variable length data follows */
 	char instance_name [1];
 	// string name
@@ -249,6 +252,8 @@ typedef struct {
 typedef struct {
 	unsigned char type;
 	guint8 seq_num;
+	int name_length;
+	int help_length;
 	/* variable length data follows */
 	char name [1];
 	// string name
@@ -629,21 +634,23 @@ foreach_shared_item (SharedFunc func, void *data)
 	foreach_shared_item_in_area (p, end, func, data);
 }
 
-static int
-mono_string_compare_ascii (MonoString *str, const char *ascii_str)
+static gboolean
+mono_utf16_equal_ascii (const gunichar2 *utf16, gsize utf16_length,
+	const char *ascii, gsize ascii_length)
 {
 	/* FIXME: make this case insensitive */
-	const gunichar2 *strc = mono_string_chars_internal (str);
-	while (*strc == *ascii_str++) {
-		if (*strc == 0)
-			return 0;
-		strc++;
+	if (utf16_length != ascii_length)
+		return FALSE;
+	for (gsize i = 0; i < utf16_length; ++i) {
+		if (utf16 [i] != ascii [i])
+			return FALSE;
 	}
-	return *strc - *(const unsigned char *)(ascii_str - 1);
+	return TRUE;
 }
 
 typedef struct {
-	MonoString *name;
+	const gunichar2 *name;
+	gsize name_length;
 	SharedCategory *cat;
 } CatSearch;
 
@@ -653,7 +660,7 @@ category_search (SharedHeader *header, void *data)
 	CatSearch *search = (CatSearch *)data;
 	if (header->ftype == FTYPE_CATEGORY) {
 		SharedCategory *cat = (SharedCategory*)header;
-		if (mono_string_compare_ascii (search->name, cat->name) == 0) {
+		if (mono_utf16_equal_ascii (search->name, search->name_length, cat->name, cat->name_length)) {
 			search->cat = cat;
 			return FALSE;
 		}
@@ -662,11 +669,9 @@ category_search (SharedHeader *header, void *data)
 }
 
 static SharedCategory*
-find_custom_category (MonoString *name)
+find_custom_category (const gunichar2 *name)
 {
-	CatSearch search;
-	search.name = name;
-	search.cat = NULL;
+	CatSearch search = { name, name_length, NULL };
 	foreach_shared_item (category_search, &search);
 	return search.cat;
 }
@@ -682,7 +687,8 @@ category_collect (SharedHeader *header, void *data)
 }
 
 static GSList*
-get_custom_categories (void) {
+get_custom_categories (void)
+{
 	GSList *list = NULL;
 	foreach_shared_item (category_collect, &list);
 	return list;
@@ -691,15 +697,15 @@ get_custom_categories (void) {
 static SharedCounter*
 custom_category_counters (SharedCategory* cat)
 {
-	char *help = cat->name + strlen (cat->name) + 1;
-	return (SharedCounter*)(help + strlen (help) + 1);
+	char *help = cat->name + cat->name_length + 1;
+	return (SharedCounter*)(help + cat->help_length + 1);
 }
 
 static SharedCounter*
 next_custom_category_counter (SharedCounter* counter)
 {
-	char *help = counter->name + strlen (counter->name) + 1;
-	return (SharedCounter*)(help + strlen (help) + 1);
+	char *help = counter->name + counter->name_length + 1;
+	return (SharedCounter*)(help + counter->help_length + 1);
 }
 
 static SharedCounter*
@@ -708,7 +714,7 @@ find_custom_counter (SharedCategory* cat, MonoString *name)
 	int i;
 	SharedCounter *counter = custom_category_counters (cat);
 	for (i = 0; i < cat->num_counters; ++i) {
-		if (mono_string_compare_ascii (name, counter->name) == 0)
+		if (mono_utf16_equal_ascii (name, name_length, counter->name, counter->name_length) == 0)
 			return counter;
 		counter = next_custom_category_counter (counter);
 	}
@@ -772,7 +778,7 @@ get_custom_instances_list (SharedCategory* cat)
 static char*
 custom_category_help (SharedCategory* cat)
 {
-	return cat->name + strlen (cat->name) + 1;
+	return cat->name + cat->name_length + 1;
 }
 
 static const CounterDesc*
@@ -1232,7 +1238,7 @@ custom_writable_update (ImplVtable *vtable, MonoBoolean do_incr, gint64 value)
 }
 
 static SharedInstance*
-custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
+custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name, int name_length)
 {
 	SharedInstance* inst;
 	char *p;
@@ -1240,7 +1246,7 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 	inst = find_custom_instance (cat, name);
 	if (inst)
 		return inst;
-	size = sizeof (SharedInstance) + strlen (name);
+	size = sizeof (SharedInstance) + name_length;
 	size += 7;
 	size &= ~7;
 	size += (sizeof (guint64) * cat->num_counters);
@@ -1254,8 +1260,9 @@ custom_get_instance (SharedCategory *cat, SharedCounter *scounter, char* name)
 	cat->num_instances++;
 	/* now copy the variable data */
 	p = inst->instance_name;
-	strcpy (p, name);
-	p += strlen (name) + 1;
+	memcpy (p, name, name_length);
+	p [name_lenght] = 0;
+	p += name_length + 1;
 	perfctr_unlock ();
 
 	return inst;
@@ -1278,7 +1285,7 @@ custom_vtable (SharedCounter *scounter, SharedInstance* inst, char *data)
 static gpointer
 custom_get_value_address (SharedCounter *scounter, SharedInstance* sinst)
 {
-	int offset = sizeof (SharedInstance) + strlen (sinst->instance_name);
+	int offset = sizeof (SharedInstance) + sinst->instance_name_length;
 	offset += 7;
 	offset &= ~7;
 	offset += scounter->seq_num * sizeof (guint64);
@@ -1318,8 +1325,9 @@ find_category (MonoString *category)
 }
 
 void*
-mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString* instance,
-		int *type, MonoBoolean *custom)
+mono_perfcounter_get_impl (const gunichar2* category, int category_length,
+	const gunichar2* counter, int counter_length, const gunichar2* instance,
+	int instance_length, int *type, MonoBoolean *custom)
 {
 	ERROR_DECL (error);
 	const CategoryDesc *cdesc;
@@ -1335,9 +1343,8 @@ mono_perfcounter_get_impl (MonoString* category, MonoString* counter, MonoString
 			return NULL;
 		return result;
 	}
-	gchar *c_instance = mono_string_to_utf8_checked_internal (instance, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
+	char *c_instance = mono_utf16_to_utf8 (instance, g_utf16_len (instance), error);
+	return_val_if_nok (error, NULL);
 	switch (cdesc->id) {
 	case CATEGORY_CPU:
 		result = cpu_get_impl (counter, c_instance, type, custom);
@@ -1419,7 +1426,7 @@ mono_perfcounter_category_del (MonoString *name)
 
 /* this is an icall */
 MonoString*
-mono_perfcounter_category_help (MonoString *category)
+mono_perfcounter_category_help (const gunichar2 *category, int category_length)
 {
 	ERROR_DECL (error);
 	MonoString *result = NULL;
@@ -1430,7 +1437,7 @@ mono_perfcounter_category_help (MonoString *category)
 		SharedCategory *scat = find_custom_category (category);
 		if (!scat)
 			return NULL;
-		result = mono_string_new_checked (mono_domain_get (), custom_category_help (scat), error);
+		result = mono_string_new_handle (mono_domain_get (), custom_category_help (scat), error);
 		if (mono_error_set_pending_exception (error))
 			return NULL;
 		return result;
@@ -1481,9 +1488,9 @@ typedef struct {
  * categories with the same name are compatible.
  */
 MonoBoolean
-mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoArray *items)
+mono_perfcounter_create (const gunichar2 *category, int category_length, const gunichar2 *help, int help_length,
+	int type, MonoArrayHandle items, MonoError *error)
 {
-	ERROR_DECL (error);
 	int result = FALSE;
 	int i, size;
 	int num_counters = mono_array_length_internal (items);
@@ -1493,31 +1500,32 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	char **counter_info = NULL;
 	char *p;
 	SharedCategory *cat;
+	gsize name_length = 0;
+	gsize chelp_length = 0;
 
 	/* FIXME: ensure there isn't a category created already */
-	name = mono_string_to_utf8_checked_internal (category, error);
-	if (!mono_error_ok (error))
-		goto failure;
-	chelp = mono_string_to_utf8_checked_internal (help, error);
-	if (!mono_error_ok (error))
-		goto failure;
+	name = mono_utf16_to_utf8len (category, category_length, &name, length, error);
+	goto_if_nok (error, failure);
+
+	chelp = mono_utf16_to_utf8len (help, help_length, &chelp_length, error);
+	goto_if_nok (error, failure);
+
 	counter_info = g_new0 (char*, num_counters * 2);
 	/* calculate the size we need structure size + name/help + 2 0 string terminators */
-	size = G_STRUCT_OFFSET (SharedCategory, name) + strlen (name) + strlen (chelp) + 2;
+	size = G_STRUCT_OFFSET (SharedCategory, name) + name_length + chelp_length + 2;
+	gsize j = 0;
 	for (i = 0; i < num_counters; ++i) {
 		CounterCreationData *data = mono_array_get_internal (items, CounterCreationData*, i);
-		counter_info [i * 2] = mono_string_to_utf8_checked_internal (data->name, error);
-		if (!mono_error_ok (error))
-			goto failure;
-		counter_info [i * 2 + 1] = mono_string_to_utf8_checked_internal (data->help, error);
-		if (!mono_error_ok (error))
-			goto failure;
+		for (gsize k = 0; k < 2; ++k) {
+			gsize utf8_length = 0;
+			counter_info [j] = mono_string_to_utf8len (k ? data->help : data->name, &utf8_length, error);
+			goto_if_nok (error, failure);
+			if (!counter_info [j])
+				goto failure;
+			size += utf8_length + 1;
+			++j;
+		}
 		size += sizeof (SharedCounter) + 1; /* 1 is for the help 0 terminator */
-	}
-	for (i = 0; i < num_counters * 2; ++i) {
-		if (!counter_info [i])
-			goto failure;
-		size += strlen (counter_info [i]) + 1;
 	}
 	size += 7;
 	size &= ~7;
@@ -1534,19 +1542,20 @@ mono_perfcounter_create (MonoString *category, MonoString *help, int type, MonoA
 	cat->counters_data_size = counters_data_size;
 	/* now copy the vaiable data */
 	p = cat->name;
-	strcpy (p, name);
-	p += strlen (name) + 1;
-	strcpy (p, chelp);
-	p += strlen (chelp) + 1;
+	memcpy (p, name, name_length + 1);
+	p += name_length + 1;
+	memcpy (p, chelp, chelp_length + 1);
+	p += chelp_length + 1;
 	for (i = 0; i < num_counters; ++i) {
 		CounterCreationData *data = mono_array_get_internal (items, CounterCreationData*, i);
 		/* emit the SharedCounter structures */
 		*p++ = perfctr_type_compress (data->type);
 		*p++ = i;
-		strcpy (p, counter_info [i * 2]);
-		p += strlen (counter_info [i * 2]) + 1;
-		strcpy (p, counter_info [i * 2 + 1]);
-		p += strlen (counter_info [i * 2 + 1]) + 1;
+		for (gsize j = i * 2; j <= i * 2 + 1; ++j) {
+			gsize length = strlen (counter_info [j]) + 1;
+			memcpy (p, counter_info [j], length);
+			p += length;
+		}
 	}
 
 	perfctr_unlock ();
@@ -1560,7 +1569,6 @@ failure:
 	}
 	g_free (name);
 	g_free (chelp);
-	mono_error_cleanup (error);
 	return result;
 }
 

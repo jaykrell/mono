@@ -2220,6 +2220,9 @@ MonoString*
 mono_string_new_wrapper_internal (const char *text);
 
 char*
+mono_string_to_utf8len (MonoString *string_obj, gsize *utf8_length, MonoError *error);
+
+char*
 mono_string_to_utf8_checked_internal (MonoString *string_obj, MonoError *error);
 
 mono_unichar2*
