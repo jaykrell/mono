@@ -188,16 +188,16 @@ static gpointer
 namedsem_create (gint32 initial, gint32 max, const gunichar2 *name, gint32 name_length, MonoError *error)
 {
 	gpointer handle;
-	gchar *utf8_name;
+
+	gsize utf8_len = 0;
+	char *utf8_name = mono_utf16_to_utf8len (name, name_length, &utf8_len, error);
+	return_val_if_nok (error, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: creating %s handle, initial %d max %d name \"%s\"",
 		    __func__, mono_w32handle_get_typename (MONO_W32TYPE_NAMEDSEM), initial, max, (const char*)name);
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
-
-	utf8_name = mono_utf16_to_utf8 (name, name_length, error);
-	return_val_if_nok (error, NULL);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Creating named sem name [%s] initial %d max %d", __func__, utf8_name, initial, max);
 
@@ -215,10 +215,7 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name, gint32 name_
 		/* A new named semaphore */
 		MonoW32HandleNamedSemaphore namedsem_handle;
 
-		// FIXME? Silent truncation?
-		// Does not matter, unless there are other names
-		// that truncate to the same.
-		const gsize utf8_len = strlen (name);
+		// FIXME Silent truncation.
 		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
 		memcpy (&namedsem_handle.sharedns.name [0], utf8_name, len);
 		namedsem_handle.sharedns.name [len] = '\0';
@@ -235,23 +232,21 @@ namedsem_create (gint32 initial, gint32 max, const gunichar2 *name, gint32 name_
 
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
-	const gunichar2 *name, gint32 name_length, gint32 *error, MonoError *mono_error)
+	const gunichar2 *name, gint32 name_length, gint32 *err, MonoError *error)
 { 
-	gpointer sem;
+	*err = ERROR_SUCCESS;
 
 	// FIXME check for embedded nuls in name.
 
 	if (maximumCount <= 0) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: maximumCount <= 0", __func__);
-
-		*error = ERROR_INVALID_PARAMETER;
+		*err = ERROR_INVALID_PARAMETER;
 		return NULL;
 	}
 
 	if (initialCount > maximumCount || initialCount < 0) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: initialCount > maximumCount or < 0", __func__);
-
-		*error = ERROR_INVALID_PARAMETER;
+		*err = ERROR_INVALID_PARAMETER;
 		return NULL;
 	}
 
@@ -261,13 +256,9 @@ ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount,
 	 */
 	mono_w32error_set_last (ERROR_SUCCESS);
 
-	if (!name)
-		sem = sem_create (initialCount, maximumCount);
-	else
-		sem = namedsem_create (initialCount, maximumCount, name, name_length, mono_error);
-
-	*error = mono_w32error_get_last ();
-
+	gpointer sem = name ? namedsem_create (initialCount, maximumCount, name, name_length, error)
+			    : sem_create (initialCount, maximumCount);
+	*err = mono_w32error_get_last ();
 	return sem;
 }
 
@@ -327,32 +318,33 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 
 gpointer
 ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name, gint32 name_length,
-	gint32 rights, gint32 *error, MonoError *mono_error)
+	gint32 rights, gint32 *err, MonoError *error)
 {
 	g_assert (name);
-	gpointer handle = NULL;
-	gchar *utf8_name;
 
 	// FIXME check for embedded nuls in name.
 
-	*error = ERROR_SUCCESS;
+	*err = ERROR_SUCCESS;
+
+	char *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	return_val_if_nok (error, NULL);
+
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Opening named sem [%s]", __func__, utf8_name);
 
 	/* w32 seems to guarantee that opening named objects can't race each other */
 	mono_w32handle_namespace_lock ();
 
-	utf8_name = mono_utf16_to_utf8 (name, name_length, mono_error);
-	return_val_if_nok (mono_error, NULL);
+	gpointer handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_SEMAPHORE, "%s: Opening named sem [%s]", __func__, utf8_name);
+	mono_w32handle_namespace_unlock ();
 
-	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDSEM, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
-		*error = ERROR_INVALID_HANDLE;
+		*err = ERROR_INVALID_HANDLE;
 		goto cleanup;
 	} else if (!handle) {
 		/* This name doesn't exist */
-		*error = ERROR_FILE_NOT_FOUND;
+		*err = ERROR_FILE_NOT_FOUND;
 		goto cleanup;
 	}
 
@@ -360,9 +352,6 @@ ves_icall_System_Threading_Semaphore_OpenSemaphore_icall (const gunichar2 *name,
 
 cleanup:
 	g_free (utf8_name);
-
-	mono_w32handle_namespace_unlock ();
-
 	return handle;
 }
 

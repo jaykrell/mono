@@ -299,7 +299,8 @@ static gpointer mutex_create (gboolean owned)
 	return mutex_handle_create (&mutex_handle, MONO_W32TYPE_MUTEX, owned);
 }
 
-static gpointer namedmutex_create (gboolean owned, const gchar *utf8_name)
+static gpointer
+namedmutex_create (gboolean owned, const char *utf8_name, gsize utf8_len)
 {
 	gpointer handle;
 
@@ -323,6 +324,7 @@ static gpointer namedmutex_create (gboolean owned, const gchar *utf8_name)
 		/* A new named mutex */
 		MonoW32HandleNamedMutex namedmutex_handle;
 
+		// FIXME Silent truncation.
 		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
 		memcpy (&namedmutex_handle.sharedns.name [0], utf8_name, len);
 		namedmutex_handle.sharedns.name [len] = '\0';
@@ -349,10 +351,11 @@ ves_icall_System_Threading_Mutex_CreateMutex_icall (MonoBoolean owned, const gun
 	if (!name)
 		return mutex_create (owned);
 
-	gchar *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	gsize utf8_len = 0;
+	char *utf8_name = mono_utf16_to_utf8len (name, name_length, &utf8_len, error);
 	return_val_if_nok (error, NULL);
 
-	gpointer mutex = namedmutex_create (owned, utf8_name);
+	gpointer mutex = namedmutex_create (owned, utf8_name, utf8_len);
 
 	if (mono_w32error_get_last () == ERROR_ALREADY_EXISTS)
 		*created = FALSE;
@@ -456,7 +459,7 @@ cleanup:
 gpointer
 ves_icall_System_Threading_Mutex_OpenMutex_internal (const gunichar2 *name, gint32 name_length, gint32 rights G_GNUC_UNUSED, gint32 *err, MonoError *error)
 {
-	gchar *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
+	char *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
 	return_val_if_nok (error, NULL);
 	gpointer handle = mono_w32mutex_open (utf8_name, err);
 	g_free (utf8_name);

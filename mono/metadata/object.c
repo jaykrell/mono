@@ -7551,13 +7551,14 @@ mono_string_to_utf8 (MonoString *s)
 }
 
 /**
- * mono_utf16_to_utf8:
+ * mono_utf16_to_utf8len:
  */
 char *
-mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
+mono_utf16_to_utf8len (const gunichar2 *s, gsize slength, gsize *gsize_written, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	*gsize_written = 0;
 	long written = 0;
 	char *as;
 	GError *gerror = NULL;
@@ -7576,6 +7577,7 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 		g_error_free (gerror);
 		return NULL;
 	}
+	*gsize_written = written;
 	/* g_utf16_to_utf8 may not be able to complete the conversion (e.g. NULL values were found, #335488) */
 	if (slength > written) {
 		/* allocate the total length and copy the part of the string that has been converted */
@@ -7586,6 +7588,16 @@ mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
 	}
 
 	return as;
+}
+
+/**
+ * mono_utf16_to_utf8:
+ */
+char *
+mono_utf16_to_utf8 (const gunichar2 *s, gsize slength, MonoError *error)
+{
+	gsize written = 0;
+	return mono_utf16_to_utf8len (s, slength, &written, error);
 }
 
 char *

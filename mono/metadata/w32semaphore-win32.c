@@ -22,11 +22,11 @@ mono_w32semaphore_init (void)
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
-	const gunichar2 *name, gint32 name_length, gint32 *error)
+	const gunichar2 *name, gint32 name_length, gint32 *err, MonoError *error)
 { 
 	// FIXME check name for embedded nuls
 	HANDLE sem = CreateSemaphoreW (NULL, initialCount, maximumCount, name : NULL);
-	*error = GetLastError ();
+	*err = GetLastError ();
 	return sem;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
@@ -39,10 +39,10 @@ ves_icall_System_Threading_Semaphore_ReleaseSemaphore_internal (gpointer handle,
 
 gpointer
 ves_icall_System_Threading_Semaphore_OpenSemaphore_icallconst gunichar2 *name, gint32 name_length,
-	gint32 rights, gint32 *error)
+	gint32 rights, gint32 *err, MonoError *error)
 {
 	// FIXME check name for embedded nuls
 	HANDLE sem = OpenSemaphoreW (rights, FALSE, name);
-	*error = GetLastError ();
+	*err = GetLastError ();
 	return sem;
 }
