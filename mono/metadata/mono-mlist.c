@@ -15,7 +15,6 @@
 #include "mono/metadata/class-internals.h"
 #include "mono/metadata/object-internals.h"
 
-
 static
 MonoMList*  mono_mlist_alloc_checked       (MonoObject *data, MonoError *error);
 
@@ -239,6 +238,25 @@ mono_mlist_append_checked (MonoMList* list, MonoObject *data, MonoError *error)
 	} else {
 		return res;
 	}
+}
+
+gboolean
+mono_mlist_append_handle (MonoMListHandle list, MonoObjectHandle data, MonoError *error)
+{
+	// This function is raw-pointer heavy, in order to avoid allocating
+	// handles in a loop.
+
+	error_init (error);
+	MonoMList* res = mono_mlist_alloc_handle (data, error);
+	return_val_if_nok (error, FALSE);
+
+	if (MONO_HANDLE_BOOL (list)) {
+		MonoMList* last = mono_mlist_last (MONO_HANDLE_RAW (list));
+		MONO_OBJECT_SETREF_INTERNAL (last, next, res);
+	} else {
+		MONO_HANDLE_ASSIGN_RAW (list, res);
+	}
+	return TRUE;
 }
 
 static MonoMList*

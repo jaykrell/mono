@@ -15,10 +15,6 @@ typedef struct _MonoIOSelectorJob MonoIOSelectorJob;
 
 ICALL_EXPORT
 void
-ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job);
-
-ICALL_EXPORT
-void
 ves_icall_System_IOSelector_Remove (gpointer handle);
 
 void

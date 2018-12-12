@@ -425,6 +425,12 @@ mono_gchandle_get_target_handle (uint32_t gchandle)
 	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target_internal (gchandle));
 }
 
+void
+mono_gchandle_get_target_handle_assign (MonoObjectHandle handle, uint32_t gchandle)
+{
+	MONO_HANDLE_ASSIGN_RAW (handle, mono_gchandle_get_target_internal (gchandle));
+}
+
 gpointer
 mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx, uint32_t *gchandle)
 {

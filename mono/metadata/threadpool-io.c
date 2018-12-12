@@ -60,6 +60,8 @@ struct _MonoIOSelectorJob {
 	MonoObject *state;
 };
 
+TYPED_HANDLE_DECL (MonoIOSelectorJob);
+
 typedef enum {
 	UPDATE_EMPTY = 0,
 	UPDATE_ADD,
@@ -69,7 +71,8 @@ typedef enum {
 
 typedef struct {
 	gint fd;
-	MonoIOSelectorJob *job;
+	//MonoIOSelectorJob *job;
+	gchandle_t job_gchandle;
 } ThreadPoolIOUpdate_Add;
 
 typedef struct {
@@ -110,32 +113,32 @@ static gboolean io_selector_running = FALSE;
 
 static ThreadPoolIO* threadpool_io;
 
-static MonoIOSelectorJob*
-get_job_for_event (MonoMList **list, gint32 event)
+static gboolean
+get_job_for_event (MonoIOSelectorJobHandle job, MonoMListHandle list, gint32 event)
 {
 	MonoMList *current;
 
 	g_assert (list);
 
-	for (current = *list; current; current = mono_mlist_next (current)) {
+	for (current = MONO_HANDLE_RAW (list); current; current = mono_mlist_next (current)) {
 		MonoIOSelectorJob *job = (MonoIOSelectorJob*) mono_mlist_get_data (current);
 		if (job->operation == event) {
-			*list = mono_mlist_remove_item (*list, current);
+			mono_mlist_remove_item_handle (list, current);
 			mono_mlist_set_data (current, NULL);
-			return job;
+			return TRUE;
 		}
 	}
 
-	return NULL;
+	return FALSE;
 }
 
 static gint
-get_operations_for_jobs (MonoMList *list)
+get_operations_for_jobs (MonoMListHandle list)
 {
 	MonoMList *current;
 	gint operations = 0;
 
-	for (current = list; current; current = mono_mlist_next (current))
+	for (current = MONO_HANDLE_RAW (list); current; current = mono_mlist_next (current))
 		operations |= ((MonoIOSelectorJob*) mono_mlist_get_data (current))->operation;
 
 	return operations;
@@ -253,6 +256,12 @@ filter_jobs_for_domain (gpointer key, gpointer value, gpointer user_data)
 	mono_g_hash_table_replace (states, key, list);
 }
 
+typedef struct {
+	MonoGHashTable *states;
+	MonoMListHandle list;
+	MonoIOSelectorJobHandle job;
+} MonoThreadooolIoWaitCallbackState;
+
 static void
 wait_callback (gint fd, gint events, gpointer user_data)
 {
@@ -265,20 +274,23 @@ wait_callback (gint fd, gint events, gpointer user_data)
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: wke");
 		selector_thread_wakeup_drain_pipes ();
 	} else {
-		MonoGHashTable *states;
-		MonoMList *list = NULL;
+		g_assert (user_data);
+		MonoThreadooolIoWaitCallbackState *state = (MonoThreadooolIoWaitCallbackState*)user_data;
+		MonoGHashTable *states = state->states;
+		MonoMList list = state->list;
+		MonoIOSelectorJobHandle job = state->job;
+		MonoMList *list_raw = NULL;
 		gpointer k;
 		gboolean remove_fd = FALSE;
 		gint operations;
 
-		g_assert (user_data);
-		states = (MonoGHashTable *)user_data;
-
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_SELECTOR, "io threadpool: cal fd %3d, events = %2s | %2s | %3s",
 			fd, (events & EVENT_IN) ? "RD" : "..", (events & EVENT_OUT) ? "WR" : "..", (events & EVENT_ERR) ? "ERR" : "...");
 
-		if (!mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list))
+		if (!mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list_raw)
 			g_error ("wait_callback: fd %d not found in states table", fd);
+
+		MONO_HANDLE_ASSIGN_RAW (list, list_raw);
 
 		if (list && (events & EVENT_IN) != 0) {
 			MonoIOSelectorJob *job = get_job_for_event (&list, EVENT_IN);
@@ -298,7 +310,7 @@ wait_callback (gint fd, gint events, gpointer user_data)
 
 		remove_fd = (events & EVENT_ERR) == EVENT_ERR;
 		if (!remove_fd) {
-			mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
+			mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), MONO_HANDLE_RAW (list));
 
 			operations = get_operations_for_jobs (list);
 
@@ -325,6 +337,8 @@ selector_thread_interrupt (gpointer unused)
 static gsize WINAPI
 selector_thread (gpointer data)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	ERROR_DECL (error);
 	MonoGHashTable *states;
 
@@ -333,9 +347,12 @@ selector_thread (gpointer data)
 	mono_thread_set_name_internal (mono_thread_internal_current (), thread_name, FALSE, TRUE, error);
 	mono_error_assert_ok (error);
 
+	MonoMListHandle list = MONO_HANDLE_NEW (MonoMList, NULL);
+	MonoIOSelectorJobHandle job = MONO_HANDLE_NEW (MonoIOSelectorJob, NULL);
+
 	if (mono_runtime_is_shutting_down ()) {
 		io_selector_running = FALSE;
-		return 0;
+		goto exit;
 	}
 
 	states = mono_g_hash_table_new_type (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, NULL, "Thread Pool I/O State Table");
@@ -361,17 +378,15 @@ selector_thread (gpointer data)
 				gint operations;
 				gpointer k;
 				gboolean exists;
-				MonoMList *list = NULL;
-				MonoIOSelectorJob *job;
 
 				fd = update->data.add.fd;
 				g_assert (fd >= 0);
 
-				job = update->data.add.job;
+				mono_gchandle_get_target_handle_assign (job, update->data.add.job_gchandle);
 				g_assert (job);
 
 				exists = mono_g_hash_table_lookup_extended (states, GINT_TO_POINTER (fd), &k, (gpointer*) &list);
-				list = mono_mlist_append_checked (list, (MonoObject*) job, error);
+				mono_mlist_append_handle (list, MONO_HANDLE_CAST (MonoObject, job), error);
 				mono_error_assert_ok (error);
 				mono_g_hash_table_replace (states, GINT_TO_POINTER (fd), list);
 
@@ -427,7 +442,7 @@ selector_thread (gpointer data)
 
 				for (j = i + 1; j < threadpool_io->updates_size; ++j) {
 					ThreadPoolIOUpdate *update = &threadpool_io->updates [j];
-					if (update->type == UPDATE_ADD && mono_object_domain (update->data.add.job) == domain)
+					if (update->type == UPDATE_ADD && mono_gchandle_is_in_domain (update->data.add.job_gchandle, domain))
 						memset (update, 0, sizeof (ThreadPoolIOUpdate));
 				}
 
@@ -469,7 +484,7 @@ selector_thread (gpointer data)
 
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 
-	return 0;
+	HANDLE_FUNCTION_RETURN_VAL (0);
 }
 
 /* Locking: threadpool_io->updates_lock must be held */
@@ -601,14 +616,14 @@ mono_threadpool_io_cleanup (void)
 }
 
 void
-ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
+ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJobHandle job, MonoError *error)
 {
 	ThreadPoolIOUpdate *update;
 
 	g_assert (handle);
 
-	g_assert ((job->operation == EVENT_IN) ^ (job->operation == EVENT_OUT));
-	g_assert (job->callback);
+	g_assert ((MONO_HANDLE_GETVAL (job, operation) == EVENT_IN) ^ (MONO_HANDLE_GETVAL (job, operation) == EVENT_OUT));
+	g_assert (MONO_HANDLE_GETVAL (job, operation));
 
 	if (mono_runtime_is_shutting_down ())
 		return;
@@ -619,19 +634,17 @@ ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
 
 	mono_coop_mutex_lock (&threadpool_io->updates_lock);
 
-	if (!io_selector_running) {
-		mono_coop_mutex_unlock (&threadpool_io->updates_lock);
-		return;
-	}
+	if (!io_selector_running)
+		goto exit;
 
 	update = update_get_new ();
 	update->type = UPDATE_ADD;
 	update->data.add.fd = GPOINTER_TO_INT (handle);
-	update->data.add.job = job;
+	update->data.add.job_gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, job), FALSE);
 	mono_memory_barrier (); /* Ensure this is safely published before we wake up the selector */
 
 	selector_thread_wakeup ();
-
+exit:
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 }
 
@@ -651,10 +664,8 @@ mono_threadpool_io_remove_socket (int fd)
 
 	mono_coop_mutex_lock (&threadpool_io->updates_lock);
 
-	if (!io_selector_running) {
-		mono_coop_mutex_unlock (&threadpool_io->updates_lock);
-		return;
-	}
+	if (!io_selector_running)
+		goto exit;
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_SOCKET;
@@ -664,7 +675,7 @@ mono_threadpool_io_remove_socket (int fd)
 	selector_thread_wakeup ();
 
 	mono_coop_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
-
+exit:
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 }
 
@@ -678,10 +689,8 @@ mono_threadpool_io_remove_domain_jobs (MonoDomain *domain)
 
 	mono_coop_mutex_lock (&threadpool_io->updates_lock);
 
-	if (!io_selector_running) {
-		mono_coop_mutex_unlock (&threadpool_io->updates_lock);
-		return;
-	}
+	if (!io_selector_running)
+		goto exit;
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_DOMAIN;
@@ -691,14 +700,14 @@ mono_threadpool_io_remove_domain_jobs (MonoDomain *domain)
 	selector_thread_wakeup ();
 
 	mono_coop_cond_wait (&threadpool_io->updates_cond, &threadpool_io->updates_lock);
-
+exit:
 	mono_coop_mutex_unlock (&threadpool_io->updates_lock);
 }
 
 #else
 
 void
-ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJob *job)
+ves_icall_System_IOSelector_Add (gpointer handle, MonoIOSelectorJobHandle job, MonoError *error)
 {
 	g_assert_not_reached ();
 }

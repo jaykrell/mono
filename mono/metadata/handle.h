@@ -534,6 +534,9 @@ mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned);
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle);
 
+void
+mono_gchandle_get_target_handle_assign (MonoObjectHandle handle, uint32_t gchandle);
+
 gboolean
 mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal);
 
