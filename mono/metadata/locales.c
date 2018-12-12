@@ -197,7 +197,7 @@ ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData
 									 NUM_SHORT_DATE_PATTERNS, error);
 	return_val_if_nok (error, FALSE);
 	MONO_HANDLE_SET (this_obj, ShortDatePatterns, short_date_patterns);
-	MonoArrayHandle year_month_patterns =create_names_array_idx_dynamic (dfe->year_month_patterns,
+	MonoArrayHandle year_month_patterns = create_names_array_idx_dynamic (dfe->year_month_patterns,
 									NUM_YEAR_MONTH_PATTERNS, error);
 	return_val_if_nok (error, FALSE);
 	MONO_HANDLE_SET (this_obj, YearMonthPatterns, year_month_patterns);
