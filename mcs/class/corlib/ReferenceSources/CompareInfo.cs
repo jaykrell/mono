@@ -41,11 +41,6 @@ namespace System.Globalization
 		// Maps culture IDs to SimpleCollator objects
 		static Dictionary<string, SimpleCollator> collators;
 
-/* TEMPORARY FOR TESTING DO NOT MERGE
-   TEMPORARY FOR TESTING DO NOT MERGE
-   TEMPORARY FOR TESTING DO NOT MERGE
-   TEMPORARY FOR TESTING DO NOT MERGE
-   TEMPORARY FOR TESTING DO NOT MERGE
 		static bool managedCollation;
 		static bool managedCollationChecked;
 
@@ -59,18 +54,6 @@ namespace System.Globalization
 				return managedCollation;
 			}
 		}
-*/
-// TEMPORARY FOR TESTING DO NOT MERGE
-// TEMPORARY FOR TESTING DO NOT MERGE
-// TEMPORARY FOR TESTING DO NOT MERGE
-		static bool UseManagedCollation {
-			get {
-				return false;
-			}
-		}
-// TEMPORARY FOR TESTING DO NOT MERGE
-// TEMPORARY FOR TESTING DO NOT MERGE
-// TEMPORARY FOR TESTING DO NOT MERGE
 
 		SimpleCollator GetCollator ()
 		{
