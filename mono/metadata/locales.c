@@ -334,11 +334,9 @@ static MonoBoolean
 construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
-	error_init (error);
+	MonoStringHandle tmp_str = MONO_HANDLE_NEW (MonoString, NULL);
 
 	MONO_HANDLE_SETVAL (this_obj, lcid, gint32, ci->lcid);
-
-	MonoStringHandle tmp_str = MONO_HANDLE_NEW (MonoString, NULL);
 
 #define SET_STR(field) do {						\
 		mono_string_new_utf8z_assign (tmp_str, domain, idx2string (ci->field), error); \
@@ -373,7 +371,6 @@ construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, M
 static MonoBoolean
 construct_region (MonoRegionInfoHandle this_obj, const RegionInfoEntry *ri, MonoError *error)
 {
-	error_init (error);
 	MonoDomain *domain = mono_domain_get ();
 	MonoStringHandle tmp_str = MONO_HANDLE_NEW (MonoString, NULL);
 
