@@ -82,10 +82,9 @@ create_group_sizes_array (const gint *gs, gint ml, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoArrayHandle ret;
-	int i, len = 0;
-
-	error_init (error);
+	MonoArrayHandle ret = NULL_HANDLE_ARRAY;
+	int i = 0;
+	int len = 0;
 
 	for (i = 0; i < ml; i++) {
 		if (gs [i] == -1)
@@ -112,22 +111,18 @@ create_names_array_idx (const guint16 *names, int ml, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoArrayHandle ret;
-	MonoDomain *domain;
-	int i;
-	MonoStringHandle s;
-
-	error_init (error);
+	MonoArrayHandle ret = NULL_HANDLE_ARRAY;
+	MonoDomain *domain = mono_domain_get ();
+	MonoStringHandle s = MONO_HANDLE_NEW (MonoString, NULL);
+	int i = 0;
 
 	if (names == NULL)
 		goto return_null;
 
-	domain = mono_domain_get ();
 	ret = mono_array_new_cached_handle (domain, mono_get_string_class (), ml, error);
 	goto_if_nok (error, return_null);
 
-	s = MONO_HANDLE_NEW (MonoString, NULL);
-	for(i = 0; i < ml; i++) {
+	for (i = 0; i < ml; ++i) {
 		mono_string_new_utf8z_assign (s, domain, dtidx2string (names [i]), error);
 		goto_if_nok (error, return_null);
 		MONO_HANDLE_ARRAY_SETREF (ret, i, s);
@@ -150,8 +145,6 @@ create_names_array_idx_dynamic (const guint16 *names, int ml, MonoError *error)
 	MonoDomain *domain = mono_domain_get ();
 	int i = 0;
 	int len = 0;
-
-	error_init (error);
 
 	if (names == NULL)
 		goto return_null;
