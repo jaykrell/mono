@@ -714,8 +714,8 @@ TYPED_HANDLE_DECL (MonoRegionInfo);
 typedef struct {
 	MonoObject obj;
 	MonoString *str;
-	gint32 options;
 	MonoArray *key;
+	gint32 options;
 	gint32 lcid;
 } MonoSortKey;
 
