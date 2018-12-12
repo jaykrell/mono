@@ -348,10 +348,8 @@ HANDLES(CALDATA_1, "fill_calendar_data_icall", ves_icall_System_Globalization_Ca
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 HANDLES(COMPINF_1, "assign_sortkey_icall", ves_icall_System_Globalization_CompareInfo_assign_sortkey, void, 4, (MonoSortKey, const_gunichar2_ptr, int, gint32))
-HANDLES(COMPINF_4, "internal_compare_icall", ves_icall_System_Globalization_CompareInfo_internal_compare,
-	int, 7, (const_gunichar2_ptr, gint32, gint32, const_gunichar2_ptr, gint32, gint32, gint32))
-HANDLES(COMPINF_6, "internal_index_icall", ves_icall_System_Globalization_CompareInfo_internal_index,
-	int, 7, (const_gunichar2_ptr, gint32, gint32, const_gunichar2_ptr, gint32, gint32, MonoBoolean))
+NOHANDLES(ICALL(COMPINF_4, "internal_compare_icall", ves_icall_System_Globalization_CompareInfo_internal_compare))
+NOHANDLES(ICALL(COMPINF_6, "internal_index_icall", ves_icall_System_Globalization_CompareInfo_internal_index))
 
 ICALL_TYPE(CULDATA, "System.Globalization.CultureData", CULDATA_1)
 HANDLES(CULDATA_1, "fill_culture_data", ves_icall_System_Globalization_CultureData_fill_culture_data, void, 2, (MonoCultureData, gint32))

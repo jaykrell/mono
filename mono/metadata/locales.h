@@ -33,4 +33,15 @@ typedef enum {
 ICALL_EXPORT
 void ves_icall_System_Text_Normalization_load_normalization_resource (guint8 **argProps, guint8** argMappedChars, guint8** argCharMapIndex, guint8** argHelperIndex, guint8** argMapIdxToComposite, guint8** argCombiningClass, MonoError *error);
 
+ICALL_EXPORT
+int
+ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *str1, gint32 len1,
+							     const gunichar2 *str2, gint32 len2,
+							     gint32 options);
+ICALL_EXPORT
+gint32
+ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *src, gint32 sindex,
+							   gint32 count, const gunichar2 *cmpstr, gint32 lencmpstr,
+							   MonoBoolean first);
+
 #endif /* _MONO_METADATA_FILEIO_H_ */

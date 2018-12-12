@@ -38,19 +38,11 @@
 #include <CoreFoundation/CoreFoundation.h>
 #endif
 
-#undef DEBUG
+static gint32
+string_invariant_compare_char (gunichar2 c1, gunichar2 c2, gint32 options);
 
-static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
-					     gint32 options);
-static gint32 string_invariant_compare (const gunichar2 *str1, gint32 off1,
-					gint32 len1, const gunichar2 *str2,
-					gint32 off2, gint32 len2,
-					gint32 options);
-static gint32 string_invariant_indexof (const gunichar2 *source, gint32 sindex,
-					gint32 count, const gunichar2 *cmpstr, gint32 lencmpstr,
-					MonoBoolean first);
-
-static const CultureInfoEntry* culture_info_entry_from_lcid (int lcid);
+static const CultureInfoEntry*
+culture_info_entry_from_lcid (int lcid);
 
 /* Lazy class loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (culture_info, "System.Globalization", "CultureInfo")
@@ -123,7 +115,7 @@ create_names_array_idx (const guint16 *names, int ml, MonoError *error)
 	MonoArrayHandle ret;
 	MonoDomain *domain;
 	int i;
-	MonoStringHandle s = MONO_HANDLE_NEW (MonoString, NULL);
+	MonoStringHandle s;
 
 	error_init (error);
 
@@ -131,10 +123,10 @@ create_names_array_idx (const guint16 *names, int ml, MonoError *error)
 		goto return_null;
 
 	domain = mono_domain_get ();
-
-	ret = mono_array_new_cached_handle (mono_domain_get (), mono_get_string_class (), ml, error);
+	ret = mono_array_new_cached_handle (domain, mono_get_string_class (), ml, error);
 	goto_if_nok (error, return_null);
 
+	s = MONO_HANDLE_NEW (MonoString, NULL);
 	for(i = 0; i < ml; i++) {
 		mono_string_new_utf8z_assign (s, domain, dtidx2string (names [i]), error);
 		goto_if_nok (error, return_null);
@@ -154,16 +146,15 @@ create_names_array_idx_dynamic (const guint16 *names, int ml, MonoError *error)
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoStringHandle s = MONO_HANDLE_NEW (MonoString, NULL);
-	MonoArrayHandle ret;
-	MonoDomain *domain;
-	int i, len = 0;
+	MonoArrayHandle ret = NULL_HANDLE_ARRAY;
+	MonoDomain *domain = mono_domain_get ();
+	int i = 0;
+	int len = 0;
 
 	error_init (error);
 
 	if (names == NULL)
 		goto return_null;
-
-	domain = mono_domain_get ();
 
 	for (i = 0; i < ml; i++) {
 		if (names [i] == 0)
@@ -171,7 +162,7 @@ create_names_array_idx_dynamic (const guint16 *names, int ml, MonoError *error)
 		len++;
 	}
 
-	ret = mono_array_new_cached_handle (mono_domain_get (), mono_get_string_class (), len, error);
+	ret = mono_array_new_cached_handle (domain, mono_get_string_class (), len, error);
 	goto_if_nok (error, return_null);
 
 	for(i = 0; i < len; i++) {
@@ -190,10 +181,10 @@ MonoBoolean
 ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarDataHandle this_obj,
 	const gunichar2 *name, int name_length, gint32 calendar_index, MonoError *error)
 {
-	MonoDomain *domain;
 	const DateTimeFormatEntry *dfe;
 	const CultureInfoNameEntry *ne;
 	const CultureInfoEntry *ci;
+	MonoDomain *domain = mono_domain_get ();
 
 	char *n = mono_utf16_to_utf8 (name, name_length, error);
 	return_val_if_nok (error, FALSE);
@@ -205,8 +196,6 @@ ves_icall_System_Globalization_CalendarData_fill_calendar_data (MonoCalendarData
 
 	ci = &culture_entries [ne->culture_entry_index];
 	dfe = &datetime_format_entries [ci->datetime_format_index];
-
-	domain = mono_domain_get ();
 
 	MonoStringHandle native_name = mono_string_new_handle (domain, idx2string (ci->nativename), error);
 	return_val_if_nok (error, FALSE);
@@ -266,9 +255,8 @@ void
 ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureDataHandle this_obj,
 	gint32 datetime_index, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
-
 	g_assert (datetime_index >= 0);
+	MonoDomain *domain = mono_domain_get ();
 
 	const DateTimeFormatEntry *dfe = &datetime_format_entries [datetime_index];
 
@@ -304,10 +292,9 @@ ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInf
 	gint32 number_index, MonoError *error)
 {
 	g_assert (number_index >= 0);
+	MonoDomain *domain = mono_domain_get ();
 
 	const NumberFormatEntry *nfe = &number_format_entries [number_index];
-
-	MonoDomain *domain = mono_domain_get ();
 
 	MONO_HANDLE_SETVAL (number, currencyDecimalDigits, gint32, nfe->currency_decimal_digits);
 
@@ -354,7 +341,6 @@ static MonoBoolean
 construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
-
 	error_init (error);
 
 	MONO_HANDLE_SETVAL (this_obj, lcid, gint32, ci->lcid);
@@ -394,10 +380,8 @@ construct_culture (MonoCultureInfoHandle this_obj, const CultureInfoEntry *ci, M
 static MonoBoolean
 construct_region (MonoRegionInfoHandle this_obj, const RegionInfoEntry *ri, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
-
 	error_init (error);
-
+	MonoDomain *domain = mono_domain_get ();
 	MonoStringHandle tmp_str = MONO_HANDLE_NEW (MonoString, NULL);
 
 #define SET_STR(field) do {						\
@@ -591,29 +575,21 @@ ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (
 		gint lcid, MonoError *error)
 {
 	const CultureInfoEntry *ci = culture_info_entry_from_lcid (lcid);
-	if(ci == NULL)
-		return FALSE;
-
-	return construct_culture (this_obj, ci, error);
+	return ci && construct_culture (this_obj, ci, error);
 }
 
 MonoBoolean
 ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfoHandle this_obj,
 		const gunichar2 *name, int name_length, MonoError *error)
 {
-	const CultureInfoNameEntry *ne;
 	char *n = mono_utf16_to_utf8 (name, name_length, error);
 	return_val_if_nok (error, FALSE);
-	ne = (const CultureInfoNameEntry *)mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
+
+	const CultureInfoNameEntry
+	*ne = (const CultureInfoNameEntry *)mono_binary_search (n, culture_name_entries, NUM_CULTURE_ENTRIES,
 			sizeof (CultureInfoNameEntry), culture_name_locator);
-
 	g_free (n);
-	if (ne == NULL) {
-		/*g_print ("ne (%s) is null\n", n);*/
-		return FALSE;
-	}
-
-	return construct_culture (this_obj, &culture_entries [ne->culture_entry_index], error);
+	return ne && construct_culture (this_obj, &culture_entries [ne->culture_entry_index], error);
 }
 /*
 MonoBoolean
@@ -641,29 +617,22 @@ ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (M
 		sizeof (RegionInfoNameEntry), region_name_locator);
 
 	g_free (n);
-	if (ne == NULL) {
-		/*g_print ("ne (%s) is null\n", n);*/
-		return FALSE;
-	}
-
-	return construct_region (this_obj, &region_entries [ne->region_entry_index], error);
+	return ne && construct_region (this_obj, &region_entries [ne->region_entry_index], error);
 }
 
 MonoArrayHandle
 ves_icall_System_Globalization_CultureInfo_internal_get_cultures (MonoBoolean neutral,
 		MonoBoolean specific, MonoBoolean installed, MonoError *error)
 {
-	MonoArrayHandle ret;
+	MonoArrayHandle ret = NULL_HANDLE_ARRAY;
 	MonoClass *klass;
 	MonoCultureInfoHandle culture;
-	MonoDomain *domain;
+	MonoDomain *domain = mono_domain_get ();
 	const CultureInfoEntry *ci;
-	gint i, len;
+	gint i;
 	gboolean is_neutral;
 
-	domain = mono_domain_get ();
-
-	len = 0;
+	gint len = 0;
 	for (i = 0; i < NUM_CULTURE_ENTRIES; i++) {
 		ci = &culture_entries [i];
 		is_neutral = ci->territory == 0;
@@ -709,44 +678,21 @@ fail:
 	return ret;
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_compare (
-	const gunichar2 *str1, gint32 off1, gint32 len1,
-	const gunichar2 *str2, gint32 off2, gint32 len2,
-	gint32 options, MonoError *error)
+void
+ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoSortKeyHandle key,
+	const gunichar2 *source, int keylen, gint32 options, MonoError *error)
 {
-	/* Do a normal ascii string compare, as we only know the
-	 * invariant locale if we dont have ICU
-	 */
-	return(string_invariant_compare (str1, off1, len1, str2, off2, len2,
-					 options));
-}
-
-void ves_icall_System_Globalization_CompareInfo_assign_sortkey (
-	MonoSortKeyHandle key, const gunichar2 *source, int keylen, gint32 options, MonoError *error)
-{
-	MonoArrayHandle arr;
-	gint32 i;
-	
-	arr = mono_array_new_handle (mono_domain_get (), mono_get_byte_class (),
-				    keylen, error);
+	MonoArrayHandle arr = mono_array_new_handle (mono_domain_get (), mono_get_byte_class (), keylen, error);
 	return_if_nok (error);
 
-	for(i=0; i<keylen; i++) {
+	for (int i = 0; i < keylen; ++i)
 		MONO_HANDLE_ARRAY_SETVAL (arr, guint8, i, source [i]);
-	}
 	
 	MONO_HANDLE_SET (key, key, arr);
 }
 
-int ves_icall_System_Globalization_CompareInfo_internal_index (
-	const gunichar2 *source, gint32 sindex, gint32 count, const gunichar2 *value, gint32 value_length,
-	gint32 options, MonoBoolean first, MonoError *error)
-{
-	return string_invariant_indexof (source, sindex, count, value, value_length, first);
-}
-
-static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
-					     gint32 options)
+static gint32
+string_invariant_compare_char (gunichar2 c1, gunichar2 c2, gint32 options)
 {
 	gint32 result;
 
@@ -780,56 +726,51 @@ static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 	return ((result < 0) ? -1 : (result > 0) ? 1 : 0);
 }
 
-static gint32 string_invariant_compare (const gunichar2 *ustr1, gint32 off1,
-					gint32 len1, const gunichar2 *ustr2,
-					gint32 off2, gint32 len2,
-					gint32 options)
+gint32
+ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *ustr1, gint32 len1,
+			  const gunichar2 *ustr2, gint32 len2,
+			  gint32 options)
 {
+	/* Do a normal ascii string compare, as we only know the
+	 * invariant locale if we dont have ICU
+	 */
+
 	/* c translation of C# code from old string.cs.. :) */
 	const gint32 length = MAX (len1, len2);
-	gint32 charcmp;
-	gint32 pos = 0;
-
-	ustr1 += off1;
-	ustr2 += off2;
+	gint32 pos;
 
 	for (pos = 0; pos != length; pos++) {
 		if (pos >= len1 || pos >= len2)
 			break;
-
-		charcmp = string_invariant_compare_char(ustr1[pos], ustr2[pos],
-							options);
-		if (charcmp != 0) {
-			return(charcmp);
-		}
+		int charcmp = string_invariant_compare_char (ustr1 [pos], ustr2 [pos], options);
+		if (charcmp)
+			return charcmp;
 	}
 
 	/* the lesser wins, so if we have looped until length we just
 	 * need to check the last char
 	 */
-	if (pos == length) {
-		return(string_invariant_compare_char(ustr1[pos - 1],
-						     ustr2[pos - 1], options));
-	}
+	if (pos && pos == length)
+		return string_invariant_compare_char(ustr1 [pos - 1], ustr2 [pos - 1], options);
 
 	/* Test if one of the strings has been compared to the end */
 	if (pos >= len1) {
 		if (pos >= len2) {
-			return(0);
+			return 0;
 		} else {
-			return(-1);
+			return -1;
 		}
 	} else if (pos >= len2) {
-		return(1);
+		return 1;
 	}
 
 	/* if not, check our last char only.. (can this happen?) */
-	return(string_invariant_compare_char(ustr1[pos], ustr2[pos], options));
+	return string_invariant_compare_char (ustr1 [pos], ustr2 [pos], options);
 }
 
-static gint32 string_invariant_indexof (const gunichar2 *src, gint32 sindex,
-					gint32 count, const gunichar2 *cmpstr, gint32 lencmpstr,
-					MonoBoolean first)
+gint32
+ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *src, gint32 sindex,
+	gint32 count, const gunichar2 *cmpstr, gint32 lencmpstr, MonoBoolean first)
 {
 	gint32 pos,i;
 	
