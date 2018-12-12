@@ -600,6 +600,8 @@ typedef struct {
 	MonoArray *ShortestDayNames;
 } MonoDateTimeFormatInfo;
 
+TYPED_HANDLE_DECL (MonoDateTimeFormatInfo);
+
 typedef struct 
 {
 	MonoObject obj;
@@ -633,12 +635,16 @@ typedef struct
 	gint32 percentDecimalDigits;
 } MonoNumberFormatInfo;
 
+TYPED_HANDLE_DECL (MonoNumberFormatInfo);
+
 typedef struct {
 	MonoObject obj;
 	gint32 lcid;
 	MonoString *icu_name;
 	gpointer ICU_collator;
 } MonoCompareInfo;
+
+TYPED_HANDLE_DECL (MonoCompareInfo);
 
 typedef struct {
 	MonoObject obj;
@@ -660,6 +666,8 @@ typedef struct {
 	MonoArray *GenitiveAbbreviatedMonthNames;
 } MonoCalendarData;
 
+TYPED_HANDLE_DECL (MonoCalendarData);
+
 typedef struct {
 	MonoObject obj;
 	MonoString *AMDesignator;
@@ -670,6 +678,8 @@ typedef struct {
 	guint32 FirstDayOfWeek;
 	guint32 CalendarWeekRule;
 } MonoCultureData;
+
+TYPED_HANDLE_DECL (MonoCultureData);
 
 typedef struct {
 	MonoObject obj;
@@ -695,6 +705,8 @@ typedef struct {
 	const void* text_info_data;
 } MonoCultureInfo;
 
+TYPED_HANDLE_DECL (MonoCultureInfo);
+
 typedef struct {
 	MonoObject obj;
 	gint32 geo_id;
@@ -708,6 +720,8 @@ typedef struct {
 	MonoString *currency_english_name;
 	MonoString *currency_native_name;
 } MonoRegionInfo;
+
+TYPED_HANDLE_DECL (MonoRegionInfo);
 
 typedef struct {
 	MonoObject object;
@@ -1685,8 +1699,6 @@ mono_string_handle_length (MonoStringHandle s);
 
 #endif
 
-#define mono_string_chars_unsafe(s) (mono_string_chars_internal (MONO_HANDLE_RAW (s)))
-
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
@@ -2066,9 +2078,6 @@ mono_string_new_utf8_assign (MonoStringHandleOut handle, MonoDomain *domain, con
 
 MonoStringHandle
 mono_string_new_utf8z_assign (MonoStringHandleOut handle, MonoDomain *domain, const char *text, MonoError *error);
-
-MonoStringHandle
-mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
 MonoString *
 mono_string_from_utf16_checked (const mono_unichar2 *data, MonoError *error);

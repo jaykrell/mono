@@ -506,7 +506,7 @@ extern const MonoObjectHandle mono_null_value_handle;
 #define NULL_HANDLE_STRING_BUILDER	(MONO_HANDLE_CAST (MonoStringBuilder, NULL_HANDLE))
 
 static inline MonoObjectHandle
-mono_handle_assign_raw (MonoObjectHandle dest, void *source)
+mono_handle_assign_raw (MonoObjectHandleOut dest, void *source)
 {
 	g_assert (dest.__raw);
 	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)source);

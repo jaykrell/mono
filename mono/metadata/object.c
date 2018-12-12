@@ -5523,7 +5523,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 }
 
 static MonoObjectHandle
-mono_object_new_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error);
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error);
 
 /**
  * object_new_common_tail:
@@ -5647,7 +5647,7 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
  * It returns NULL on failure and sets \p error.
  */
 MonoObjectHandle
-mono_object_new_assign (MonoObjectHandle o, MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_assign (MonoObjectHandleOut o, MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
@@ -5772,7 +5772,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 }
 
 MonoObjectHandle
-mono_object_new_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error)
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error)
 {
 	// This function handles remoting and COM.
 	// mono_object_new_alloc_by_vtable_assign does not.
@@ -6699,7 +6699,7 @@ mono_string_new_utf8z_assign (MonoStringHandle o, MonoDomain *domain, const char
 }
 
 /**
- * mono_string_new_utf8_len_handle:
+ * mono_string_new_utf8_len:
  * \param text a pointer to an utf8 string
  * \param length number of bytes in \p text to consider
  * \param error set on error
@@ -6707,7 +6707,7 @@ mono_string_new_utf8z_assign (MonoStringHandle o, MonoDomain *domain, const char
  * failure returns NULL and sets \p error.
  */
 MonoStringHandle
-mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error)
+mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error)
 {
 	return mono_string_new_utf8_assign (MONO_HANDLE_NEW (MonoString, NULL), domain, text, length, error);
 }
@@ -7654,7 +7654,10 @@ mono_string_to_utf8len (MonoStringHandle s, gsize *utf8len, MonoError *error)
 	*utf8len = 0;
 	if (MONO_HANDLE_IS_NULL (s))
 		return NULL;
-	return mono_utf16_to_utf8len (mono_string_chars_unsafe (s), mono_string_handle_length (s), utf8len, error);
+	guint gchandle = 0;
+	char *utf8 = mono_utf16_to_utf8len (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s), utf8len, error);
+	mono_gchandle_free_internal (gchandle);
+	return utf8;
 }
 
 /**
