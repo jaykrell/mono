@@ -96,7 +96,7 @@ namespace System.Globalization
 			
 			return UseManagedCollation ?
 				internal_index_managed (s1, sindex, count, s2, opt, first) :
-				internal_index (s1, sindex, count, s2, opt, first);
+				internal_index (s1, sindex, count, s2, first);
 		}
 
 		int internal_compare_switch (string str1, int offset1, int length1, string str2, int offset2, int length2, CompareOptions options)
@@ -129,25 +129,45 @@ namespace System.Globalization
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern void assign_sortkey (object key, string source,
+		private unsafe extern static void assign_sortkey_icall (object key, char *source, int source_length,
 							CompareOptions options);		
 
+		private unsafe static void assign_sortkey (object key, string source,
+							CompareOptions options)
+		{
+			fixed (char* fixed_source = source)
+				assign_sortkey_icall (key, fixed_source, source?.Length ?? 0, options);
+		}
+
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern int internal_compare (string str1, int offset1,
-							 int length1, string str2,
-							 int offset2, int length2,
+		private unsafe extern static int internal_compare_icall (char *str1, int length1,
+							 char *str2, int length2,
 							 CompareOptions options);
 
-		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern int internal_index (string source, int sindex,
-						   int count, char value,
-						   CompareOptions options,
-						   bool first);
+		private unsafe static int internal_compare (string str1, int offset1,
+							 int length1, string str2,
+							 int offset2, int length2,
+							 CompareOptions options)
+		{
+			fixed (char* fixed_str1 = str1,
+				     fixed_str2 = str2)
+				return internal_compare_icall (fixed_str1 + offset1,
+					length1, fixed_str2 + offset2, length2, options);
+		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		private extern int internal_index (string source, int sindex,
-						   int count, string value,
-						   CompareOptions options,
+		private unsafe extern static int internal_index_icall (char* source, int sindex,
+						   int count, char* value, int value_length,
 						   bool first);
+
+		private unsafe static int internal_index (string source, int sindex,
+						   int count, string value,
+						   bool first)
+		{
+			fixed (char* fixed_source = source,
+				     fixed_value = value)
+				return internal_index_icall (fixed_source, sindex, count,
+					fixed_value, value?.Length ?? 0, first);
+		}
 	}
 }
