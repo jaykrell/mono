@@ -348,10 +348,8 @@ HANDLES(CALDATA_1, "fill_calendar_data_icall", ves_icall_System_Globalization_Ca
 
 ICALL_TYPE(COMPINF, "System.Globalization.CompareInfo", COMPINF_1)
 HANDLES(COMPINF_1, "assign_sortkey_icall", ves_icall_System_Globalization_CompareInfo_assign_sortkey, void, 4, (MonoSortKey, const_gunichar2_ptr, int, gint32))
-
 HANDLES(COMPINF_4, "internal_compare_icall", ves_icall_System_Globalization_CompareInfo_internal_compare,
 	int, 7, (const_gunichar2_ptr, gint32, gint32, const_gunichar2_ptr, gint32, gint32, gint32))
-
 HANDLES(COMPINF_6, "internal_index_icall", ves_icall_System_Globalization_CompareInfo_internal_index,
 	int, 7, (const_gunichar2_ptr, gint32, gint32, const_gunichar2_ptr, gint32, gint32, MonoBoolean))
 
@@ -364,7 +362,6 @@ HANDLES(CULINF_5, "construct_internal_locale_from_lcid", ves_icall_System_Global
 HANDLES(CULINF_6, "construct_internal_locale_from_name_icall", ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name, MonoBoolean, 3, (MonoCultureInfo, const_gunichar2_ptr, int))
 HANDLES(CULINF_7, "get_current_locale_name", ves_icall_System_Globalization_CultureInfo_get_current_locale_name, MonoString, 0, ())
 HANDLES(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureInfo_internal_get_cultures, MonoArray, 3, (MonoBoolean, MonoBoolean, MonoBoolean))
-//ICALL(CULINF_10, "internal_is_lcid_neutral", ves_icall_System_Globalization_CultureInfo_internal_is_lcid_neutral)
 
 ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_2)
 HANDLES(REGINF_2, "construct_internal_region_from_name_icall", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name,
@@ -1097,7 +1094,6 @@ NOHANDLES(ICALL(THREAD_49, "VolatileWrite(uint16&,uint16)", ves_icall_System_Thr
 NOHANDLES(ICALL(THREAD_50, "VolatileWrite(uintptr&,uintptr)", ves_icall_System_Threading_Thread_VolatileWriteIntPtr))
 NOHANDLES(ICALL(THREAD_51, "VolatileWrite(ulong&,ulong)", ves_icall_System_Threading_Thread_VolatileWrite8))
 NOHANDLES(ICALL(THREAD_9, "YieldInternal", ves_icall_System_Threading_Thread_YieldInternal))
-//NOHANDLES(ICALL(THREAD_52, "current_lcid()", ves_icall_System_Threading_Thread_current_lcid))
 
 ICALL_TYPE(THREADP, "System.Threading.ThreadPool", THREADP_1)
 HANDLES(THREADP_1, "BindIOCompletionCallbackNative", ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative, MonoBoolean, 1, (gpointer))

@@ -745,13 +745,6 @@ int ves_icall_System_Globalization_CompareInfo_internal_index (
 	return string_invariant_indexof (source, sindex, count, value, value_length, first);
 }
 
-int
-ves_icall_System_Threading_Thread_current_lcid (void)
-{
-	/* Invariant */
-	return 0x007F;
-}
-
 static gint32 string_invariant_compare_char (gunichar2 c1, gunichar2 c2,
 					     gint32 options)
 {
