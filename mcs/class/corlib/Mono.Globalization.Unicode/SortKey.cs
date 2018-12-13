@@ -71,12 +71,21 @@ namespace System.Globalization
 		readonly CompareOptions options;
 		readonly int lcid;
 
+		private static byte [] CreateKey (string source)
+		{
+			var key = new byte [source.Length];
+			for (int i = 0; i < source.Length; ++i)
+				key [i] = (byte)source [i];
+			return key;
+		}
+
 		// for legacy unmanaged one
 		internal SortKey (int lcid, string source, CompareOptions opt)
 		{
 			this.lcid = lcid;
 			this.source = source;
 			this.options = opt;
+			this.key = CreateKey (source);
 		}
 
 		internal SortKey (int lcid, string source, byte [] buffer, CompareOptions opt,
@@ -89,6 +98,7 @@ namespace System.Globalization
 			this.source = source;
 			this.key = buffer;
 			this.options = opt;
+			this.key = CreateKey (source);
 		}
 
 		internal SortKey (String localeName, String str, CompareOptions options, byte[] keyData)
