@@ -5629,8 +5629,7 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	MonoVTable *vtable = mono_class_vtable_checked (domain, klass, error);
-	if (!is_ok (error))
-		return NULL;
+	return_val_if_nok (error, NULL);
 
 	return mono_object_new_specific_checked (vtable, error);
 }
@@ -5651,8 +5650,10 @@ MonoObjectHandle
 mono_object_new_assign (MonoObjectHandle o, MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+
 	MonoVTable* const vtable = mono_class_vtable_checked (domain, klass, error);
 	return_val_if_nok (error, NULL_HANDLE);
+
 	return mono_object_new_by_vtable (o, vtable, error);
 }
 
@@ -5693,6 +5694,7 @@ mono_object_new_pinned_handle (MonoDomain *domain, MonoClass *klass, MonoError *
 	int const size = mono_class_instance_size (klass);
 
 	MonoObjectHandle o = mono_gc_alloc_handle_pinned_obj (vtable, size);
+
 	return object_new_handle_common_tail (o, klass, error);
 }
 
@@ -5884,6 +5886,7 @@ mono_object_new_alloc_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoErr
 	int const size = m_class_get_instance_size (klass);
 
 	o = mono_gc_alloc_handle_obj (o, vtable, size);
+
 	return object_new_handle_common_tail (o, klass, error);
 }
 
@@ -5948,6 +5951,7 @@ mono_object_new_handle_mature (MonoVTable *vtable, MonoError *error)
 	int const size = m_class_get_instance_size (klass);
 
 	MonoObjectHandle o = mono_gc_alloc_handle_mature (vtable, size);
+
 	return object_new_handle_common_tail (o, klass, error);
 }
 
