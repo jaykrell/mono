@@ -5524,7 +5524,7 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 }
 
 static MonoObjectHandle
-mono_object_new_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error);
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error);
 
 /**
  * object_new_common_tail:
@@ -5647,7 +5647,7 @@ mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error)
  * It returns NULL on failure and sets \p error.
  */
 MonoObjectHandle
-mono_object_new_assign (MonoObjectHandle o, MonoDomain *domain, MonoClass *klass, MonoError *error)
+mono_object_new_assign (MonoObjectHandleOut o, MonoDomain *domain, MonoClass *klass, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -5775,7 +5775,7 @@ mono_object_new_specific_checked (MonoVTable *vtable, MonoError *error)
 }
 
 MonoObjectHandle
-mono_object_new_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error)
+mono_object_new_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error)
 {
 	// This function handles remoting and COM.
 	// mono_object_new_alloc_by_vtable_assign does not.
@@ -5878,7 +5878,7 @@ mono_object_new_alloc_specific_checked (MonoVTable *vtable, MonoError *error)
 }
 
 MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error)
+mono_object_new_alloc_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6657,21 +6657,15 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 /**
 <<<<<<< HEAD
  * mono_string_new_utf8_len:
-=======
  * mono_string_new_utf8_assign:
  * \param o    handle to assign to
->>>>>>> [Coop] In-place object and string handle constructors to port loops w/o structural change.
  * \param text a pointer to an utf8 string
  * \param length number of bytes in \p text to consider
  * \param error set on error
  * \returns o NULL_HANDLE_STRING and sets \p error.
  */
 MonoStringHandle
-<<<<<<< HEAD
-mono_string_new_utf8_len (MonoDomain *domain, const char *text, guint length, MonoError *error)
-=======
-mono_string_new_utf8_assign (MonoStringHandle o, MonoDomain *domain, const char *text, gsize length, MonoError *error)
->>>>>>> [Coop] In-place object and string handle constructors to port loops w/o structural change.
+mono_string_new_utf8_assign (MonoStringHandleOut o, MonoDomain *domain, const char *text, gsize length, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -6706,7 +6700,7 @@ mono_string_new_utf8_assign (MonoStringHandle o, MonoDomain *domain, const char 
  * \returns o NULL_HANDLE_STRING and sets \p error.
  */
 MonoStringHandle
-mono_string_new_utf8z_assign (MonoStringHandle o, MonoDomain *domain, const char *text, MonoError *error)
+mono_string_new_utf8z_assign (MonoStringHandleOut o, MonoDomain *domain, const char *text, MonoError *error)
 {
 	return mono_string_new_utf8_assign (o, domain, text, strlen (text), error);
 }

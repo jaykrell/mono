@@ -1985,7 +1985,7 @@ MonoObject *
 mono_object_new_checked (MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
-mono_object_new_assign (MonoObjectHandle o, MonoDomain *domain, MonoClass *klass, MonoError *error);
+mono_object_new_assign (MonoObjectHandleOut o, MonoDomain *domain, MonoClass *klass, MonoError *error);
 
 MonoObjectHandle
 mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
@@ -1993,7 +1993,7 @@ mono_object_new_handle (MonoDomain *domain, MonoClass *klass, MonoError *error);
 // This function skips handling of remoting and COM.
 // "alloc" means "less".
 MonoObjectHandle
-mono_object_new_alloc_by_vtable (MonoObjectHandle o, MonoVTable *vtable, MonoError *error);
+mono_object_new_alloc_by_vtable (MonoObjectHandleOut o, MonoVTable *vtable, MonoError *error);
 
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable, MonoError *error);
@@ -2055,7 +2055,6 @@ mono_string_new_utf8_assign (MonoStringHandleOut handle, MonoDomain *domain, con
 MonoStringHandle
 mono_string_new_utf8z_assign (MonoStringHandleOut handle, MonoDomain *domain, const char *text, MonoError *error);
 
-// FIXME? Remove.
 MonoStringHandle
 mono_string_new_utf8_len_handle (MonoDomain *domain, const char *text, guint length, MonoError *error);
 
