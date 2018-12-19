@@ -83,6 +83,7 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-threads-coop.h>
 #include "object-internals.h"
 #include "icall-decl.h"
 
@@ -2464,6 +2465,9 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 		procs = NULL_HANDLE_ARRAY;
 		goto exit;
 	}
+
+	MONO_ENTER_NO_SAFEPOINTS;
+
 	raw = mono_array_addr_internal (MONO_HANDLE_RAW (procs), guint32, 0);
 	if (sizeof (guint32) == sizeof (gpointer)) {
 		memcpy (raw, pidarray, count * sizeof (gint32));
@@ -2471,6 +2475,9 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 		for (int i = 0; i < count; ++i)
 			raw [i] = GPOINTER_TO_UINT (pidarray [i]);
 	}
+
+	MONO_EXIT_NO_SAFEPOINTS;
+
 exit:
 	g_free (pidarray);
 	return procs;

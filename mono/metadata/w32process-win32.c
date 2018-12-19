@@ -33,6 +33,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-threads-coop.h>
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 #include <shellapi.h>
 #endif
@@ -386,7 +387,12 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (MonoError *error)
 		goto exit;
 	}
 
+	MONO_ENTER_NO_SAFEPOINTS
+
 	memcpy (mono_array_addr_internal (MONO_HANDLE_RAW (procs), guint32, 0), pids, needed);
+
+	MONO_EXIT_NO_SAFEPOINTS;
+
 exit:
 	g_free (pids);
 	return procs;
