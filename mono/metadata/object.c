@@ -7653,7 +7653,10 @@ mono_string_to_utf8len (MonoStringHandle s, gsize *utf8len, MonoError *error)
 	*utf8len = 0;
 	if (MONO_HANDLE_IS_NULL (s))
 		return NULL;
-	return mono_utf16_to_utf8len (mono_string_chars_unsafe (s), mono_string_handle_length (s), utf8len, error);
+	guint gchandle = 0;
+	char *utf8 = mono_utf16_to_utf8len (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s), utf8len, error);
+	mono_gchandle_free_internal (gchandle);
+	return utf8;
 }
 
 /**

@@ -1673,8 +1673,6 @@ mono_string_handle_length (MonoStringHandle s);
 
 #endif
 
-#define mono_string_chars_unsafe(s) (mono_string_chars_internal (MONO_HANDLE_RAW (s)))
-
 char *
 mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 
