@@ -133,7 +133,7 @@ process_set_field_ref (MonoObjectHandle obj, const char *fieldname, MonoObjectHa
 	MonoClassField *field = mono_class_get_field_from_name_full (klass, fieldname, NULL);
 	g_assert (field);
 
-	mono_gc_wbarrier_generic_store_internal (field->offset + (char*)MONO_HANDLE_RAW (obj), MONO_HANDLE_RAW (data));
+	MONO_HANDLE_SET_FIELD_REF (obj, field, data);
 }
 
 static void
@@ -177,8 +177,8 @@ process_set_field_utf8 (MonoObjectHandle obj, MonoStringHandle str, const char *
 	process_set_field_string (obj, fieldname, str);
 }
 
-static void
-process_set_field_raw (MonoObjectHandle obj, const char *fieldname, const void *val, gsize size)
+static MonoClassField*
+process_resolve_field (MonoObjectHandle obj, const char *fieldname)
 {
 	// FIXME Cache offsets. Per-class.
 	MonoClass *klass = mono_handle_class (obj);
@@ -187,7 +187,7 @@ process_set_field_raw (MonoObjectHandle obj, const char *fieldname, const void *
 	MonoClassField *field = mono_class_get_field_from_name_full (klass, fieldname, NULL);
 	g_assert (field);
 
-	memcpy (field->offset + (char*)MONO_HANDLE_RAW (obj), val, size);
+	return field;
 }
 
 static void
@@ -195,7 +195,7 @@ process_set_field_int (MonoObjectHandle obj, const char *fieldname, guint32 val)
 {
 	LOGDEBUG (g_message ("%s: Setting field %s to %d", __func__, fieldname, val));
 
-	process_set_field_raw (obj, fieldname, &val, sizeof (val));
+	MONO_HANDLE_SET_FIELD_VAL (obj, guint32, process_resolve_field (obj, fieldname), val);
 }
 
 static void
@@ -203,7 +203,7 @@ process_set_field_intptr (MonoObjectHandle obj, const char *fieldname, gpointer 
 {
 	LOGDEBUG (g_message ("%s: Setting field %s to %p", __func__, fieldname, val));
 
-	process_set_field_raw (obj, fieldname, &val, sizeof (val));
+	MONO_HANDLE_SET_FIELD_VAL (obj, gpointer, process_resolve_field (obj, fieldname), val);
 }
 
 static void
@@ -211,7 +211,7 @@ process_set_field_bool (MonoObjectHandle obj, const char *fieldname, guint8 val)
 {
 	LOGDEBUG (g_message ("%s: Setting field %s to %s", __func__, fieldname, val ? "TRUE" : "FALSE"));
 
-	process_set_field_raw (obj, fieldname, &val, sizeof (val));
+	MONO_HANDLE_SET_FIELD_VAL (obj, guint8, process_resolve_field (obj, fieldname), val);
 }
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
