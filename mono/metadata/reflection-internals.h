@@ -12,6 +12,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-error.h>
+#include "icall-decl.h"
 
 /* Safely access System.Reflection.Assembly from native code */
 TYPED_HANDLE_DECL (MonoReflectionAssembly)
@@ -24,10 +25,6 @@ mono_domain_try_type_resolve_name (MonoDomain *domain, MonoStringHandle name, Mo
 
 MonoReflectionAssemblyHandle
 mono_domain_try_type_resolve_typebuilder (MonoDomain *domain, MonoReflectionTypeBuilderHandle typebuilder, MonoError *error);
-
-ICALL_EXPORT
-MonoReflectionTypeHandle
-ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 
 MonoReflectionTypeBuilderHandle
 mono_class_get_ref_info (MonoClass *klass);

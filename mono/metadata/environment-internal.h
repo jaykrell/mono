@@ -16,9 +16,6 @@
 #define _MONO_METADATA_ENVIRONMENT_INTERNAL_H_
 
 #include <mono/metadata/icalls.h>
-
-ICALL_EXPORT
-MonoStringHandle
-ves_icall_System_Environment_GetOSVersionString (MonoError *error);
+#include "icall-decl.h"
 
 #endif /* _MONO_METADATA_ENVIRONMENT_INTERNAL_H_ */

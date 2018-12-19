@@ -12,9 +12,9 @@
 #define _MONO_METADATA_LOCALES_H_
 
 #include <glib.h>
-
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
+#include "icall-decl.h"
 
 /* This is a copy of System.Globalization.CompareOptions */
 typedef enum {
@@ -39,9 +39,6 @@ void ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberForm
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
-
-ICALL_EXPORT
-MonoStringHandle ves_icall_System_Globalization_CultureInfo_get_current_locale_name (MonoError *error);
 
 ICALL_EXPORT
 MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint lcid);
@@ -84,8 +81,5 @@ gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureIn
 
 ICALL_EXPORT
 gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-void ves_icall_System_Text_Normalization_load_normalization_resource (guint8 **argProps, guint8** argMappedChars, guint8** argCharMapIndex, guint8** argHelperIndex, guint8** argMapIdxToComposite, guint8** argCombiningClass, MonoError *error);
 
 #endif /* _MONO_METADATA_FILEIO_H_ */
