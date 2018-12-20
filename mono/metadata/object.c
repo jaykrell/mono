@@ -6655,8 +6655,6 @@ mono_string_new_len (MonoDomain *domain, const char *text, guint length)
 }
 
 /**
-<<<<<<< HEAD
- * mono_string_new_utf8_len:
  * mono_string_new_utf8_assign:
  * \param o    handle to assign to
  * \param text a pointer to an utf8 string
