@@ -45,6 +45,7 @@
 #include "mini-runtime.h"
 #include "aot-runtime.h"
 #include "tasklets.h"
+#include "mono/metadata/register-icall-def.h"
 
 #ifdef TARGET_WIN32
 static void (*restore_stack) (void);
@@ -920,20 +921,35 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 
 #ifndef DISABLE_JIT
 GSList*
-mono_amd64_get_exception_trampolines (gboolean aot)
+mono_amd64_get_exception_trampolines (gboolean aot, gboolean reg)
 {
 	MonoTrampInfo *info;
 	GSList *tramps = NULL;
 
 	/* LLVM needs different throw trampolines */
 	get_throw_trampoline (&info, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", aot, FALSE);
-	tramps = g_slist_prepend (tramps, info);
+	if (reg) {
+		mono_register_jit_icall_info (&mono_llvm_throw_corlib_exception_trampoline_icall_info, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_tramp_info_register (info, NULL);
+	} else {
+		tramps = g_slist_prepend (tramps, info);
+	}
 
 	get_throw_trampoline (&info, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", aot, FALSE);
-	tramps = g_slist_prepend (tramps, info);
+	if (reg) {
+		mono_register_jit_icall_info (&mono_llvm_throw_corlib_exception_abs_trampoline_icall_info, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_tramp_info_register (info, NULL);
+	} else {
+		tramps = g_slist_prepend (tramps, info);
+	}
 
 	get_throw_trampoline (&info, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", aot, FALSE);
-	tramps = g_slist_prepend (tramps, info);
+	if (reg) {
+		mono_register_jit_icall_info (&mono_llvm_resume_unwind_trampoline_icall_info, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_tramp_info_register (info, NULL);
+	} else {
+		tramps = g_slist_prepend (tramps, info);
+	}
 
 	return tramps;
 }
@@ -941,7 +957,7 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 #else
 
 GSList*
-mono_amd64_get_exception_trampolines (gboolean aot)
+mono_amd64_get_exception_trampolines (gboolean aot, gboolean reg)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -952,10 +968,8 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 void
 mono_arch_exceptions_init (void)
 {
-	GSList *tramps, *l;
-	gpointer tramp;
-
 	if (mono_ee_features.use_aot_trampolines) {
+#error TODO
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
 		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
@@ -964,14 +978,7 @@ mono_arch_exceptions_init (void)
 		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
 	} else if (!mono_llvm_only) {
 		/* Call this to avoid initialization races */
-		tramps = mono_amd64_get_exception_trampolines (FALSE);
-		for (l = tramps; l; l = l->next) {
-			MonoTrampInfo *info = (MonoTrampInfo *)l->data;
-
-			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
-			mono_tramp_info_register (info, NULL);
-		}
-		g_slist_free (tramps);
+		mono_amd64_get_exception_trampolines (FALSE, TRUE);
 	}
 }
 

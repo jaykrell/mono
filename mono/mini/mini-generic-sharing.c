@@ -21,11 +21,11 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
-
 #include "mini.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 #include "llvmonly-runtime.h"
+#include "mono/metadata/register-icall-def.h"
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
@@ -1832,8 +1832,9 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
  * when it needs to jump over native frames.
  */
 MonoMethod*
-mini_get_interp_lmf_wrapper (const char *name, gpointer target)
+mini_get_interp_lmf_wrapper (const char *name, MonoJitICallInfo *target)
 {
+#error TODO
 	MonoMethod *res, *cached;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
@@ -1885,7 +1886,11 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 	gshared_unlock ();
 	mono_mb_free (mb);
 
+<<<<<<< HEAD
 	g_free (wrapper_name);
+=======
+	wrapper = (MonoMethod*)mini_create_interp_lmf_wrapper (&mono_interp_entry_from_trampoline_icall_info);
+>>>>>>> Reduce heap allocations and hash lookups in icall implementation.
 
 	return res;
 }

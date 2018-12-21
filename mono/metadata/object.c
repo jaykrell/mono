@@ -57,7 +57,12 @@
 #include "external-only.h"
 #include "monitor.h"
 #include "icall-decl.h"
+<<<<<<< HEAD
 #include "icall-signatures.h"
+=======
+#include "register-icall-def.h"
+#include "class-internals.h"
+>>>>>>> Reduce heap allocations and hash lookups in icall implementation.
 
 // If no symbols in an object file in a static library are referenced, its exports will not be exported.
 // There are a few workarounds:
