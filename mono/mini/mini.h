@@ -2098,16 +2098,8 @@ void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst)
 
 void      mono_replace_ins                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **prev, MonoBasicBlock *first_bb, MonoBasicBlock *last_bb);
 
-void              mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw);
-
-#ifdef __cplusplus
-template <typename T>
-inline void
-mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, T func, const char *symbol, gboolean no_throw)
-{
-	mini_register_opcode_emulation (opcode, name, sigstr, (gpointer)func, symbol, no_throw);
-}
-#endif // __cplusplus
+void
+mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info);
 
 void              mono_trampolines_init (void);
 void              mono_trampolines_cleanup (void);
