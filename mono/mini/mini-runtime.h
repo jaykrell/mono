@@ -342,6 +342,7 @@ struct MonoJumpInfo {
 		MonoDelegateClassMethodPair *del_tramp;
 		/* MONO_PATCH_INFO_VIRT_METHOD */
 		MonoJumpInfoVirtMethod *virt_method;
+		MonoJitICallInfo *icall_info;
 	} data;
 };
 
