@@ -574,6 +574,7 @@ typedef struct {
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;
+	gboolean dynamic; // Is the icall info itself dynamic -- rarely (mono_get_array_new_va_icall).
 } MonoJitICallInfo;
 
 void
@@ -1058,29 +1059,59 @@ MonoMethodSignature*
 mono_create_icall_signature (const char *sigstr);
 
 MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
-
-MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
+mono_register_jit_icall_info_full (MonoJitICallInfo *info, gconstpointer func, const char *name, const char* sigstr, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
 #ifdef __cplusplus
 template <typename T>
 inline MonoJitICallInfo *
-mono_register_jit_icall (T func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 {
-	return mono_register_jit_icall ((gconstpointer)func, name, sig, is_save);
+	return mono_register_jit_icall_info_full (info, (gconstpointer)func, name, sigstr, sig, no_wrapper, NULL);
 }
 
 template <typename T>
 inline MonoJitICallInfo *
-mono_register_jit_icall_full (T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+mono_register_jit_icall_info_full (MonoJitICallInfo *info, T func, const char *name, const char *sigstr, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
 {
-	return mono_register_jit_icall_full ((gconstpointer)func, name, sig, no_wrapper, c_symbol);
+	return mono_register_jit_icall_info_full (info, (gconstpointer)func, name, sigstr, sig, no_wrapper, c_symbol);
 }
 #endif // __cplusplus
 
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
+
+#ifdef __cplusplus
+template <typename T>
+static void
+xregister_icall_info_no_wrapper (MonoJitICallInfo *info, T func, const char *name, const char *sigstr)
+#else
+static void
+xregister_icall_info_no_wrapper (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr)
+#endif
+{
+//	mono_register_jit_icall_info_full (info, func, name, sigstr, NULL, TRUE, name);
+}
+
+// FIXME Double evaluation of name.
+#define register_icall_with_wrapper(func, name, sigstr) \
+	(mono_register_jit_icall_info_full ((&func ## _icall_info), (func), (name), (sigstr), NULL, FALSE, (name)))
+
+#define register_icall(func, name, sigstr, no_wrapper) \
+	(register_icall_info ((&func ## _icall_info), (func), (name), (sigstr), (no_wrapper)))
+
+// FIXME Double evaluation of name.
+#define register_icall_no_wrapper(func, name, sigstr) \
+	(mono_register_jit_icall_info_full ((&func ## _icall_info), (func), (name), (sigstr), NULL, TRUE, (name)))
+
+#define mono_register_jit_icall_full(func, name, sigstr, avoid_wrapper, c_symbol) \
+	(mono_register_jit_icall_info_full ((&func ## _icall_info), (func), (name), (sigstr), NULL, (avoid_wrapper), (c_symbol)))
+
+/*
+ * Register an icall where FUNC is dynamically generated or otherwise not
+ * possible to link to it using NAME during AOT.
+ */
+#define register_dyn_icall(expr, name, sigstr, no_wrapper) \
+	(mono_register_jit_icall_info_full ((&name ## _icall_info), (expr), #name, (sigstr), NULL, (no_wrapper), NULL))
 
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;

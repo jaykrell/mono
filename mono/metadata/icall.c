@@ -8694,18 +8694,36 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_icall_unlock ();
 }
 
-MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
+static void
+mono_jit_icall_info_free (gpointer p)
 {
-	MonoJitICallInfo *info;
+	MonoJitICallInfo *info = (MonoJitICallInfo*)p;
+	if (info && info->dynamic)
+		g_free (info);
+}
 
+MonoJitICallInfo *
+mono_register_jit_icall_info_full (MonoJitICallInfo *info, gconstpointer func,
+	const char *name, const char *sigstr, MonoMethodSignature *sig,
+	gboolean no_wrapper, const char *c_symbol)
+{
+	g_assert (info);
 	g_assert (func);
 	g_assert (name);
+
+	if (!sig && sigstr)
+		sig = mono_create_icall_signature (sigstr);
+
+	info->name = name;
+	info->func = func;
+	info->sig = sig;
+	info->c_symbol = c_symbol;
+	info->wrapper = no_wrapper ? func : NULL;
 
 	mono_icall_lock ();
 
 	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
+		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_jit_icall_info_free);
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 
@@ -8714,30 +8732,11 @@ mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSi
 		g_assert_not_reached ();
 	}
 
-	info = g_new0 (MonoJitICallInfo, 1);
-	
-	info->name = name;
-	info->func = func;
-	info->sig = sig;
-	info->c_symbol = c_symbol;
-
-	if (avoid_wrapper) {
-		info->wrapper = func;
-	} else {
-		info->wrapper = NULL;
-	}
-
-	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
+	g_hash_table_insert (jit_icall_hash_name, (gpointer)name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 
 	mono_icall_unlock ();
 	return info;
-}
-
-MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
-{
-	return mono_register_jit_icall_full (func, name, sig, no_wrapper, NULL);
 }
 
 int

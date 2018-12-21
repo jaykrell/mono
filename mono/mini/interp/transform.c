@@ -4850,14 +4850,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				}
 				case CEE_MONO_ICALL: {
 					guint32 token;
-					gpointer func;
 					MonoJitICallInfo *info;
 					int icall_op;
 
 					token = read32 (td->ip + 1);
 					td->ip += 5;
-					func = mono_method_get_wrapper_data (method, token);
-					info = mono_find_jit_icall_by_addr (func);
+					info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
 					g_assert (info);
 
 					CHECK_STACK (td, info->sig->param_count);
@@ -4880,7 +4878,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						g_assert (icall_op != -1);
 
 						ADD_CODE(td, icall_op);
-						ADD_CODE(td, get_data_item_index (td, func));
+						ADD_CODE(td, get_data_item_index (td, (gpointer)info->func));
 					}
 					td->sp -= info->sig->param_count;
 
@@ -5535,9 +5533,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 				if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
 					MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor_interp");
 					g_assert (mi);
-					char *wrapper_name = g_strdup_printf ("__icall_wrapper_%s", mi->name);
-					nm = mono_marshal_get_icall_wrapper (mi->sig, wrapper_name, mi->func, TRUE);
-					g_free (wrapper_name);
+					nm = mono_marshal_get_icall_wrapper (mi, TRUE);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 					/*
 					 * Usually handled during transformation of the caller, but

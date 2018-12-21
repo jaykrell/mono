@@ -48,6 +48,7 @@
 #include "mono/metadata/cominterop-win32-internals.h"
 #endif
 #include "icall-decl.h"
+#include "register-icall-def.h"
 
 typedef guint32 gchandle_t; // FIXME use this more
 
@@ -88,15 +89,14 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall (       T func, const char *name, const char *sigstr, gboolean save)
+register_icall_info (MonoJitICallInfo *info,        T func, const char *name, const char *sigstr, gboolean no_wrapper)
 #else
 static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+register_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr, gboolean no_wrapper)
 #endif
 {
-	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
-
-	mono_register_jit_icall_full (func, name, sig, save, name);
+	// FIXME Some versions of register_icall_info pass NULL for last parameter, some pass name.
+	mono_register_jit_icall_info_full (info, func, name, sigstr, NULL, no_wrapper, name);
 }
 
 mono_bstr
@@ -631,6 +631,7 @@ cominterop_get_interface (MonoComObject *obj_raw, MonoClass *ic)
 	HANDLE_FUNCTION_RETURN_VAL (itf);
 }
 
+/* This is an icall, it will return NULL and set pending exception on failure */
 static MonoReflectionType *
 cominterop_type_from_handle (MonoType *handle)
 {

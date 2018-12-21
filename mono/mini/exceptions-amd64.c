@@ -946,26 +946,35 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 
 #endif /* !DISABLE_JIT */
 
+MonoJitICallInfo mono_llvm_throw_corlib_exception_trampoline_icall_info;
+MonoJitICallInfo mono_llvm_throw_corlib_exception_abs_trampoline_icall_info;
+MonoJitICallInfo mono_llvm_resume_unwind_trampoline_icall_info;
+
 void
 mono_arch_exceptions_init (void)
 {
 	GSList *tramps, *l;
 	gpointer tramp;
+	const char *name;
 
 	if (mono_ee_features.use_aot_trampolines) {
-		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
-		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
-		tramp = mono_aot_get_trampoline ("llvm_resume_unwind_trampoline");
-		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
+
+		tramp = mono_aot_get_trampoline (name = "llvm_throw_corlib_exception_trampoline");
+		mono_register_jit_icall_info_full (&mono_llvm_throw_corlib_exception_trampoline_icall_info, tramp, name, NULL, NULL, TRUE, NULL);
+
+		tramp = mono_aot_get_trampoline (name = "llvm_throw_corlib_exception_abs_trampoline");
+		mono_register_jit_icall_info_full (&mono_llvm_throw_corlib_exception_abs_trampoline_icall_info, tramp, name, NULL, NULL, TRUE, NULL);
+
+		tramp = mono_aot_get_trampoline (name = "llvm_resume_unwind_trampoline");
+		mono_register_jit_icall_info_full (&mono_llvm_resume_unwind_trampoline_icall_info, tramp, name, NULL, NULL, TRUE, NULL);
 	} else {
 		/* Call this to avoid initialization races */
 		tramps = mono_amd64_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {
 			MonoTrampInfo *info = (MonoTrampInfo *)l->data;
-
-			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
+			MonoJitICallInfo *jit_icall_info = g_new0 (MonoJitICallInfo, 1);
+			jit_icall_info->dynamic = TRUE;
+			mono_register_jit_icall_info_full (jit_icall_info, info->code, g_strdup (info->name), NULL, NULL, TRUE, NULL);
 			mono_tramp_info_register (info, NULL);
 		}
 		g_slist_free (tramps);

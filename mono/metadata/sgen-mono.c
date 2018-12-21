@@ -36,6 +36,8 @@
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
 #include "metadata/w32handle.h"
+#include "class-internals.h"
+#include "register-icall-def.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
@@ -55,8 +57,7 @@ gboolean sgen_mono_xdomain_checks = FALSE;
 /* Functions supplied by the runtime to be called by the GC */
 static MonoGCCallbacks gc_callbacks;
 
-#define OPDEF(a,b,c,d,e,f,g,h,i,j) \
-	a = i,
+#define OPDEF(a,b,c,d,e,f,g,h,i,j) a = i,
 
 enum {
 #include "mono/cil/opcode.def"
@@ -1006,10 +1007,10 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	int num_params, i;
 
 	if (!registered) {
-		mono_register_jit_icall (mono_gc_alloc_obj, "mono_gc_alloc_obj", mono_create_icall_signature ("object ptr int"), FALSE);
-		mono_register_jit_icall (mono_gc_alloc_vector, "mono_gc_alloc_vector", mono_create_icall_signature ("object ptr int int"), FALSE);
-		mono_register_jit_icall (mono_gc_alloc_string, "mono_gc_alloc_string", mono_create_icall_signature ("object ptr int int32"), FALSE);
-		mono_register_jit_icall (mono_profiler_raise_gc_allocation, "mono_profiler_raise_gc_allocation", mono_create_icall_signature ("void object"), FALSE);
+		mono_register_jit_icall_full (mono_gc_alloc_obj, "mono_gc_alloc_obj",  "object ptr int", FALSE, NULL);
+		mono_register_jit_icall_full (mono_gc_alloc_vector, "mono_gc_alloc_vector", "object ptr int int", FALSE, NULL);
+		mono_register_jit_icall_full (mono_gc_alloc_string, "mono_gc_alloc_string", "object ptr int int32", FALSE, NULL);
+		mono_register_jit_icall_full (mono_profiler_raise_gc_allocation, "mono_profiler_raise_gc_allocation", "void object", FALSE, NULL);
 		registered = TRUE;
 	}
 

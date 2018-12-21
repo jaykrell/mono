@@ -80,6 +80,7 @@
 #include "lldb.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
+//#include "mono/metadata/register-icall-def.h"
 
 MonoCallSpec *mono_jit_trace_calls;
 MonoMethodDesc *mono_inject_async_exc_method;
@@ -986,9 +987,11 @@ mono_get_array_new_va_icall (int rank)
 	mono_jit_lock ();
 	info = mono_find_jit_icall_by_name (icall_name);
 	if (info == NULL) {
+		info = g_new0 (MonoJitICallInfo, 1);
+		info->dynamic = TRUE;
 		esig = mono_get_array_new_va_signature (rank);
 		name = g_strdup (icall_name);
-		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
+		info = mono_register_jit_icall_info_full (info, mono_array_new_va, name, NULL, esig, FALSE, NULL);
 	}
 	mono_jit_unlock ();
 
@@ -1710,16 +1713,16 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 void
-mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
+mono_register_opcode_emulation_info (int opcode, MonoJitICallInfo *info, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_throw)
 {
-	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	info = mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
+	mono_register_jit_icall_info_full (info, func, name, NULL, sig, no_throw, symbol);
 
+#ifndef DISABLE_JIT
 	if (emul_opcode_num >= emul_opcode_alloced) {
 		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
 		emul_opcode_alloced += incr;
@@ -1730,6 +1733,7 @@ mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	emul_opcode_opcodes [emul_opcode_num] = opcode;
 	emul_opcode_num++;
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
+#endif
 }
 
 static void

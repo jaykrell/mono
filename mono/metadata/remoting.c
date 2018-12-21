@@ -25,6 +25,7 @@
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/assembly.h"
 #include "icall-decl.h"
+#include "register-icall-def.h"
 
 typedef enum {
 	MONO_MARSHAL_NONE,			/* No marshalling needed */
@@ -75,7 +76,7 @@ static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 
 static MonoReflectionType *
-type_from_handle (MonoType *handle);
+mono_type_from_handle (MonoType *handle);
 
 static void
 mono_context_set_icall (MonoAppContext *new_context);
@@ -106,15 +107,14 @@ mono_compile_method_icall (MonoMethod *method);
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall (T func, const char *name, const char *sigstr, gboolean save)
+register_icall_info (MonoJitICallInfo *info, T func, const char *name, const char *sigstr, gboolean no_wrapper)
 #else
 static void
-register_icall (gpointer func, const char *name, const char *sigstr, gboolean save)
+register_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr, gboolean no_wrapper)
 #endif
 {
-	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
-
-	mono_register_jit_icall (func, name, sig, save);
+	// FIXME Some versions of register_icall_info pass NULL for last parameter, some pass name.
+	mono_register_jit_icall_info_full (info, func, name, sigstr, NULL, no_wrapper, NULL);
 }
 
 static inline void
@@ -223,7 +223,7 @@ mono_remoting_marshal_init (void)
 	mono_loader_lock ();
 
 	if (!icalls_registered) {
-		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
+		register_icall (mono_type_from_handle, "mono_type_from_handle", "object ptr", FALSE);
 		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
 		register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
 		register_icall (ves_icall_mono_marshal_xdomain_copy_value, "ves_icall_mono_marshal_xdomain_copy_value", "object object", FALSE);
@@ -248,8 +248,8 @@ mono_remoting_marshal_init (void)
 }
 
 /* This is an icall, it will return NULL and set pending exception on failure */
-static MonoReflectionType *
-type_from_handle (MonoType *handle)
+MonoReflectionType *
+mono_type_from_handle (MonoType *handle)
 {
 	ERROR_DECL (error);
 	MonoReflectionType *ret;
@@ -1919,7 +1919,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	
 	/* get the reflection type from the type handle */
 	mono_mb_emit_ptr (mb, m_class_get_byval_arg (klass));
-	mono_mb_emit_icall (mb, type_from_handle);
+	mono_mb_emit_icall (mb, mono_type_from_handle);
 	
 	mono_mb_emit_ldarg (mb, 0);
 	
@@ -1934,7 +1934,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 
 	/* Upgrade the proxy vtable by calling: mono_upgrade_remote_class_wrapper (type, ob)*/
 	mono_mb_emit_ptr (mb, m_class_get_byval_arg (klass));
-	mono_mb_emit_icall (mb, type_from_handle);
+	mono_mb_emit_icall (mb, mono_type_from_handle);
 	mono_mb_emit_ldarg (mb, 0);
 	
 	mono_mb_emit_icall (mb, mono_upgrade_remote_class_wrapper);
