@@ -975,24 +975,12 @@ mono_get_array_new_va_signature (int arity)
 MonoJitICallInfo *
 mono_get_array_new_va_icall (int rank)
 {
-	MonoMethodSignature *esig;
-	char icall_name [256];
-	char *name;
-	MonoJitICallInfo *info;
-
-	/* Need to register the icall so it gets an icall wrapper */
-	sprintf (icall_name, "ves_array_new_va_%d", rank);
-
-	mono_jit_lock ();
-	info = mono_find_jit_icall_by_name (icall_name);
-	if (info == NULL) {
-		esig = mono_get_array_new_va_signature (rank);
-		name = g_strdup (icall_name);
-		info = mono_register_jit_icall (mono_array_new_va, name, esig, FALSE);
+	switch (rank) {
+#define MONO_ARRAY_NEW(x) case x: return &mono_array_new_ ## x ## _icall_info;
+MONO_ARRAY_NEW_ALL
+#undef MONO_ARRAY_NEW
+	default: g_assert_not_reached ();
 	}
-	mono_jit_unlock ();
-
-	return info;
 }
 
 gboolean
@@ -1710,16 +1698,16 @@ mono_find_jit_opcode_emulation (int opcode)
 }
 
 void
-mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
+mini_register_opcode_emulation_info (int opcode, MonoJitICallInfo *info, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
 {
-	MonoJitICallInfo *info;
 	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
 
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	info = mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
+	info = mono_register_jit_icall_info_full (info, func, name, sig, no_wrapper, symbol);
 
+//FIXME #ifndef DISABLE_JIT
 	if (emul_opcode_num >= emul_opcode_alloced) {
 		int incr = emul_opcode_alloced? emul_opcode_alloced/2: 16;
 		emul_opcode_alloced += incr;
@@ -1730,6 +1718,7 @@ mini_register_opcode_emulation (int opcode, const char *name, const char *sigstr
 	emul_opcode_opcodes [emul_opcode_num] = opcode;
 	emul_opcode_num++;
 	emul_opcode_hit_cache [opcode >> (EMUL_HIT_SHIFT + 3)] |= (1 << (opcode & EMUL_HIT_MASK));
+//FIXME #endif
 }
 
 static void
@@ -2124,16 +2113,8 @@ mono_postprocess_patches (MonoCompile *cfg)
 			 * absolute address.
 			 */
 			if (info) {
-				//printf ("TEST %s %p\n", info->name, patch_info->data.target);
-				/* for these array methods we currently register the same function pointer
-				 * since it's a vararg function. But this means that mono_find_jit_icall_by_addr ()
-				 * will return the incorrect one depending on the order they are registered.
-				 * See tests/test-arr.cs
-				 */
-				if (strstr (info->name, "ves_array_new_va_") == NULL && strstr (info->name, "ves_array_element_address_") == NULL) {
-					patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
-					patch_info->data.name = info->name;
-				}
+				patch_info->type = MONO_PATCH_INFO_JIT_ICALL_INFO;
+				patch_info->data.icall_info = info;
 			}
 
 			if (patch_info->type == MONO_PATCH_INFO_ABS) {

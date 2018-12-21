@@ -2176,13 +2176,10 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 	 * threads when debugging.
 	 */
 	if (direct_icalls_enabled (cfg)) {
-		char *name;
 		int costs;
 
 		if (!info->wrapper_method) {
-			name = g_strdup_printf ("__icall_wrapper_%s", info->name);
-			info->wrapper_method = mono_marshal_get_icall_wrapper (info->sig, name, info->func, TRUE);
-			g_free (name);
+			info->wrapper_method = mono_marshal_get_icall_wrapper (info, TRUE);
 			mono_memory_barrier ();
 		}
 
@@ -3596,12 +3593,6 @@ handle_array_new (MonoCompile *cfg, int rank, MonoInst **sp, guchar *ip)
 
 	/* Need to register the icall so it gets an icall wrapper */
 	info = mono_get_array_new_va_icall (rank);
-
-	cfg->flags |= MONO_CFG_HAS_VARARGS;
-
-	/* mono_array_new_va () needs a vararg calling convention */
-	cfg->exception_message = g_strdup ("array-new");
-	cfg->disable_llvm = TRUE;
 
 	/* FIXME: This uses info->sig, but it should use the signature of the wrapper */
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, sp);
@@ -10098,12 +10089,8 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			gpointer func;
-			MonoJitICallInfo *info;
-
-			func = mono_method_get_wrapper_data (method, token);
-			info = mono_find_jit_icall_by_addr (func);
-			if (!info)
+			MonoJitICallInfo *info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
+			if (!info || !info->func)
 				g_error ("Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 			g_assert (info);
 
