@@ -174,10 +174,6 @@ typedef struct {
 } GenericArrayHelperWrapperInfo;
 
 typedef struct {
-	gpointer func;
-} ICallWrapperInfo;
-
-typedef struct {
 	MonoMethod *method;
 } ArrayAccessorWrapperInfo;
 
@@ -251,7 +247,7 @@ typedef struct {
 		/* GENERIC_ARRAY_HELPER */
 		GenericArrayHelperWrapperInfo generic_array_helper;
 		/* ICALL_WRAPPER */
-		ICallWrapperInfo icall;
+		MonoJitICallInfo *icall_info;
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
 		/* PROXY_ISINST etc. */
@@ -430,7 +426,7 @@ gpointer
 mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type);
 
 MonoMethod *
-mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions);
+mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_exceptions);
 
 MonoMethod *
 mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype) MONO_LLVM_INTERNAL;
