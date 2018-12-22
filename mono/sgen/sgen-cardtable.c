@@ -132,8 +132,8 @@ sgen_card_table_wbarrier_generic_nostore (gpointer ptr)
 	sgen_card_table_mark_address ((mword)ptr);	
 }
 
-static void
-sgen_card_table_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
+void
+mono_gc_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 {
 	GCObject **dest = (GCObject **)_dest;
 	GCObject **src = (GCObject **)_src;
@@ -626,7 +626,6 @@ sgen_card_table_init (SgenRememberedSet *remset)
 
 	remset->find_address = sgen_card_table_find_address;
 	remset->find_address_with_cards = sgen_card_table_find_address_with_cards;
-	remset->wbarrier_range_copy = sgen_card_table_wbarrier_range_copy;
 
 	need_mod_union = sgen_get_major_collector ()->is_concurrent;
 }

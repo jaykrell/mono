@@ -3066,12 +3066,6 @@ mono_gc_wbarrier_generic_store_atomic_internal (gpointer ptr, GCObject *value)
 	sgen_dummy_use (value);
 }
 
-void
-sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
-{
-	remset.wbarrier_range_copy (_dest,_src, size);
-}
-
 /*
  * ######################################################################
  * ########  Other mono public interface functions.

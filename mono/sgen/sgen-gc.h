@@ -709,12 +709,8 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_object_copy) (GCObject* obj, GCObject *src);
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
-	void (*wbarrier_range_copy) (gpointer dest, gconstpointer src, int count);
-
 	void (*start_scan_remsets) (void);
-
 	void (*clear_cards) (void);
-
 	gboolean (*find_address) (char *addr);
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
 } SgenRememberedSet;
@@ -729,8 +725,6 @@ void mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int co
 void mono_gc_wbarrier_generic_nostore (gpointer ptr);
 void mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value);
 void mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value);
-
-void sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size);
 
 static inline SgenDescriptor
 sgen_obj_get_descriptor (GCObject *obj)

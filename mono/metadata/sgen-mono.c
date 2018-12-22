@@ -183,18 +183,6 @@ mono_gc_wbarrier_set_field_internal (MonoObject *obj, gpointer field_ptr, MonoOb
 	mono_gc_wbarrier_set_arrayref_internal ((MonoArray*)obj, field_ptr, value);
 }
 
-void
-mono_gc_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
-{
-	sgen_wbarrier_range_copy (_dest, _src, size);
-}
-
-MonoRangeCopyFunction
-mono_gc_get_range_copy_func (void)
-{
-	return sgen_get_remset ()->wbarrier_range_copy;
-}
-
 int
 mono_gc_get_suspend_signal (void)
 {

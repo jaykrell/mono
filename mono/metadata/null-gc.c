@@ -422,12 +422,6 @@ mono_gc_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 	g_assert_not_reached ();
 }
 
-MonoRangeCopyFunction
-mono_gc_get_range_copy_func (void)
-{
-	return &mono_gc_wbarrier_range_copy;
-}
-
 guint8*
 mono_gc_get_card_table (int *shift_bits, gpointer *card_mask)
 {
