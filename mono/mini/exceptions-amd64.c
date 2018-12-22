@@ -946,9 +946,9 @@ mono_amd64_get_exception_trampolines (gboolean aot)
 
 #endif /* !DISABLE_JIT */
 
-MonoJitICallInfo mono_llvm_throw_corlib_exception_trampoline_icall_info;
-MonoJitICallInfo mono_llvm_throw_corlib_exception_abs_trampoline_icall_info;
-MonoJitICallInfo mono_llvm_resume_unwind_trampoline_icall_info;
+static MonoJitICallInfo mono_llvm_throw_corlib_exception_trampoline_icall_info;
+static MonoJitICallInfo mono_llvm_throw_corlib_exception_abs_trampoline_icall_info;
+static MonoJitICallInfo mono_llvm_resume_unwind_trampoline_icall_info;
 
 void
 mono_arch_exceptions_init (void)

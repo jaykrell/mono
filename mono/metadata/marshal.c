@@ -2906,7 +2906,7 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 	MonoMethodSignature *const sig = callinfo->sig;
 	g_assert (sig->pinvoke);
 
-	const char *const name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
+	char *const name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
@@ -2929,7 +2929,7 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 	res = mono_mb_create_and_cache_full (cache, (gpointer) func, mb, csig, csig->param_count + 16, info, NULL);
 	mono_mb_free (mb);
 
-	g_free ((gpointer)name);
+	g_free (name);
 
 	return res;
 }

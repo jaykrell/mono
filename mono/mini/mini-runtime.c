@@ -676,14 +676,23 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 
 #ifdef __cplusplus
 template <typename T>
-static inline void
-register_opcode_emulation_info (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, const char *sigstr, T func, const char *symbol, gboolean no_wrapper)
+static void
+register_opcode_emulation (int opcode, MonoJitICallInfo *info, const char *name, const char *sigstr, T func, const char *symbol, gboolean no_wrapper)
 #else
-static inline void
-register_opcode_emulation_info (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
+static void
+register_opcode_emulation (int opcode, MonoJitICallInfo *info, const char *name, const char *sigstr, gpointer func, const char *symbol, gboolean no_wrapper)
 #endif
 {
-	mono_register_opcode_emulation_info (opcode, jit_icall_info, name, sigstr, func, symbol, no_wrapper);
+#ifndef DISABLE_JIT
+	mini_register_opcode_emulation (opcode, info, name, sigstr, func, symbol, no_wrapper);
+#else
+	MonoMethodSignature *sig = mono_create_icall_signature (sigstr);
+
+	g_assert (!sig->hasthis);
+	g_assert (sig->param_count < 3);
+
+	mono_register_jit_icall_info_full (info, func, name, sig, no_wrapper, symbol);
+#endif
 }
 
 // Some functions are registered more than once, rendering uniquely naming
@@ -693,6 +702,93 @@ register_opcode_emulation_info (int opcode, MonoJitICallInfo *jit_icall_info, co
    do {	static MonoJitICallInfo func ## _icall_info; 						  	\
 		mono_register_opcode_emulation_info ((opcode), (&func ## _icall_info), (name), (sigstr), (func), (symbol), (no_wrapper)); \
 	} while(0)
+
+/*
+ * For JIT icalls implemented in C.
+ * NAME should be the same as the name of the C function whose address is FUNC.
+ * If @avoid_wrapper is TRUE, no wrapper is generated. This is for perf critical icalls which
+ * can't throw exceptions.
+ */
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall (MonoJitICallInfo *info, T func, const char *name, const char *sigstr, gboolean avoid_wrapper)
+#else
+static void
+register_icall (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr, gboolean avoid_wrapper)
+#endif
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	// FIXME Some versions of register_icall_info pass NULL for last parameter, some pass name.
+	mono_register_jit_icall_info_full (info, func, name, sig, avoid_wrapper, name);
+}
+
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall_no_wrapper (MonoJitICallInfo *info, T func, const char *name, const char *sigstr)
+#else
+static void
+register_icall_no_wrapper (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr)
+#endif
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_full (info, func, name, sig, TRUE, name);
+}
+
+#ifdef __cplusplus
+template <typename T>
+static void
+register_icall_with_wrapper (MonoJitICallInfo *info, T func, const char *name, const char *sigstr)
+#else
+static void
+register_icall_with_wrapper (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr)
+#endif
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_icall_info_full (info, func, name, sig, FALSE, name);
+}
+
+/*
+ * Register an icall where FUNC is dynamically generated or otherwise not
+ * possible to link to it using NAME during AOT.
+ */
+#ifdef __cplusplus
+template <typename T>
+static void
+register_dyn_icall (MonoJitICallInfo *info, T func, const char *name, const char *sigstr, gboolean save)
+#else
+static void
+register_dyn_icall (MonoJitICallInfo *info, gpointer func, const char *name, const char *sigstr, gboolean save)
+#endif
+{
+	MonoMethodSignature *sig;
+
+	if (sigstr)
+		sig = mono_create_icall_signature (sigstr);
+	else
+		sig = NULL;
+
+	mono_register_jit_info_icall (info, func, name, sig, save);
+}
 
 MonoLMF *
 mono_get_lmf (void)
@@ -4537,76 +4633,6 @@ register_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, co
 	// Some versions of register_icall_info pass NULL for last parameter, some pass name.
 	mono_register_jit_icall_info_full (info, func, name, sigstr, NULL, no_wrapper, name);
 }
-
-#if 0
-
-/*
- * For JIT icalls implemented in C.
- * NAME should be the same as the name of the C function whose address is FUNC.
- * If @avoid_wrapper is TRUE, no wrapper is generated. This is for perf critical icalls which
- * can't throw exceptions.
- */
-#define register_icall(func, name, sigstr, no_wrapper)                     \
-	g_assert (func && name);                                     	       \
-	g_assert (!strcmp (#func, name));                                      \
-	static MonoJitICallInfo func ## _jit_icall_info = {                    \
-		#func, (gpointer)func, no_wrapper ? (gpointer)func : NULL };       \
-	func ## _jit_icall_info.sig = sigstr ? mono_create_icall_signature (sigstr) : NULL; \
-	mono_register_jit_icall_info (&func ## _jit_icall_info)                \
-
-/*
- * Register an icall where FUNC is dynamically generated or otherwise maybe not
- * possible to link to it using NAME during AOT. The linkability
- * is determined by null-ness of c_symbol.
- */
-#define register_dyn_icall(expr, name, sigstr, no_wrapper, c_symbol)       \
-	g_assert (sigstr);                                             		   \
-	static MonoJitICallInfo name ## _jit_icall_info = { #name, NULL, NULL, NULL, NULL, c_symbol }; \
-	name ## _jit_icall_info.func = (gpointer)(expr);                       \
-	name ## _jit_icall_info.wrapper = no_wrapper ? name ## _jit_icall_info.func : NULL;	\
-	name ## _jit_icall_info.sig = mono_create_icall_signature (sigstr);    \
-	mono_register_jit_icall_info (&name ## _jit_icall_info)                \
-
-#define register_icall_no_wrapper(func, name, sigstr)                      \
-	g_assert (func && name && sigstr);                                     \
-	g_assert (!strcmp (#func, name));                                      \
-	static MonoJitICallInfo func ## _jit_icall_info = { #func, (gpointer)func, (gpointer)func, NULL, NULL, #func }; \
-	func ## _jit_icall_info.sig = mono_create_icall_signature (sigstr);    \
-	mono_register_jit_icall_info (&func ## _jit_icall_info)                \
-
-#define register_icall_with_wrapper(func, name, sigstr)                    \
-	g_assert (func && name && sigstr);                                     \
-	g_assert (!strcmp (#func, name));                                      \
-	static MonoJitICallInfo func ## _jit_icall_info = { #func, (gpointer)func, NULL, NULL, NULL, #func }; \
-	func ## _jit_icall_info.sig = mono_create_icall_signature (sigstr);    \
-	mono_register_jit_icall_info (&func ## _jit_icall_info)                \
-
-#define register_opcode_emulation_1(name, sigstr, func, c_symbol, no_wrapper) \
-	g_assert (name && sigstr && func && c_symbol);                         \
-	g_assert (!strcmp (#func, c_symbol));                                  \
-	static MonoJitICallInfo func ## _jit_icall_info = { name,              \
-		(gpointer)func, no_wrapper ? (gpointer)func : NULL, NULL, NULL, #func }; \
-	func ## _jit_icall_info.sig = mono_create_icall_signature (sigstr);    \
-	g_assert (!func ## _jit_icall_info.sig->hasthis);                      \
-	g_assert (func ## _jit_icall_info.sig->param_count < 3);               \
-	mono_register_jit_icall_info (&func ## _jit_icall_info)                \
-
-#ifndef DISABLE_JIT
-
-#define register_opcode_emulation_2(opcode, func) \
-	mini_register_opcode_emulation (opcode, &func ## _jit_icall_info)
-
-#else
-
-#define register_opcode_emulation_2(opcode, func) /* nothing */
-
-#endif
-
-#define register_opcode_emulation(opcode, name, sigstr, func, c_symbol, no_wrapper) \
-	register_opcode_emulation_1 (name, sigstr, func, c_symbol, no_wrapper); \
-	register_opcode_emulation_2 (opcode, func)
-
-#endif
 
 static void
 register_icalls (void)

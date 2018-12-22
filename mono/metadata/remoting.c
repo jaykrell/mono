@@ -76,7 +76,10 @@ static void
 mono_marshal_xdomain_copy_out_value (MonoObject *src, MonoObject *dst);
 
 static MonoReflectionType *
-mono_type_from_handle (MonoType *handle);
+type_from_handle (MonoType *handle);
+
+// Make the info manually because the function does not start "mono_".
+static MonoJitICallInfo type_from_handle_icall_info;
 
 static void
 mono_context_set_icall (MonoAppContext *new_context);
@@ -223,7 +226,7 @@ mono_remoting_marshal_init (void)
 	mono_loader_lock ();
 
 	if (!icalls_registered) {
-		register_icall (mono_type_from_handle, "mono_type_from_handle", "object ptr", FALSE);
+		register_icall (type_from_handle, "type_from_handle", "object ptr", FALSE);
 		register_icall (mono_marshal_set_domain_by_id, "mono_marshal_set_domain_by_id", "int32 int32 int32", FALSE);
 		register_icall (mono_marshal_check_domain_image, "mono_marshal_check_domain_image", "int32 int32 ptr", FALSE);
 		register_icall (ves_icall_mono_marshal_xdomain_copy_value, "ves_icall_mono_marshal_xdomain_copy_value", "object object", FALSE);
@@ -249,7 +252,7 @@ mono_remoting_marshal_init (void)
 
 /* This is an icall, it will return NULL and set pending exception on failure */
 MonoReflectionType *
-mono_type_from_handle (MonoType *handle)
+type_from_handle (MonoType *handle)
 {
 	ERROR_DECL (error);
 	MonoReflectionType *ret;
@@ -1919,7 +1922,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	
 	/* get the reflection type from the type handle */
 	mono_mb_emit_ptr (mb, m_class_get_byval_arg (klass));
-	mono_mb_emit_icall (mb, mono_type_from_handle);
+	mono_mb_emit_icall (mb, type_from_handle);
 	
 	mono_mb_emit_ldarg (mb, 0);
 	
@@ -1934,7 +1937,7 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 
 	/* Upgrade the proxy vtable by calling: mono_upgrade_remote_class_wrapper (type, ob)*/
 	mono_mb_emit_ptr (mb, m_class_get_byval_arg (klass));
-	mono_mb_emit_icall (mb, mono_type_from_handle);
+	mono_mb_emit_icall (mb, type_from_handle);
 	mono_mb_emit_ldarg (mb, 0);
 	
 	mono_mb_emit_icall (mb, mono_upgrade_remote_class_wrapper);
