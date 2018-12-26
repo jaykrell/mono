@@ -4041,14 +4041,11 @@ add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
 	MonoAotCompile *acfg = (MonoAotCompile *)user_data;
 	MonoJitICallInfo *callinfo = (MonoJitICallInfo *)value;
 	MonoMethod *wrapper;
-	char *name;
 
 	if (!callinfo->sig)
 		return;
 
-	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
-	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, TRUE);
-	g_free (name);
+	wrapper = mono_marshal_get_icall_wrapper (callinfo, TRUE);
 
 	add_method (acfg, wrapper);
 }

@@ -2176,13 +2176,11 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 	 * threads when debugging.
 	 */
 	if (direct_icalls_enabled (cfg)) {
-		char *name;
 		int costs;
 
 		if (!info->wrapper_method) {
-			name = g_strdup_printf ("__icall_wrapper_%s", info->name);
-			info->wrapper_method = mono_marshal_get_icall_wrapper (info->sig, name, info->func, TRUE);
-			g_free (name);
+			(void)mono_marshal_get_icall_wrapper (info, TRUE);
+			g_assert (info->wrapper_method);
 			mono_memory_barrier ();
 		}
 

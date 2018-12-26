@@ -2153,7 +2153,6 @@ mono_image_close_except_pools (MonoImage *image)
 	free_hash (image->stfld_wrapper_cache);
 	free_hash (image->isinst_cache);
 	free_hash (image->castclass_cache);
-	free_hash (image->icall_wrapper_cache);
 	free_hash (image->proxy_isinst_cache);
 	if (image->var_gparam_cache)
 		mono_conc_hashtable_destroy (image->var_gparam_cache);

@@ -388,7 +388,6 @@ struct _MonoImage {
 	GHashTable *stfld_wrapper_cache;
 	GHashTable *isinst_cache;
 
-	GHashTable *icall_wrapper_cache;
 	GHashTable *castclass_cache;
 	GHashTable *proxy_isinst_cache;
 	GHashTable *rgctx_template_hash; /* LOCKING: templates lock */

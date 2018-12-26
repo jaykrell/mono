@@ -1501,22 +1501,26 @@ mono_mb_create_and_cache_full (GHashTable *cache, gpointer key,
 							   MonoMethodBuilder *mb, MonoMethodSignature *sig,
 							   int max_stack, WrapperInfo *info, gboolean *out_found)
 {
-	MonoMethod *res;
+	MonoMethod *res = NULL;
 
 	if (out_found)
 		*out_found = FALSE;
 
-	mono_marshal_lock ();
-	res = (MonoMethod *)g_hash_table_lookup (cache, key);
-	mono_marshal_unlock ();
+	if (cache) {
+		mono_marshal_lock ();
+		res = (MonoMethod *)g_hash_table_lookup (cache, key);
+		mono_marshal_unlock ();
+	}
 	if (!res) {
 		MonoMethod *newm;
 		newm = mono_mb_create_method (mb, sig, max_stack);
 		mono_marshal_lock ();
-		res = (MonoMethod *)g_hash_table_lookup (cache, key);
+		if (cache)
+			res = (MonoMethod *)g_hash_table_lookup (cache, key);
 		if (!res) {
 			res = newm;
-			g_hash_table_insert (cache, key, res);
+			if (cache)
+				g_hash_table_insert (cache, key, res);
 			mono_marshal_set_wrapper_info (res, info);
 			mono_marshal_unlock ();
 		} else {
@@ -2915,21 +2919,24 @@ emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gco
 /**
  * mono_marshal_get_icall_wrapper:
  * Generates IL code for the icall wrapper. The generated method
- * calls the unmanaged code in \p func.
+ * calls the unmanaged code in \p callinfo->func.
  */
 MonoMethod *
-mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions)
+mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_exceptions)
 {
-	MonoMethodSignature *csig, *csig2;
-	MonoMethodBuilder *mb;
-	MonoMethod *res;
-	WrapperInfo *info;
-	
-	GHashTable *cache = get_cache (& m_class_get_image (mono_defaults.object_class)->icall_wrapper_cache, mono_aligned_addr_hash, NULL);
-	if ((res = mono_marshal_find_in_cache (cache, (gpointer) func)))
+	MonoMethod *res = callinfo->wrapper_method;
+	if (res)
 		return res;
 
+	MonoMethodSignature *sig = callinfo->sig;
+	gconstpointer func = callinfo->func;
+	MonoMethodSignature *csig, *csig2;
+	MonoMethodBuilder *mb;
+	WrapperInfo *info;
+
 	g_assert (sig->pinvoke);
+
+	char *name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
@@ -2950,9 +2957,11 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ICALL_WRAPPER);
 	info->d.icall.func = (gpointer)func;
-	res = mono_mb_create_and_cache_full (cache, (gpointer) func, mb, csig, csig->param_count + 16, info, NULL);
+	res = mono_mb_create_and_cache_full (NULL, (gpointer) func, mb, csig, csig->param_count + 16, info, NULL);
 	mono_mb_free (mb);
 
+	callinfo->wrapper_method = res;
+	g_free (name);
 	return res;
 }
 
