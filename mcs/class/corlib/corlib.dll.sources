@@ -951,6 +951,7 @@ corert/Decimal.DecCalc.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/FormattableString.cs
 ../referencesource/mscorlib/system/gc.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/Guid.cs
+../../../external/corefx/src/Common/src/CoreLib/System/Guid.Unix.cs
 ../referencesource/mscorlib/system/iappdomain.cs
 ../referencesource/mscorlib/system/iappdomainsetup.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IAsyncDisposable.cs
@@ -1153,6 +1154,7 @@ corefx/Stream.cs
 ../referencesource/mscorlib/system/io/stringwriter.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IO/TextReader.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IO/TextWriter.cs
+corefx/TextWriter.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IO/UnmanagedMemoryStream.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IO/UnmanagedMemoryAccessor.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/IO/UnmanagedMemoryStreamWrapper.cs
@@ -1590,6 +1592,7 @@ corefx/BinaryEnums.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Threading/TimeoutHelper.cs
 
 ../referencesource/mscorlib/system/threading/Tasks/AsyncCausalityTracer.cs
+corert/CancellationTokenRegistration.cs
 ../../../external/corert/src/System.Private.CoreLib/src/System/Threading/CancellationTokenRegistration.cs
 ../../../external/corert/src/System.Private.CoreLib/src/System/Threading/Tasks/TaskExceptionHolder.cs
 ../../../external/corert/src/System.Private.CoreLib/shared/System/Threading/Tasks/ConcurrentExclusiveSchedulerPair.cs
@@ -1799,7 +1802,7 @@ corert/RuntimeAugments.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/Runtime/CompilerServices/TypeForwardedFromAttribute.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/Runtime/CompilerServices/TypeForwardedToAttribute.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/Runtime/CompilerServices/UnsafeValueTypeAttribute.cs
-
+corefx/SwitchExpressionException.cs
 
 ../../../external/corefx/src/Common/src/CoreLib/System/Runtime/InteropServices/MemoryMarshal.cs
 ../../../external/corefx/src/Common/src/CoreLib/System/Runtime/InteropServices/MemoryMarshal.Fast.cs

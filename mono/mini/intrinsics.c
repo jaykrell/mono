@@ -425,6 +425,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->flags |= MONO_INST_UNALIGNED;
 			return ins;
 		}
+	} else if (!strcmp (cmethod->name, "ByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
 	}
 
 	return NULL;
@@ -650,7 +660,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			dreg = alloc_ireg (cfg);
 
-			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoVTable, flags));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOAD_MEMBASE, dreg, args [0]->dreg, MONO_STRUCT_OFFSET (MonoObject, vtable));
+			MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, dreg, dreg, MONO_STRUCT_OFFSET (MonoVTable, flags));
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_IAND_IMM, dreg, dreg, 	MONO_VT_FLAG_ARRAY_OR_STRING);
 			EMIT_NEW_BIALU_IMM (cfg, ins, OP_COMPARE_IMM, -1, dreg, 0);
 			EMIT_NEW_UNALU (cfg, ins, OP_ICGT, dreg, -1);
