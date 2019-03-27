@@ -577,10 +577,9 @@ typedef struct MonoCachedClassInfo {
 
 typedef struct {
 	const char *name;
-	// FIXME try making these regular gpointer
-	gconstpointer func;
-	gconstpointer wrapper;
-	gconstpointer trampoline;
+	gpointer func;
+	gpointer wrapper;
+	gpointer trampoline;
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;
@@ -1070,64 +1069,64 @@ MONO_API gboolean
 mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container, MonoError *error);
 
-MonoJitICallInfo *
-mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
+void
+mono_register_jit_icall_id (MonoJitICallId icall_id, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
 
 MonoJitICallInfo *
-mono_register_jit_icall_info_full (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
+mono_register_jit_icall_id_full (MonoJitICallId icall_id, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
 #ifdef __cplusplus
 template <typename T>
-inline MonoJitICallInfo *
-mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+inline void
+mono_register_jit_icall_id (MonoJitICallId icall_id, T func, const char *name, MonoMethodSignature *sig, gboolean is_save)
 {
-	return mono_register_jit_icall_info (info, (gconstpointer)func, name, sig, is_save);
+	mono_register_jit_icall_id (icall_id, (gpointer)func, name, sig, is_save);
 }
 
 template <typename T>
 inline MonoJitICallInfo *
-mono_register_jit_icall_info_full (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+mono_register_jit_icall_id_full (MonoJitICallId icall_id, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
 {
-	return mono_register_jit_icall_info_full (info, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
+	return mono_register_jit_icall_id_full (icall_id, (gpointer)func, name, sig, no_wrapper, c_symbol);
 }
 #endif // __cplusplus
 
 void
-mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
+mono_register_jit_icall_wrapper (MonoJitICallId icall_id, gconstpointer wrapper);
 
-// Provide info-less signatures that provide info via token pasting.
+// Provide icall_id-less signatures that provide icall_id via token pasting.
 // The wrappers are for mono_ functions in class-internals.h and
 // for various similar non-mono_ functions in other files.
 //
-// name parameter can be removed later.
+// name parameter keeps diff smaller and provides checking and can be removed later. It must match #func.
 #define register_icall_with_wrapper(func, name, sig) do { 	\
 	g_assert (!strcmp (#func, name)); 							\
-	register_icall_info_with_wrapper ((&mono_jit_icall_info_ ## func), (func), (#func), (sig)); \
+	register_icall_id_with_wrapper (mono_jit_icall_name_to_id (func), (func), (#func), (sig)); \
 } while (0)
 
-// name parameter can be removed later.
+// name parameter keeps diff smaller and provides checking and can be removed later. It must match #func.
 #define register_icall(func, name, sig, no_wrapper) do {	\
 	g_assert (!strcmp (#func, name)); 							\
-	register_icall_info ((&mono_jit_icall_info_ ## func), (func), (#func), (sig), (no_wrapper)); \
+	register_icall_id (mono_jit_icall_name_to_id (func), (func), (#func), (sig), (no_wrapper)); \
 } while (0)
 
-// name parameter can be removed later.
+// name parameter keeps diff smaller and provides checking and can be removed later. It must match #func.
 #define register_icall_no_wrapper(func, name, sig) do { \
 	g_assert (!strcmp (#func, name)); 							\
-	register_icall_info_no_wrapper ((&mono_jit_icall_info_ ## func), (func), (#func), (sig)); \
+	register_icall_id_no_wrapper (mono_jit_icall_name_to_id (func), (func), (#func), (sig)); \
 } while (0)
 
 // Some register_jit_icall_not_full pass NULL as last parameter, some pass name.
-// name parameter is just to reduce diff. It must match #func.
+// name parameter keeps diff smaller and provides checking and can be removed later. It must match #func.
 #define mono_register_jit_icall(func, name, sig, avoid_wrapper) do { \
 	g_assert (!strcmp (#func, name)); 							\
-	mono_register_jit_icall_info ((&mono_jit_icall_info_ ## func), (func), (#func), (sig), (avoid_wrapper)); \
+	mono_register_jit_icall_id (mono_jit_icall_name_to_id (func), (func), (#func), (sig), (avoid_wrapper)); \
 } while (0)
 
-// name parameter is just to reduce diff. It must match #func.
+// name parameter keeps diff smaller and provides checking and can be removed later. It must match #func.
 #define mono_register_jit_icall_full(func, name, sig, avoid_wrapper, c_symbol) do { \
 	g_assert (!strcmp (#func, name)); 							\
-	mono_register_jit_icall_info_full ((&mono_jit_icall_info_ ## func), (func), (#func), (sig), (avoid_wrapper), (c_symbol)); \
+	mono_register_jit_icall_id_full (mono_jit_icall_name_to_id (func), (func), (#func), (sig), (avoid_wrapper), (c_symbol)); \
 } while (0)
 
 /*
@@ -1135,16 +1134,13 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
  * possible to link to it using NAME during AOT.
  */
 #define register_dyn_icall(expr, name, sig, no_wrapper) \
-	(register_dyn_icall_info ((&mono_jit_icall_info_ ## name), (expr), #name, (sig), (no_wrapper)))
+	(register_dyn_icall_id (mono_jit_icall_name_to_id (name), (expr), #name, (sig), (no_wrapper)))
 
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;
 
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
-
-GHashTable*
-mono_get_jit_icall_info (void);
 
 const char*
 mono_lookup_jit_icall_symbol (const char *name);

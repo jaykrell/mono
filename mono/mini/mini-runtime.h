@@ -342,7 +342,8 @@ struct MonoJumpInfo {
 		MonoDelegateClassMethodPair *del_tramp;
 		/* MONO_PATCH_INFO_VIRT_METHOD */
 		MonoJumpInfoVirtMethod *virt_method;
-		MonoJitICallInfo *icall_info;
+		//MonoJitICallInfo *icall_info;
+		int/*MonoJitICallId*/ icall_id;
 	} data;
 };
 
@@ -448,7 +449,7 @@ MONO_API void      mono_jit_set_domain      (MonoDomain *domain);
 
 gboolean  mono_method_same_domain           (MonoJitInfo *caller, MonoJitInfo *callee);
 gpointer  mono_create_ftnptr                (MonoDomain *domain, gpointer addr);
-MonoMethod* mono_icall_get_wrapper_method    (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
+MonoMethod* mono_icall_get_wrapper_method    (MonoJitICallId icall_id) MONO_LLVM_INTERNAL;
 gconstpointer     mono_icall_get_wrapper       (MonoJitICallInfo* callinfo) MONO_LLVM_INTERNAL;
 gconstpointer     mono_icall_get_wrapper_full  (MonoJitICallInfo* callinfo, gboolean do_compile);
 

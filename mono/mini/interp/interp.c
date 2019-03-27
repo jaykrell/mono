@@ -1372,7 +1372,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	if (!entry_func) {
 #ifdef MONO_ARCH_HAS_NO_PROPER_MONOCTX
 		ERROR_DECL (error);
-		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (&mono_jit_icall_info_mono_interp_to_native_trampoline), error);
+		entry_func = (MonoPIFunc) mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (mono_jit_icall_name_to_id (mono_interp_to_native_trampoline), error);
 		mono_error_assert_ok (error);
 #else
 		entry_func = get_interp_to_native_trampoline ();
@@ -2829,7 +2829,7 @@ interp_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *e
 	else {
 		static gpointer cached_func = NULL;
 		if (!cached_func) {
-			cached_func = mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (&mono_jit_icall_info_mono_interp_entry_from_trampoline), error);
+			cached_func = mono_jit_compile_method_jit_only (mini_get_interp_lmf_wrapper (mono_jit_icall_name_to_id (mono_interp_entry_from_trampoline), error);
 			mono_memory_barrier ();
 		}
 		entry_func = cached_func;

@@ -929,7 +929,7 @@ mono_amd64_get_exception_trampolines (gboolean aot, gboolean reg)
 	/* LLVM needs different throw trampolines */
 	get_throw_trampoline (&info, FALSE, TRUE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", aot, FALSE);
 	if (reg) {
-		mono_register_jit_icall_info (&mono_jit_icall_info_mono_llvm_throw_corlib_exception_trampoline, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_register_jit_icall_id (mono_jit_icall_name_to_id (mono_llvm_throw_corlib_exception_trampoline), info->code, g_strdup (info->name), NULL, TRUE);
 		mono_tramp_info_register (info, NULL);
 	} else {
 		tramps = g_slist_prepend (tramps, info);
@@ -937,7 +937,7 @@ mono_amd64_get_exception_trampolines (gboolean aot, gboolean reg)
 
 	get_throw_trampoline (&info, FALSE, TRUE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", aot, FALSE);
 	if (reg) {
-		mono_register_jit_icall_info (&mono_jit_icall_info_mono_llvm_throw_corlib_exception_abs_trampoline, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_register_jit_icall_id (mono_jit_icall_name_to_id (mono_llvm_throw_corlib_exception_abs_trampoline), info->code, g_strdup (info->name), NULL, TRUE);
 		mono_tramp_info_register (info, NULL);
 	} else {
 		tramps = g_slist_prepend (tramps, info);
@@ -945,7 +945,7 @@ mono_amd64_get_exception_trampolines (gboolean aot, gboolean reg)
 
 	get_throw_trampoline (&info, FALSE, TRUE, TRUE, TRUE, "llvm_resume_unwind_trampoline", aot, FALSE);
 	if (reg) {
-		mono_register_jit_icall_info (&mono_jit_icall_info_mono_llvm_resume_unwind_trampoline, info->code, g_strdup (info->name), NULL, TRUE);
+		mono_register_jit_icall_id (mono_jit_icall_name_to_id (mono_llvm_resume_unwind_trampoline), info->code, g_strdup (info->name), NULL, TRUE);
 		mono_tramp_info_register (info, NULL);
 	} else {
 		tramps = g_slist_prepend (tramps, info);
@@ -972,19 +972,19 @@ mono_arch_exceptions_init (void)
 
 		typedef struct MonoArchExceptionsInit {
 			const char *name;
-			MonoJitICallInfo *icall_info;
+			MonoJitICallId icall_id;
 		} MonoArchExceptionsInit;
 
 		const static MonoArchExceptionsInit inits [ ] = {
-			{ "llvm_throw_corlib_exception_trampoline", &mono_jit_icall_info_mono_llvm_throw_corlib_exception_trampoline },
-			{ "llvm_throw_corlib_exception_abs_trampoline", &mono_jit_icall_info_mono_llvm_throw_corlib_exception_abs_trampoline },
-			{ "llvm_resume_unwind_trampoline", &mono_jit_icall_info_mono_llvm_resume_unwind_trampoline },
+			{ "llvm_throw_corlib_exception_trampoline", mono_jit_icall_name_to_id (mono_llvm_throw_corlib_exception_trampoline) },
+			{ "llvm_throw_corlib_exception_abs_trampoline", mono_jit_icall_name_to_id (mono_llvm_throw_corlib_exception_abs_trampoline) },
+			{ "llvm_resume_unwind_trampoline", mono_jit_icall_name_to_id (mono_llvm_resume_unwind_trampoline) },
 		};
 
 		for (guint i = 0; i < G_N_ELEMENTS (inits); ++i) {
 			const MonoArchExceptionsInit *init = &inits [i];
 			gpointer tramp = mono_aot_get_trampoline (init->name);
-			mono_register_jit_icall_info (init->icall_info, tramp, init->name, NULL, TRUE);
+			mono_register_jit_icall_id (init->icall_id, tramp, init->name, NULL, TRUE);
 		}
 
 	} else if (!mono_llvm_only) {

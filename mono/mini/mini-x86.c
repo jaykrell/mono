@@ -3163,7 +3163,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
 			x86_push_reg (code, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_INFO,
-							  &mono_jit_icall_info_mono_arch_throw_exception);
+							  mono_jit_icall_name_to_id (mono_arch_throw_exception);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
@@ -3172,7 +3172,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			x86_alu_reg_imm (code, X86_SUB, X86_ESP, MONO_ARCH_FRAME_ALIGNMENT - 4);
 			x86_push_reg (code, ins->sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_INFO,
-							  &mono_jit_icall_info_mono_arch_rethrow_exception);
+							  mono_jit_icall_name_to_id (mono_arch_rethrow_exception);
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			break;
@@ -4836,7 +4836,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			x86_test_membase_imm (code, ins->sreg1, 0, 1);
 			br[0] = code; x86_branch8 (code, X86_CC_EQ, 0, FALSE);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_INFO, &mono_jit_icall_info_mono_threads_state_poll);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_INFO, mono_jit_icall_name_to_id (mono_threads_state_poll);
 			x86_patch (br [0], code);
 
 			break;
@@ -5339,7 +5339,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				}
 
 				x86_push_imm (code, m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF);
-				patch_info->data.icall_info = &mono_jit_icall_info_mono_arch_throw_corlib_exception;
+				patch_info->data.icall_id = mono_jit_icall_name_to_id (mono_arch_throw_corlib_exception;
 				patch_info->type = MONO_PATCH_INFO_JIT_ICALL_INFO;
 				patch_info->ip.i = code - cfg->native_code;
 				x86_call_code (code, 0);

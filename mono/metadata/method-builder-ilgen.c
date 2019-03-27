@@ -544,10 +544,10 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 }
 
 void
-mono_mb_emit_icall_info (MonoMethodBuilder *mb, MonoJitICallInfo *jit_icall_info)
+mono_mb_emit_icall_id (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id)
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
+	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_id);
 }
 
 void

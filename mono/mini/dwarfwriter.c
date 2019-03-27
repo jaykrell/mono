@@ -1398,11 +1398,9 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 		switch (ip [1]) {
 		case CEE_MONO_ICALL: {
 			MonoJitICallInfo *info;
-
 			token = read32 (ip + 2);
-			info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
-			g_assert (info);
 
+			3info = &mono_jit_icall_info.array [token];
 			dis = g_strdup_printf ("IL_%04x: mono_icall <%s>", (int)(ip - header->code), info->name);
 			ip += 6;
 			break;

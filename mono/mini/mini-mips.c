@@ -3440,7 +3440,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * breakpoint there.
 			 */
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_INFO,
-								 &mono_jit_icall_info_mono_break);
+								 mono_jit_icall_name_to_id (mono_break);
 			mips_load (code, mips_t9, 0x1f1f1f1f);
 			mips_jalr (code, mips_t9, mips_ra);
 			mips_nop (code);

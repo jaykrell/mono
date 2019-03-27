@@ -88,18 +88,18 @@ Code shared between the DISABLE_COM and !DISABLE_COM
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall_info (MonoJitICallInfo *info,        T func, const char *name, MonoMethodSignature *sig, gboolean save)
+register_icall_id (MonoJitICallId icall_id,        T func, const char *name, MonoMethodSignature *sig, gboolean save)
 #else
 static void
-register_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, MonoMethodSignature *sig, gboolean save)
+register_icall_id (MonoJitICallId icall_id, gpointer func, const char *name, MonoMethodSignature *sig, gboolean save)
 #endif
 {
-	// FIXME Some versions of register_icall_info pass NULL for last parameter, some pass name.
+	// FIXME Some versions of register_icall_id pass NULL for last parameter, some pass name.
 	// marshal.c: name
-	// remoting.c: NULL (via mono_register_jit_icall_info)
+	// remoting.c: NULL (via mono_register_jit_icall_id)
 	// cominterop.c: name
 	// mini-runtime.c: name
-	mono_register_jit_icall_info_full (info, func, name, sig, save, name);
+	mono_register_jit_icall_id_full (icall_id, func, name, sig, save, name);
 }
 
 mono_bstr

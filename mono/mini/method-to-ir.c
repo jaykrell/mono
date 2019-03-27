@@ -10093,7 +10093,7 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			MonoJitICallInfo *info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
+			MonoJitICallInfo *info = mono_jit_icall_info_from_id(token);
 			if (!info || !info->func)
 				g_error ("Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 			g_assert (info);

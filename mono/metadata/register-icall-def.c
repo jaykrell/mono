@@ -7,6 +7,6 @@
 #include <config.h>
 #include <glib.h>
 #include "mono/metadata/exception-internals.h"
-
-#define MONO_REGISTER_JIT_ICALL(x) MonoJitICallInfo mono_jit_icall_info_ ## x = { 0 };
 #include "register-icall-def.h"
+
+MonoJitICallInfos mono_jit_icall_info;

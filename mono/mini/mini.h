@@ -2068,7 +2068,7 @@ template <typename T>
 inline MonoInst*
 mono_emit_jit_icall (MonoCompile *cfg, T func, MonoInst **args)
 {
-	return mono_emit_jit_icall (cfg, (gconstpointer)func, args);
+	return mono_emit_jit_icall (cfg, (gpointer)func, args);
 }
 #endif // __cplusplus
 

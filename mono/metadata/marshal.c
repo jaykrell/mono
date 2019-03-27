@@ -122,44 +122,44 @@ get_method_image (MonoMethod *method)
 #ifdef __cplusplus
 template <typename T>
 static void
-register_dyn_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
+register_dyn_icall_id (MonoJitICallId icall_id, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 #else
 static void
-register_dyn_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
+register_dyn_icall_id (MonoJitICallId icall_id, gpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 #endif
 {
 	// FIXME There are near duplicates of this function, in marshal.c and mini-runtime.c.
-	mono_register_jit_icall_info_full (info, func, name, sig, no_wrapper, NULL);
+	mono_register_jit_icall_id_full (icall_id, func, name, sig, no_wrapper, NULL);
 }
 
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
+register_icall_id (MonoJitICallId icall_id, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 #else
 static void
-register_icall_info (MonoJitICallInfo *info, gpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
+register_icall_id (MonoJitICallId icall_id, gpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
 #endif
 {
-	// FIXME Some versions of register_icall_info pass NULL for last parameter, some pass name.
+	// FIXME Some versions of register_icall_id pass NULL for last parameter, some pass name.
 	// marshal.c: name
-	// remoting.c: NULL (via mono_register_jit_icall_info)
+	// remoting.c: NULL (via mono_register_jit_icall_id)
 	// cominterop.c: name
 	// mini-runtime.c: name
-	mono_register_jit_icall_info_full (info, func, name, sig, no_wrapper, name);
+	mono_register_jit_icall_id_full (icall_id, func, name, sig, no_wrapper, name);
 }
 
 #ifdef __cplusplus
 template <typename T>
 static void
-register_icall_info_no_wrapper (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig)
+register_icall_id_no_wrapper (MonoJitICallId icall_id, T func, const char *name, MonoMethodSignature *sig)
 #else
 static void
-register_icall_info_no_wrapper (MonoJitICallInfo *info, gpointer func, const char *name, MonoMethodSignature *sig)
+register_icall_id_no_wrapper (MonoJitICallId icall_id, gpointer func, const char *name, MonoMethodSignature *sig)
 #endif
 {
 	// FIXME There are near duplicates of this function in mini-runtime.c and marshal.c.
-	mono_register_jit_icall_info_full (info, func, name, sig, TRUE, name);
+	mono_register_jit_icall_id_full (icall_id, func, name, sig, TRUE, name);
 }
 
 MonoMethodSignature*
@@ -2927,7 +2927,7 @@ emit_return_noilgen (MonoMethodBuilder *mb)
 
 /**
  * mono_marshal_get_icall_wrapper:
- * Generates IL code for the icall wrapper. The generated method
+ * Generates IL code for the JIT icall wrapper. The generated method
  * calls the unmanaged code in \p callinfo->func.
  */
 MonoMethod *

@@ -825,8 +825,6 @@ static int mono_class_get_magic_index (MonoClass *k)
 static void
 interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
 {
-	MonoJitICallInfo *info = &mono_jit_icall_info_mono_throw_method_access;
-
 	/* Inject code throwing MethodAccessException */
 	interp_add_ins (td, MINT_MONO_LDPTR);
 	td->last_ins->data [0] = get_data_item_index (td, method);
@@ -837,7 +835,7 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 
 	interp_add_ins (td, MINT_ICALL_PP_V);
-	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+	td->last_ins->data [0] = get_data_item_index (td, mono_jit_icall_info.name.mono_throw_method_access.func);
 
 	td->sp -= 2;
 }
@@ -4841,7 +4839,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 					token = read32 (td->ip + 1);
 					td->ip += 5;
-					info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
+					info = mono_jit_icall_info_from_id (token);
 					g_assert (info);
 
 					CHECK_STACK (td, info->sig->param_count);
@@ -5682,7 +5680,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
 				if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-					MonoJitICallInfo *mi = &mono_jit_icall_info_ves_icall_mono_delegate_ctor_interp;
+					MonoJitICallInfo *mi = mono_jit_icall_name_to_id (ves_icall_mono_delegate_ctor_interp;
 					g_assert (mi);
 					nm = mono_marshal_get_icall_wrapper (mi, TRUE);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
