@@ -17,9 +17,21 @@
 #include <mono/metadata/class-abi-details.h>
 #include <mono/utils/mono-utils-debug.h>
 #include "mono/metadata/icall-signatures.h"
+#include "mono/metadata/register-icall-def.h"
 
 static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
+
+void
+mono_call_add_patch_info (MonoCompile *cfg, MonoCallInst *call, int ip)
+{
+	if (call->inst.flags & MONO_INST_HAS_METHOD)
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_METHOD, call->method);
+	else if (call->jit_icall_info)
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info);
+	else
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_ABS, call->fptr);
+}
 
 void
 mini_test_tailcall (MonoCompile *cfg, gboolean tailcall)
@@ -624,10 +636,8 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 }
 
 MonoInst*
-mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args)
+mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
 {
-	MonoJitICallInfo *info = mono_find_jit_icall_by_addr (func);
-
 	g_assert (info);
 
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);

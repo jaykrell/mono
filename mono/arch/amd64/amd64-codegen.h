@@ -163,7 +163,7 @@ typedef union {
 
 #define x86_imm_emit64(inst,imm)     \
 	do {	\
-			amd64_imm_buf imb; 	\
+			amd64_imm_buf volatile imb; 	\
 			imb.val = (guint64) (imm);	\
 			*(inst)++ = imb.b [0];	\
 			*(inst)++ = imb.b [1];	\

@@ -277,19 +277,23 @@ mono_tls_get_tls_offset (MonoTlsKey key)
  * Managed code will always get the value by calling this getter.
  */
 gpointer
-mono_tls_get_tls_getter (MonoTlsKey key, gboolean name)
+mono_tls_get_tls_getter (MonoTlsKey key)
 {
+	// FIXME Integrate better with jit_icall.
+	// i.e. the key enum can be a MonoJitICallId and
+	// this can be synonymous with mono_jit_icall_info.array [key].func.
+	// Note that get/set would need separate enum values.
 	switch (key) {
 	case TLS_KEY_THREAD:
-		return name ? (gpointer)"mono_tls_get_thread" : (gpointer)mono_tls_get_thread;
+		return mono_tls_get_thread;
 	case TLS_KEY_JIT_TLS:
-		return name ? (gpointer)"mono_tls_get_jit_tls" : (gpointer)mono_tls_get_jit_tls;
+		return mono_tls_get_jit_tls;
 	case TLS_KEY_DOMAIN:
-		return name ? (gpointer)"mono_tls_get_domain" : (gpointer)mono_tls_get_domain;
+		return mono_tls_get_domain;
 	case TLS_KEY_SGEN_THREAD_INFO:
-		return name ? (gpointer)"mono_tls_get_sgen_thread_info" : (gpointer)mono_tls_get_sgen_thread_info;
+		return mono_tls_get_sgen_thread_info;
 	case TLS_KEY_LMF_ADDR:
-		return name ? (gpointer)"mono_tls_get_lmf_addr" : (gpointer)mono_tls_get_lmf_addr;
+		return mono_tls_get_lmf_addr;
 	}
 	g_assert_not_reached ();
 	return NULL;
@@ -297,19 +301,23 @@ mono_tls_get_tls_getter (MonoTlsKey key, gboolean name)
 
 /* Returns the setter (void (*)(gpointer)) for the mono tls key */
 gpointer
-mono_tls_get_tls_setter (MonoTlsKey key, gboolean name)
+mono_tls_get_tls_setter (MonoTlsKey key)
 {
+	// FIXME Integrate better with jit_icall.
+	// i.e. the key enum can be a MonoJitICallId and
+	// this can be synonymous with mono_jit_icall_info.array [key].func.
+	// Note that get/set would need separate enum values.
 	switch (key) {
 	case TLS_KEY_THREAD:
-		return name ? (gpointer)"mono_tls_set_thread" : (gpointer)mono_tls_set_thread;
+		return mono_tls_set_thread;
 	case TLS_KEY_JIT_TLS:
-		return name ? (gpointer)"mono_tls_set_jit_tls" : (gpointer)mono_tls_set_jit_tls;
+		return mono_tls_set_jit_tls;
 	case TLS_KEY_DOMAIN:
-		return name ? (gpointer)"mono_tls_set_domain" : (gpointer)mono_tls_set_domain;
+		return mono_tls_set_domain;
 	case TLS_KEY_SGEN_THREAD_INFO:
-		return name ? (gpointer)"mono_tls_set_sgen_thread_info" : (gpointer)mono_tls_set_sgen_thread_info;
+		return mono_tls_set_sgen_thread_info;
 	case TLS_KEY_LMF_ADDR:
-		return name ? (gpointer)"mono_tls_set_lmf_addr" : (gpointer)mono_tls_set_lmf_addr;
+		return mono_tls_set_lmf_addr;
 	}
 	g_assert_not_reached ();
 	return NULL;
@@ -338,9 +346,16 @@ SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 	return (SgenThreadInfo*)MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
 }
 
+#define MONO_GET_LMF_ADDR() ((MonoLMF**)MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr))
+
 MonoLMF **mono_tls_get_lmf_addr (void)
 {
-	return (MonoLMF**)MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr);
+	return MONO_GET_LMF_ADDR();
+}
+
+MonoLMF **mono_get_lmf_addr (void)
+{
+	return MONO_GET_LMF_ADDR();
 }
 
 /* Setters for each tls key */
