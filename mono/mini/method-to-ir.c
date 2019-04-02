@@ -10095,15 +10095,13 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			MonoJitICallInfo *info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
-			if (!info || !info->func)
-				g_error ("Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
-			g_assert (info);
+			MonoJitICallInfo *info = &mono_jit_icall.array [token];
+			g_assert (info && info->func, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 
 			CHECK_STACK (info->sig->param_count);
 			sp -= info->sig->param_count;
 
-			if (!strcmp (info->name, "mono_threads_attach_coop")) {
+			if (info == &mono_jit_icall_info.mono_threads_attach_coop) {
 				MonoInst *addr;
 				MonoBasicBlock *next_bb;
 
@@ -10173,13 +10171,10 @@ mono_ldptr:
 		}
 		case MONO_CEE_MONO_JIT_ICALL_ADDR: {
 			MonoJitICallInfo *callinfo;
-			gpointer ptr;
 
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			ptr = mono_method_get_wrapper_data (method, token);
-			callinfo = mono_find_jit_icall_by_addr (ptr);
-			g_assert (callinfo);
-			EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, (char*)callinfo->name);
+			callinfo = &mono_jit_icall_info.array [token];
+			EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, callinfo);
 			*sp++ = ins;
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;

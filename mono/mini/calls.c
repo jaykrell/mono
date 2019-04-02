@@ -22,6 +22,17 @@ static const gboolean debug_tailcall_break_compile = FALSE; // break in method_t
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
 
 void
+mono_call_add_patch_info (MonoCompile *cfg, MonoCallInst *call, int ip)
+{
+	if (call->flags & MONO_INST_HAS_METHOD)
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_METHOD, call->method);
+	else if (call->jit_icall_info)
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info);
+	else
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_ABS, call->fptr);
+}
+
+void
 mini_test_tailcall (MonoCompile *cfg, gboolean tailcall)
 {
 	// A lot of tests say "tailcall" throughout their verbose output.
@@ -644,8 +655,6 @@ mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 {
 	MonoJumpInfo *ji = mono_patch_info_new (cfg->mempool, 0, patch_type, data);
 	MonoInst *ins;
-
-	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL);
 
 	/* 
 	 * We pass ji as the call address, the PATCH_INFO_ABS resolving code will

@@ -1866,7 +1866,7 @@ mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
-	info->d.icall_info = jit_icall_info;
+	info->d.jit_icall_info = jit_icall_info;
 	res = mono_mb_create (mb, sig, 4, info);
 
 	gshared_lock ();

@@ -3762,8 +3762,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		}
 		break;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL:
-		g_assert (!"MONO_PATCH_INFO_JIT_ICALL");
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
 		guint32 len = decode_value (p, &p);
@@ -3771,8 +3769,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		p += len + 1;
 		break;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL_INFO:
-		ji->data.icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
+	case MONO_PATCH_INFO_JIT_ICALL:
+		ji->data.jit_icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
 		break;
 	case MONO_PATCH_INFO_METHODCONST:
 		/* Shared */

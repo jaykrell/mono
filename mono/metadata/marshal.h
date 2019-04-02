@@ -247,7 +247,7 @@ typedef struct {
 		/* GENERIC_ARRAY_HELPER */
 		GenericArrayHelperWrapperInfo generic_array_helper;
 		/* ICALL_WRAPPER */
-		MonoJitICallInfo *icall_info;
+		MonoJitICallInfo *jit_icall_info;
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
 		/* PROXY_ISINST etc. */

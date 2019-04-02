@@ -436,7 +436,7 @@ mono_arch_exceptions_init (void)
 
 		typedef struct MonoArchExceptionsInit {
 			const char *name;
-			MonoJitICallInfo *icall_info;
+			MonoJitICallInfo *jit_icall_info;
 		} MonoArchExceptionsInit;
 
 		const static MonoArchExceptionsInit inits [ ] = {
@@ -448,7 +448,7 @@ mono_arch_exceptions_init (void)
 		for (guint i = 0; i < G_N_ELEMENTS (inits); ++i) {
 			const MonoArchExceptionsInit *init = &inits [i];
 			gpointer tramp = mono_aot_get_trampoline (init->name);
-			mono_register_jit_icall_info (init->icall_info, tramp, init->name, NULL, TRUE);
+			mono_register_jit_icall_info (init->jit_icall_info, tramp, init->name, NULL, TRUE);
 		}
 	} else {
 		mono_arm_get_exception_trampolines (FALSE, TRUE);

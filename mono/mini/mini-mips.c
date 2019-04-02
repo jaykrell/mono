@@ -3439,7 +3439,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * So instead of emitting a trap, we emit a call a C function and place a 
 			 * breakpoint there.
 			 */
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_INFO,
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL,
 								 &mono_jit_icall_info.mono_break);
 			mips_load (code, mips_t9, 0x1f1f1f1f);
 			mips_jalr (code, mips_t9, mips_ra);
@@ -3803,14 +3803,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_VCALL2:
 			case OP_VOIDCALL:
 			case OP_CALL:
-				if (ins->flags & MONO_INST_HAS_METHOD) {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
+				mono_call_add_patch_info (cfg, call, offset);
+				if (ins->flags & MONO_INST_HAS_METHOD)
 					mips_load (code, mips_t9, call->method);
-				}
-				else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
+				else
 					mips_load (code, mips_t9, call->fptr);
-				}
 				mips_jalr (code, mips_t9, mips_ra);
 				mips_nop (code);
 				break;

@@ -703,7 +703,7 @@ register_opcode_emulation_info (int opcode, MonoJitICallInfo *info, const char *
 #endif
 }
 
-// The opcode emulation icall_info does not need to be public, so instantiate
+// The opcode emulation jit_icall_info does not need to be public, so instantiate
 // it here instead of in register-icall-def.h. A scope is not placed
 // here, to more likely catch duplicates.
 #define register_opcode_emulation(opcode, name, sig, func, no_wrapper) 	\
@@ -1112,11 +1112,7 @@ mono_print_ji (const MonoJumpInfo *ji)
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL:
-		g_assert (!"MONO_PATCH_INFO_JIT_ICALL");
-		printf ("[JIT_ICALL %s]", ji->data.name);
-		break;
-	case MONO_PATCH_INFO_JIT_ICALL_INFO:
-		printf ("[JIT_ICALL_INFO %s]", ji->data.icall_info->name);
+		printf ("[JIT_ICALL_INFO %s]", ji->data.jit_icall_info->name);
 		break;
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
@@ -1237,10 +1233,9 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 		return (ji->type << 8) | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
 	case MONO_PATCH_INFO_JIT_ICALL:
-		g_assert (!"MONO_PATCH_INFO_JIT_ICALL");
-		return (ji->type << 8) | g_str_hash (ji->data.name);
-	case MONO_PATCH_INFO_JIT_ICALL_INFO:
-		return (ji->type << 8) | g_str_hash (ji->data.icall_info->name);
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		return (ji->type << 8) | mono_jit_icall_info_index (ji->data.jit_icall_info);
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
@@ -1305,9 +1300,6 @@ mono_patch_info_hash (gconstpointer data)
 
 		return (ji->type << 8) | (gssize)info->klass | (gssize)info->method;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
-		return (ji->type << 8) | g_str_hash (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return (ji->type << 8) | mono_signature_hash (ji->data.sig);
 	default:
@@ -1348,10 +1340,9 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			return 0;
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL:
-		g_assert (!"MONO_PATCH_INFO_JIT_ICALL");
-		return g_str_equal (ji1->data.name, ji2->data.name);
-	case MONO_PATCH_INFO_JIT_ICALL_INFO:
-		return ji1->data.icall_info == ji2->data.icall_info;
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		return ji1->data.jit_icall_info == ji2->data.jit_icall_info;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *e1 = ji1->data.rgctx_entry;
@@ -1376,11 +1367,6 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.index == ji2->data.index;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
-		if (ji1->data.target == ji2->data.target)
-			return 1;
-		return strcmp ((const char*)ji1->data.target, (const char*)ji2->data.target) == 0 ? 1 : 0;
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 1 : 0;
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
@@ -1423,20 +1409,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
 		break;
-	case MONO_PATCH_INFO_JIT_ICALL:
-	case MONO_PATCH_INFO_JIT_ICALL_INFO: {
-		MonoJitICallInfo *mi = NULL;
-		switch (patch_info->type) {
-		case MONO_PATCH_INFO_JIT_ICALL:
-			g_assert (!"MONO_PATCH_INFO_JIT_ICALL");
-			//mi = mono_find_jit_icall_by_name (patch_info->data.name);
-			g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
-			break;
-		case MONO_PATCH_INFO_JIT_ICALL_INFO:
-			mi = patch_info->data.icall_info;
-			g_assert (mi && "unknown MONO_PATCH_INFO_JIT_ICALL_INFO");
-			break;
-		}
+	case MONO_PATCH_INFO_JIT_ICALL: {
+		MonoJitICallInfo *mi = patch_info->data.jit_icall_info;
+		g_assert (mi && "unknown MONO_PATCH_INFO_JIT_ICALL");
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
@@ -2358,7 +2333,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
 	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-		callinfo = winfo->d.icall_info;
+		callinfo = winfo->d.jit_icall_info;
 		g_assert (callinfo);
 
 		/* Must be domain neutral since there is only one copy */

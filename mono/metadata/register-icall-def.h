@@ -298,13 +298,10 @@ MONO_REGISTER_JIT_ICALL (ves_icall_string_alloc) \
 MONO_REGISTER_JIT_ICALL (ves_icall_string_new_wrapper) \
 MONO_REGISTER_JIT_ICALL (ves_icall_thread_finish_async_abort) \
 	\
+MONO_REGISTER_JIT_ICALL (mono_amd64_start_gsharedvt_call) \
+	\
 MONO_REGISTER_JIT_ICALL (count) \
 
-// This enum is not actually used, except for count.
-// Instead mono_jit_icall_info_index should
-// generate the values from pointers for AOT and ilgen.
-// They could be used for const static special case arrays,
-// to shrink a pointer from 8 bytes + reloc to 4 (or 2) bytes.
 typedef enum MonoJitICallId {
 #define MONO_REGISTER_JIT_ICALL(x) MONO_JIT_ICALL_ ## x,
 MONO_REGISTER_JIT_ICALLS
