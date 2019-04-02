@@ -7,6 +7,7 @@
 #include "mini-runtime.h"
 
 #include <mono/metadata/abi-details.h>
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)
@@ -71,7 +72,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (info) {
 		char *name = mono_get_generic_trampoline_name (tramp_type);
 		*info = mono_tramp_info_create (name, buf, code - buf, NULL, NULL);
-		g_free (name);
 	}
 
 	return buf;

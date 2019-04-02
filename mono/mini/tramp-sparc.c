@@ -20,6 +20,7 @@
 #include "mini.h"
 #include "mini-sparc.h"
 #include "jit-icalls.h"
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 /*
  * mono_arch_get_unbox_trampoline:

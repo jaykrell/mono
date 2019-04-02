@@ -505,6 +505,8 @@ my_strrchr (const char *str, char ch, int *len)
 static gboolean
 match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 {
+	printf("%s 1:%s 2:%s\n", __func__, desc->klass, klass->name);
+
 	const char *p;
 	gboolean is_terminal = TRUE;
 
@@ -562,6 +564,9 @@ mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 		return FALSE;
 	if (!desc->klass)
 		return FALSE;
+
+	printf("%s 1:%s 2:%s 3:%s 4:%s\n", __func__, desc->klass, desc->name, method->klass->name, method->name);
+
 	if (!match_class (desc, strlen (desc->klass), method->klass))
 		return FALSE;
 

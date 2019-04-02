@@ -21,11 +21,11 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/unlocked.h>
-
 #include "mini.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 #include "llvmonly-runtime.h"
+#include "mono/metadata/register-icall-def.h"
 
 #define ALLOW_PARTIAL_SHARING TRUE
 //#define ALLOW_PARTIAL_SHARING FALSE
@@ -1832,25 +1832,24 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
  * when it needs to jump over native frames.
  */
 MonoMethod*
-mini_get_interp_lmf_wrapper (const char *name, gpointer target)
+mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 {
-	MonoMethod *res, *cached;
-	MonoMethodSignature *sig;
-	MonoMethodBuilder *mb;
-	WrapperInfo *info;
-	static GHashTable *cache = NULL;
-	MonoType *int_type = mono_get_int_type ();
+// FIXME
+	const char *name = jit_icall_info->name;
+	gpointer target = jit_icall_info->func;
 
-	gshared_lock ();
-	if (!cache)
-		cache = g_hash_table_new_full (NULL, NULL, NULL, NULL);
-	res = (MonoMethod *) g_hash_table_lookup (cache, target);
-	gshared_unlock ();
+	MonoMethod *res = jit_icall_info->interp_lmf_wrapper;
 
 	if (res)
 		return res;
 
-	char *wrapper_name = g_strdup_printf ("__interp_lmf_%s", name);
+	MonoMethod *cached;
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	WrapperInfo *info;
+	MonoType *int_type = mono_get_int_type ();
+
+	char *wrapper_name = g_strdup_printf ("__interp_lmf_%s", jit_icall_info->name);
 	mb = mono_mb_new (mono_defaults.object_class, wrapper_name, MONO_WRAPPER_OTHER);
 
 	sig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
@@ -1865,28 +1864,44 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
 	mono_mb_emit_byte (mb, CEE_LDARG_1);
 
+#if 0 // FIXMEjiticall
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, target);
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL);
+	mono_mb_emit_i2 (mb, mono_jit_icall_info_index (jit_icall_info));
+	printf("%s %s\n", __func__, jit_icall_info->name);
+#else
+	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+	//FIXMEjiticall mono_mb_emit_op (mb, CEE_MONO_ICALL, mono_temporary_translate_jit_icall_info_name (jit_icall_info));
+	//mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
+	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info->name);
+	printf("%s %s\n", __func__, jit_icall_info->name);
+#endif
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
+#if 0 // FIXME
+	info->d.jit_icall_info = jit_icall_info;
+#else
 	info->d.icall.func = (gpointer) target;
+#endif
 	res = mono_mb_create (mb, sig, 4, info);
 
 	gshared_lock ();
-	cached = (MonoMethod *) g_hash_table_lookup (cache, target);
-	if (cached) {
-		mono_free_method (res);
-		res = cached;
-	} else {
-		g_hash_table_insert (cache, target, res);
-	}
-	gshared_unlock ();
-	mono_mb_free (mb);
 
+	cached = jit_icall_info->interp_lmf_wrapper;
+	if (!cached)
+		jit_icall_info->interp_lmf_wrapper = res;
+
+	gshared_unlock ();
+
+	mono_mb_free (mb);
 	g_free (wrapper_name);
 
+	if (cached) {
+		mono_free_method (res);
+		return cached;
+	}
 	return res;
 }
 
