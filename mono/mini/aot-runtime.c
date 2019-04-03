@@ -3763,12 +3763,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
-		guint32 len = decode_value (p, &p);
-		ji->data.name = (char*)p;
-		p += len + 1;
-		break;
-	}
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 	case MONO_PATCH_INFO_JIT_ICALL:
 		ji->data.jit_icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
 		break;
@@ -5372,39 +5367,141 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			 * When this code is executed, the runtime may not be initalized yet, so
 			 * resolve the patch info by hand.
 			 */
-			if (ji->type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
+			if (ji->type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 				target = (gpointer)mono_get_trampoline_func ((MonoTrampolineType)ji->data.index);
-			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
+			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
-			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-				if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
+			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR:
+
+				switch (ji->data.uindex) {
+				case MONO_JIT_ICALL_mono_get_lmf_addr:
 					target = (gpointer)mono_get_lmf_addr;
-				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint_noraise")) {
+					break;
+				case MONO_JIT_ICALL_mono_thread_force_interruption_checkpoint_noraise:
 					target = (gpointer)mono_thread_force_interruption_checkpoint_noraise;
-				} else if (!strcmp (ji->data.name, "mono_exception_from_token")) {
+					break;
+				case MONO_JIT_ICALL_mono_exception_from_token:
 					target = (gpointer)mono_exception_from_token;
-				} else if (!strcmp (ji->data.name, "mono_throw_exception")) {
+					break;
+				case MONO_JIT_ICALL_mono_throw_exception:
 					target = (gpointer)mono_get_throw_exception ();
-				} else if (!strcmp (ji->data.name, "mono_rethrow_preserve_exception")) {
+					break;
+				case MONO_JIT_ICALL_mono_rethrow_preserve_exception:
 					target = (gpointer)mono_get_rethrow_preserve_exception ();
-				} else if (!strcmp (ji->data.name, "debugger_agent_single_step_from_context")) {
+					break;
+				case MONO_JIT_ICALL_debugger_agent_single_step_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
-				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
+					break;
+				case MONO_JIT_ICALL_debugger_agent_breakpoint_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
-				} else if (!strcmp (ji->data.name, "throw_exception_addr")) {
+					break;
+				case MONO_JIT_ICALL_throw_exception_addr:
 					target = mono_get_throw_exception_addr ();
-				} else if (!strcmp (ji->data.name, "rethrow_preserve_exception_addr")) {
+					break;
+				case MONO_JIT_ICALL_rethrow_preserve_exception_addr:
 					target = mono_get_rethrow_preserve_exception_addr ();
-				} else if (strstr (ji->data.name, "generic_trampoline_")) {
-					target = mono_aot_get_trampoline (ji->data.name);
-				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
-					/* Registered by mono_arch_init () */
-					target = g_hash_table_lookup (aot_jit_icall_hash, ji->data.name);
-				} else {
+					break;
+
+				// FIXME more string vs. enum? Well, if this is all that is left, rest.
+				case MONO_JIT_ICALL_generic_trampoline_jit:
+					g_asserf (!1); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_jit");
+					break;
+				case MONO_JIT_ICALL_generic_trampoline_jump:
+					g_asserf (!2); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_jump");
+					break;
+
+				case MONO_JIT_ICALL_generic_trampoline_rgctx_lazy_fetch:
+					g_asserf (!3); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_rgctx_lazy_fetch");
+					break;
+
+				case MONO_JIT_ICALL_generic_trampoline_aot:
+					g_asserf (!4); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_aot");
+					break;
+
+				case MONO_JIT_ICALL_generic_trampoline_aot_plt:
+					g_asserf (!5); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_aot_plt");
+					break;
+
+				case MONO_JIT_ICALL_generic_trampoline_delegate:
+					g_asserf (!6); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_delegate");
+					break;
+				case MONO_JIT_ICALL_generic_trampoline_generic_virtual_remoting:
+					g_asserf (!7); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_generic_virtual_remoting");
+					break;
+				case MONO_JIT_ICALL_generic_trampoline_vcall:
+					g_asserf (!8); // temporary
+					target = mono_aot_get_trampoline ("generic_trampoline_vcall");
+					break;
+
+#ifdef HOST_AMD64
+				case MONO_JIT_ICALL_mono_amd64_throw_exception:
+					target = mono_amd64_throw_exception;
+					break;
+				case MONO_JIT_ICALL_mono_amd64_throw_corlib_exception
+					target = mono_amd64_throw_corlib_exception;
+					break;
+				case MONO_JIT_ICALL_mono_amd64_resume_unwind
+					target = mono_amd64_resume_unwind;
+					break;
+				case MONO_JIT_ICALL_mono_amd64_start_gsharedvt_call
+					target = mono_amd64_start_gsharedvt_call;
+					break;
+#endif
+#if defined (HOST_ARM) || defined (HOST_ARM64)
+				case MONO_JIT_ICALL_mono_arm_throw_exception
+					target = mono_arm_throw_exception;
+					break;
+				case MONO_JIT_ICALL_mono_arm_throw_exception_by_token
+					target = mono_arm_throw_exception_by_token;
+					break;
+				case MONO_JIT_ICALL_mono_arm_resume_unwind
+					target = mono_arm_resume_unwind;
+					break;
+				case MONO_JIT_ICALL_mono_arm_start_gsharedvt_call
+					target = mono_arm_start_gsharedvt_call;
+					break;
+				case MONO_JIT_ICALL_mono_arm_unaligned_stack
+					target = mono_arm_unaligned_stack;
+					break;
+				case MONO_JIT_ICALL_mono_arm_start_gsharedvt_call
+					target = mono_arm_start_gsharedvt_call;
+					break;
+				case MONO_JIT_ICALL_mono_arm_throw_exception
+					target = mono_arm_throw_exception;
+					break;
+				case MONO_JIT_ICALL_mono_arm_resume_unwind
+					target = mono_arm_resume_unwind;
+					break;
+#endif
+#ifdef HOST_POWERPC
+				case MONO_JIT_ICALL_mono_ppc_throw_exception
+					target = mono_ppc_throw_exception;
+					break;
+#endif
+#ifdef HOST_X86
+				case MONO_JIT_ICALL_mono_x86_throw_exception
+					target = mono_x86_throw_exception;
+					break;
+				case MONO_JIT_ICALL_mono_x86_throw_corlib_exception
+					target = mono_x86_throw_corlib_exception;
+					break;
+				case MONO_JIT_ICALL_mono_x86_start_gsharedvt_call
+					target = mono_x86_start_gsharedvt_call;
+					break;
+#endif
+				default:
 					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
 					g_assert_not_reached ();
 					target = NULL;
+					break;
 				}
 			} else {
 				/* Hopefully the code doesn't have patches which need method or 
@@ -5471,7 +5568,7 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 }
 
 gpointer
-(mono_aot_get_trampoline) (const char *name)
+mono_aot_get_trampoline (const char *name)
 {
 	MonoTrampInfo *out_tinfo;
 	gpointer code;
@@ -5821,7 +5918,6 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 
 		symbol = mono_get_generic_trampoline_name (tramp_type);
 		generic_trampolines [tramp_type] = mono_aot_get_trampoline (symbol);
-		g_free (symbol);
 	}
 
 	tramp = (guint8 *)generic_trampolines [tramp_type];

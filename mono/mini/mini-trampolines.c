@@ -1589,15 +1589,16 @@ mono_find_rgctx_lazy_fetch_trampoline_by_addr (gconstpointer addr)
 	return offset;
 }
 
+// These coincide with the start of register-icall-def.h.
 static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
-	"jit",
-	"jump",
-	"rgctx_lazy_fetch",
-	"aot",
-	"aot_plt",
-	"delegate",
-	"generic_virtual_remoting",
-	"vcall"
+	"generic_trampoline_jit",
+	"generic_trampoline_jump",
+	"generic_trampoline_rgctx_lazy_fetch",
+	"generic_trampoline_aot",
+	"generic_trampoline_aot_plt",
+	"generic_trampoline_delegate",
+	"generic_trampoline_generic_virtual_remoting",
+	"generic_trampoline_vcall"
 };
 
 /*
@@ -1607,18 +1608,30 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 const char*
 mono_get_generic_trampoline_simple_name (MonoTrampolineType tramp_type)
 {
-	return tramp_names [tramp_type];
+	return tramp_names [tramp_type] + sizeof("generic_trampoline_") - 1;
 }
 
 /*
  * mono_get_generic_trampoline_name:
  *
- *   Returns a pointer to malloc-ed memory.
+ *   Returns a pointer to static memory.
+ */
+MonoJitICallInfo*
+mono_get_generic_trampoline_info (MonoTrampolineType tramp_type)
+{
+	// Zero is reserved in MonoJitICallInfos and MonoTrampolineType starts at 0.
+	return &MonoJitICallInfos.array [1 + (guint)tramp_type];
+}
+
+/*
+ * mono_get_generic_trampoline_name:
+ *
+ *   Returns a pointer to static memory.
  */
 char*
 mono_get_generic_trampoline_name (MonoTrampolineType tramp_type)
 {
-	return g_strdup_printf ("generic_trampoline_%s", tramp_names [tramp_type]);
+	return tramp_names [tramp_type];
 }
 
 /*

@@ -3062,10 +3062,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 					g_assert (cfg->compile_aot); // Confirm my understanding.
 
-					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (jinfo->data.name);
+					MonoJitICallInfo *mi = jinfo->data.jit_icall_info;
 
 					// This should no longer be needed.
-					g_assert (!mi);
+					g_assert (mi);
 
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;

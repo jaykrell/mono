@@ -8,9 +8,44 @@
 #define __MONO_METADATA_REGISTER_ICALL_DEF_H__
 
 // Changes to this file affect AOT file format.
+// Generic trampolines must come first, after zero. They have
+// their own enum, that overlays the other.
 #define MONO_REGISTER_JIT_ICALLS \
+	\
 MONO_REGISTER_JIT_ICALL (mono_jit_icall_zero_is_reserved) \
 	\
+MONO_REGISTER_JIT_ICALL (generic_trampoline_jit) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_jump) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_rgctx_lazy_fetch) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_aot) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_aot_plt) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_delegate) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_generic_virtual_remoting) \
+MONO_REGISTER_JIT_ICALL (generic_trampoline_vcall) \
+	\
+MONO_REGISTER_JIT_ICALL (rgctx_fetch_trampoline_general) \
+MONO_REGISTER_JIT_ICALL (sdb_single_step_trampoline) \
+MONO_REGISTER_JIT_ICALL (sdb_breakpoint_trampoline) \
+MONO_REGISTER_JIT_ICALL (interp_to_native_trampoline) \
+MONO_REGISTER_JIT_ICALL (native_to_interp_trampoline) \
+/* all architectures must be present  */ \
+MONO_REGISTER_JIT_ICALL (mono_amd64_throw_exception) \
+MONO_REGISTER_JIT_ICALL (mono_amd64_throw_corlib_exception) \
+MONO_REGISTER_JIT_ICALL (mono_amd64_resume_unwind) \
+MONO_REGISTER_JIT_ICALL (mono_amd64_start_gsharedvt_call) \
+MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception) \
+MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception_by_token) \
+MONO_REGISTER_JIT_ICALL (mono_arm_resume_unwind) \
+MONO_REGISTER_JIT_ICALL (mono_arm_start_gsharedvt_call) \
+MONO_REGISTER_JIT_ICALL (mono_arm_unaligned_stack) \
+MONO_REGISTER_JIT_ICALL (mono_arm_start_gsharedvt_call) \
+MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception) \
+MONO_REGISTER_JIT_ICALL (mono_arm_resume_unwind) \
+MONO_REGISTER_JIT_ICALL (mono_ppc_throw_exception) \
+MONO_REGISTER_JIT_ICALL (mono_x86_throw_exception) \
+MONO_REGISTER_JIT_ICALL (mono_x86_throw_corlib_exception) \
+MONO_REGISTER_JIT_ICALL (mono_x86_start_gsharedvt_call) \
+/* all opcode emulation must be present */ \
 MONO_REGISTER_JIT_ICALL (__emul_fadd) \
 MONO_REGISTER_JIT_ICALL (__emul_fcmp_ceq) \
 MONO_REGISTER_JIT_ICALL (__emul_fcmp_cgt) \
@@ -321,5 +356,13 @@ MONO_REGISTER_JIT_ICALLS
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_jit_icall_info_index(x) ((x) - mono_jit_icall_info.array)
+
+static inline
+MonoJitICallInfo*
+mono_jit_icall_info_cast (gconstpointer jit_icall_info)
+{
+	g_assert ((char*)jit_icall_info >= (char*)&mono_jit_icall_info && (char*)jit_icall_info < (char*)(&mono_jit_icall_info + 1));
+	return (MonoJitICallInfo*)jit_icall_info;
+}
 
 #endif // __MONO_METADATA_REGISTER_ICALL_DEF_H__
