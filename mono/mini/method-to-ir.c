@@ -10097,13 +10097,13 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			MonoJitICallInfo *info = &mono_jit_icall.array [token];
+			MonoJitICallInfo *info = &mono_jit_icall_info.array [token];
 			g_assert (info && info->func, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 
 			CHECK_STACK (info->sig->param_count);
 			sp -= info->sig->param_count;
 
-			if (info == &mono_jit_icall_info.mono_threads_attach_coop) {
+			if (token == MONO_JIT_ICALL_mono_threads_attach_coop) {
 				MonoInst *addr;
 				MonoBasicBlock *next_bb;
 

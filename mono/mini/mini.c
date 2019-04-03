@@ -2080,7 +2080,6 @@ mono_postprocess_patches (MonoCompile *cfg)
 				}
 			}
 			break;
-		}
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
 			if (cfg->method->dynamic) {

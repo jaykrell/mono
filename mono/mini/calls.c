@@ -635,10 +635,8 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 }
 
 MonoInst*
-mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args)
+mono_emit_jit_icall (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
 {
-	MonoJitICallInfo *info = mono_find_jit_icall_by_addr (func);
-
 	g_assert (info);
 
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
