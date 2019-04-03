@@ -1711,6 +1711,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 		return mini_emit_calli (cfg, mono_icall_sig_ptr, NULL, addr, NULL, NULL);
 	} else {
 		gpointer getter = mono_tls_get_tls_getter (key, FALSE);
+#error todo
 		return mono_emit_jit_icall (cfg, getter, NULL);
 	}
 }
@@ -2245,7 +2246,7 @@ emit_method_access_failure (MonoCompile *cfg, MonoMethod *caller, MonoMethod *ca
 	MonoInst *args [2];
 	args [0] = emit_get_rgctx_method (cfg, mono_method_check_context_used (caller), caller, MONO_RGCTX_INFO_METHOD);
 	args [1] = emit_get_rgctx_method (cfg, mono_method_check_context_used (callee), callee, MONO_RGCTX_INFO_METHOD);
-	mono_emit_jit_icall (cfg, mono_throw_method_access, args);
+	mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_throw_method_access, args);
 }
 
 static MonoMethod*
@@ -2477,9 +2478,9 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	args [0] = rgctx;
 	EMIT_NEW_AOTCONST (cfg, args [1], MONO_PATCH_INFO_RGCTX_SLOT_INDEX, entry);
 	if (entry->in_mrgctx)
-		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
+		call = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fill_method_rgctx, args);
 	else
-		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+		call = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fill_class_rgctx, args);
 	return call;
 #if 0
 	/*
@@ -2560,9 +2561,9 @@ emit_rgctx_fetch_inline (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEnt
 	args [0] = rgctx;
 	EMIT_NEW_ICONST (cfg, args [1], index);
 	if (mrgctx)
-		call = mono_emit_jit_icall (cfg, mono_fill_method_rgctx, args);
+		call = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fill_method_rgctx, args);
 	else
-		call = mono_emit_jit_icall (cfg, mono_fill_class_rgctx, args);
+		call = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fill_class_rgctx, args);
 	MONO_INST_NEW (cfg, ins, OP_MOVE);
 	ins->dreg = res_reg;
 	ins->sreg1 = call->dreg;
@@ -2845,7 +2846,7 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, inited_reg, 0);
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, inited_bb);
 
-		mono_emit_jit_icall (cfg, mono_generic_class_init, &vtable_arg);
+		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_generic_class_init, &vtable_arg);
 
 		MONO_START_BB (cfg, inited_bb);
 	}
@@ -3082,7 +3083,7 @@ handle_unbox_gsharedvt (MonoCompile *cfg, MonoClass *klass, MonoInst *obj)
 	args [1] = klass_inst;
 
 	/* CASTCLASS */
-	obj = mono_emit_jit_icall (cfg, mono_object_castclass_unbox, args);
+	obj = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_object_castclass_unbox, args);
 
 	NEW_BBLOCK (cfg, is_ref_bb);
 	NEW_BBLOCK (cfg, is_nullable_bb);
@@ -3198,7 +3199,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 			return mono_emit_method_call (cfg, managed_alloc, iargs, NULL);
 		}
 
-		return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
+		return mono_emit_jit_icall (cfg, &mono_jit_icall_info.alloc_ftn, iargs);
 	}
 
 	if (cfg->opt & MONO_OPT_SHARED) {
@@ -3234,7 +3235,7 @@ handle_alloc (MonoCompile *cfg, MonoClass *klass, gboolean for_box, int context_
 		EMIT_NEW_VTABLECONST (cfg, iargs [0], vtable);
 	}
 
-	return mono_emit_jit_icall (cfg, alloc_ftn, iargs);
+	return mono_emit_jit_icall (cfg, &mono_jit_icall_info.alloc_ftn, iargs);
 }
 	
 /*
@@ -3532,9 +3533,9 @@ handle_delegate_ctor (MonoCompile *cfg, MonoClass *klass, MonoInst *target, Mono
 				target,
 				emit_get_rgctx_method (cfg, target_method_context_used, method, MONO_RGCTX_INFO_METHOD)
 			};
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate_virtual, args);
+			mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_init_delegate_virtual, args);
 		} else {
-			mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, &obj);
+			mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_init_delegate, &obj);
 		}
 
 		return obj;
@@ -3673,7 +3674,7 @@ handle_constrained_gsharedvt_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMe
 			EMIT_NEW_ICONST (cfg, args [3], 0);
 			EMIT_NEW_ICONST (cfg, args [4], 0);
 		}
-		ins = mono_emit_jit_icall (cfg, mono_gsharedvt_constrained_call, args);
+		ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_gsharedvt_constrained_call, args);
 		emit_widen = FALSE;
 
 		if (mini_is_gsharedvt_type (fsig->ret)) {
@@ -5740,7 +5741,7 @@ emit_setret (MonoCompile *cfg, MonoInst *val)
 			MonoInst *conv;
 
 			iargs [0] = val;
-			conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
+			conv = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fload_r4_arg, iargs);
 			mono_arch_emit_setret (cfg, cfg->method, conv);
 		} else {
 			mono_arch_emit_setret (cfg, cfg->method, val);
@@ -6537,7 +6538,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		case MONO_CEE_BREAK:
 			if (mini_should_insert_breakpoint (cfg->method)) {
-				ins = mono_emit_jit_icall (cfg, mini_get_dbg_callbacks ()->user_break, NULL);
+				mono_jit_icall_info.user_break.func = mini_get_dbg_callbacks ()->user_break;
+				ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.user_break, NULL);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_NOP);
 			}
@@ -6839,7 +6841,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				EMIT_NEW_PCONST (cfg, args [1], fsig);
 				args [2] = addr;
 				// FIXME tailcall?
-				addr = mono_emit_jit_icall (cfg, mono_get_native_calli_wrapper, args);
+				addr = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_get_native_calli_wrapper, args);
 			}
 
 			n = fsig->param_count + fsig->hasthis;
@@ -7393,7 +7395,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				iargs [1] = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
 
 				EMIT_NEW_TEMPLOADA (cfg, iargs [2], this_arg_temp->inst_c0);
-				addr = mono_emit_jit_icall (cfg, mono_helper_compile_generic_method, iargs);
+				addr = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_helper_compile_generic_method, iargs);
 
 				EMIT_NEW_TEMPLOAD (cfg, sp [0], this_arg_temp->inst_c0);
 
@@ -7643,7 +7645,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						iargs [0] = sp [0];
 						iargs [1] = val;
 
-						mono_emit_jit_icall (cfg, mono_helper_stelem_ref_check, iargs);
+						mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_helper_stelem_ref_check, iargs);
 					}
 
 					addr = mini_emit_ldelema_ins (cfg, cmethod, sp, ip, TRUE);
@@ -7767,7 +7769,7 @@ calli_end:
 				 * option is passed to clang.
 				 * Work around this by emitting a dummy call.
 				 */
-				mono_emit_jit_icall (cfg, mono_dummy_jit_icall, NULL);
+				mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_dummy_jit_icall, NULL);
 			}
 
 			CHECK_CFG_EXCEPTION;
@@ -8385,7 +8387,7 @@ calli_end:
 					EMIT_NEW_LDSTRLITCONST (cfg, iargs [0], str);
 				else
 					EMIT_NEW_PCONST (cfg, iargs [0], str);
-				*sp = mono_emit_jit_icall (cfg, mono_string_new_wrapper_internal, iargs);
+				*sp = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_string_new_wrapper_internal, iargs);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					MonoInst *iargs [3];
@@ -8396,7 +8398,7 @@ calli_end:
 					EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
 					EMIT_NEW_IMAGECONST (cfg, iargs [1], image);
 					EMIT_NEW_ICONST (cfg, iargs [2], mono_metadata_token_index (n));
-					*sp = mono_emit_jit_icall (cfg, ves_icall_mono_ldstr, iargs);
+					*sp = mono_emit_jit_icall (cfg, &mono_jit_icall_info.ves_icall_mono_ldstr, iargs);
 					mono_ldstr_checked (cfg->domain, image, mono_metadata_token_index (n), &cfg->error);
 					CHECK_CFG_ERROR;
 				} else {
@@ -8409,12 +8411,12 @@ calli_end:
 							 * version of helper_ldstr specialized to mscorlib.
 							 */
 							EMIT_NEW_ICONST (cfg, iargs [0], mono_metadata_token_index (n));
-							*sp = mono_emit_jit_icall (cfg, mono_helper_ldstr_mscorlib, iargs);
+							*sp = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_helper_ldstr_mscorlib, iargs);
 						} else {
 							/* Avoid creating the string object */
 							EMIT_NEW_IMAGECONST (cfg, iargs [0], image);
 							EMIT_NEW_ICONST (cfg, iargs [1], mono_metadata_token_index (n));
-							*sp = mono_emit_jit_icall (cfg, mono_helper_ldstr, iargs);
+							*sp = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_helper_ldstr, iargs);
 						}
 					} 
 					else
@@ -8507,16 +8509,16 @@ calli_end:
 				EMIT_NEW_ICONST (cfg, iargs [0], m_class_get_type_token (cmethod->klass));
 				switch (n) {
 				case 0:
-					*sp ++ = mono_emit_jit_icall (cfg, mono_create_corlib_exception_0, iargs);
+					*sp ++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_create_corlib_exception_0, iargs);
 					break;
 				case 1:
 					iargs [1] = sp [0];
-					*sp ++ = mono_emit_jit_icall (cfg, mono_create_corlib_exception_1, iargs);
+					*sp ++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_create_corlib_exception_1, iargs);
 					break;
 				case 2:
 					iargs [1] = sp [0];
 					iargs [2] = sp [1];
-					*sp ++ = mono_emit_jit_icall (cfg, mono_create_corlib_exception_2, iargs);
+					*sp ++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_create_corlib_exception_2, iargs);
 					break;
 				default:
 					g_assert_not_reached ();
@@ -8581,7 +8583,7 @@ calli_end:
 					function = (gpointer)mono_array_new_n_icall;
 					break;
 				}
-				alloc = mono_emit_jit_icall (cfg, function, sp);
+				alloc = mono_emit_jit_icall (cfg, &mono_jit_icall_info.function, sp);
 			} else if (cmethod->string_ctor) {
 				g_assert (!context_used);
 				g_assert (!vtable_arg);
@@ -9258,7 +9260,7 @@ calli_end:
 				} else {
 					EMIT_NEW_FIELDCONST (cfg, iargs [1], field);
 				}
-				ins = mono_emit_jit_icall (cfg, mono_class_static_field_address, iargs);
+				ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_class_static_field_address, iargs);
 			} else if (context_used) {
 				MonoInst *static_data;
 
@@ -9299,7 +9301,7 @@ calli_end:
 				g_assert (field->parent);
 				EMIT_NEW_DOMAINCONST (cfg, iargs [0]);
 				EMIT_NEW_FIELDCONST (cfg, iargs [1], field);
-				ins = mono_emit_jit_icall (cfg, mono_class_static_field_address, iargs);
+				ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_class_static_field_address, iargs);
 			} else {
 				MonoVTable *vtable = NULL;
 
@@ -9341,7 +9343,7 @@ calli_end:
 				} else {
 					MonoInst *iargs [1];
 					EMIT_NEW_ICONST (cfg, iargs [0], GPOINTER_TO_UINT (addr));
-					ins = mono_emit_jit_icall (cfg, mono_get_special_static_data, iargs);
+					ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_get_special_static_data, iargs);
 				}
 			}
 
@@ -9519,7 +9521,7 @@ field_access_end:
 				if (managed_alloc)
 					ins = mono_emit_method_call (cfg, managed_alloc, args, NULL);
 				else
-					ins = mono_emit_jit_icall (cfg, ves_icall_array_new_specific, args);
+					ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.ves_icall_array_new_specific, args);
 			} else {
 				if (cfg->opt & MONO_OPT_SHARED) {
 					/* Decompose now to avoid problems with references to the domainvar */
@@ -9529,7 +9531,7 @@ field_access_end:
 					EMIT_NEW_CLASSCONST (cfg, iargs [1], klass);
 					iargs [2] = sp [0];
 
-					ins = mono_emit_jit_icall (cfg, ves_icall_array_new, iargs);
+					ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.ves_icall_array_new, iargs);
 				} else {
 					/* Decompose later since it is needed by abcrem */
 					MonoClass *array_type = mono_class_create_array (klass, 1);
@@ -9714,7 +9716,7 @@ field_access_end:
 				MonoInst *iargs [1];
 
 				iargs [0] = sp [0];
-				*sp++ = mono_emit_jit_icall (cfg, mono_ckfinite, iargs);
+				*sp++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ckfinite, iargs);
 			} else  {
 				sp [0] = convert_value (cfg, m_class_get_byval_arg (mono_defaults.double_class), sp [0]);
 				MONO_INST_NEW (cfg, ins, OP_CKFINITE);
@@ -9848,10 +9850,10 @@ field_access_end:
 				if (method_context_used) {
 					iargs [2] = emit_get_rgctx_method (cfg, method_context_used,
 						method, MONO_RGCTX_INFO_METHOD);
-					ins = mono_emit_jit_icall (cfg, mono_ldtoken_wrapper_generic_shared, iargs);
+					ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ldtoken_wrapper_generic_shared, iargs);
 				} else {
 					EMIT_NEW_PCONST (cfg, iargs [2], generic_context);
-					ins = mono_emit_jit_icall (cfg, mono_ldtoken_wrapper, iargs);
+					ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ldtoken_wrapper, iargs);
 				}
 				EMIT_NEW_TEMPLOADA (cfg, addr, vtvar->inst_c0);
 
@@ -9997,7 +9999,7 @@ field_access_end:
 					  NEW_TEMPLOAD (cfg, load, mono_find_exvar_for_offset (cfg, clause->handler_offset)->inst_c0);
 					*/
 
-					exc_ins = mono_emit_jit_icall (cfg, mono_thread_get_undeniable_exception, NULL);
+					exc_ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_thread_get_undeniable_exception, NULL);
 
 					NEW_BBLOCK (cfg, dont_throw);
 
@@ -10059,7 +10061,7 @@ field_access_end:
 					NEW_BBLOCK (cfg, dont_throw);
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, abort_exc->dreg, 0);
 					MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, dont_throw);
-					mono_emit_jit_icall (cfg, ves_icall_thread_finish_async_abort, NULL);
+					mono_emit_jit_icall (cfg, &mono_jit_icall_info.ves_icall_thread_finish_async_abort, NULL);
 					cfg->cbb->clause_holes = tmp;
 
 					MONO_START_BB (cfg, dont_throw);
@@ -10229,7 +10231,7 @@ mono_ldptr:
 			MONO_ADD_INS (cfg->cbb, iargs [0]);
 			NEW_CLASSCONST (cfg, iargs [1], klass);
 			MONO_ADD_INS (cfg->cbb, iargs [1]);
-			*sp++ = mono_emit_jit_icall (cfg, ves_icall_object_new, iargs);
+			*sp++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.ves_icall_object_new, iargs);
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;
 		}
@@ -10692,7 +10694,7 @@ mono_ldptr:
 			}
 
 			argconst = emit_get_rgctx_method (cfg, context_used, cmethod, MONO_RGCTX_INFO_METHOD);
-			ins = mono_emit_jit_icall (cfg, mono_ldftn, &argconst);
+			ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ldftn, &argconst);
 			*sp++ = ins;
 
 			inline_costs += CALL_COST * MIN(10, num_calls++);
@@ -10758,9 +10760,9 @@ mono_ldptr:
 											  cmethod, MONO_RGCTX_INFO_METHOD);
 
 			if (context_used)
-				*sp++ = mono_emit_jit_icall (cfg, mono_ldvirtfn_gshared, args);
+				*sp++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ldvirtfn_gshared, args);
 			else
-				*sp++ = mono_emit_jit_icall (cfg, mono_ldvirtfn, args);
+				*sp++ = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_ldvirtfn, args);
 
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;

@@ -8872,52 +8872,6 @@ mono_create_icall_signatures (void)
 	}
 }
 
-// FIXME Remove this function.
-MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name)
-{
-	MonoJitICallInfo *info;
-	g_assert (jit_icall_hash_name);
-
-	mono_icall_lock ();
-	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
-	mono_icall_unlock ();
-	return info;
-}
-
-// FIXME Remove this function.
-MonoJitICallInfo *
-mono_find_jit_icall_by_addr (gconstpointer addr)
-{
-	MonoJitICallInfo *info;
-	g_assert (jit_icall_hash_addr);
-
-	mono_icall_lock ();
-	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
-	mono_icall_unlock ();
-
-	return info;
-}
-
-/*
- * mono_lookup_jit_icall_symbol:
- *
- *   Given the jit icall NAME, returns its C symbol if possible, or NULL.
- */
-const char*
-mono_lookup_jit_icall_symbol (const char *name)
-{
-	MonoJitICallInfo *info;
-	const char *res = NULL;
-
-	mono_icall_lock ();
-	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
-	if (info)
-		res = info->c_symbol;
-	mono_icall_unlock ();
-	return res;
-}
-
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 {

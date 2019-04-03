@@ -3059,23 +3059,13 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 			if (cfg->abs_patches)
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
-				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					g_assert (cfg->compile_aot); // Confirm my understanding.
+				g_assert (jinfo->type != MONO_PATCH_INFO_JIT_ICALL_ADDR);
 
-					MonoJitICallInfo *mi = jinfo->data.jit_icall_info;
-
-					// This should no longer be needed.
-					g_assert (mi);
-
-					if (mi && (((guint64)mi->func) >> 32) == 0)
-						near_call = TRUE;
-					no_patch = TRUE;
-				} else {
-					/* 
-					 * This is not really an optimization, but required because the
-					 * generic class init trampolines use R11 to pass the vtable.
-					 */
-					near_call = TRUE;
+				/*
+				 * This is not really an optimization, but required because the
+				 * generic class init trampolines use R11 to pass the vtable.
+				 */
+				near_call = TRUE;
 				}
 			} else {
 				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);

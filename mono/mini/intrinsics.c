@@ -762,10 +762,10 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 
 			NEW_BBLOCK (cfg, end_bb);
 
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4_fast : (gpointer)mono_monitor_enter_fast, args);
+			ins = mono_emit_jit_icall (cfg, is_v4 ? &mono_jit_icall_info.mono_monitor_enter_v4_fast : &mono_jit_icall_info.mono_monitor_enter_fast, args);
 			MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, ins->dreg, 0);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, end_bb);
-			ins = mono_emit_jit_icall (cfg, is_v4 ? (gpointer)mono_monitor_enter_v4_internal : (gpointer)mono_monitor_enter_internal, args);
+			ins = mono_emit_jit_icall (cfg, is_v4 ? &mono_jit_icall_info.mono_monitor_enter_v4_internal : &mono_jit_icall_info.mono_monitor_enter_internal, args);
 			MONO_START_BB (cfg, end_bb);
 			return ins;
 		}
@@ -1375,7 +1375,8 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			(strcmp (cmethod_klass_name, "Debugger") == 0)) {
 		if (!strcmp (cmethod->name, "Break") && fsig->param_count == 0) {
 			if (mini_should_insert_breakpoint (cfg->method)) {
-				ins = mono_emit_jit_icall (cfg, mini_get_dbg_callbacks ()->user_break, NULL);
+				&mono_jit_icall_info.user_break.func = mini_get_dbg_callbacks ()->user_break;
+				ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.user_break, NULL);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_NOP);
 				MONO_ADD_INS (cfg->cbb, ins);
@@ -1400,7 +1401,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			MonoInst *assembly_ins;
 
 			EMIT_NEW_AOTCONST (cfg, assembly_ins, MONO_PATCH_INFO_IMAGE, m_class_get_image (cfg->method->klass));
-			ins = mono_emit_jit_icall (cfg, mono_get_assembly_object, &assembly_ins);
+			ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_get_assembly_object, &assembly_ins);
 			return ins;
 		}
 
@@ -1422,7 +1423,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			if (declaring->is_inflated)
 				declaring = ((MonoMethodInflated*)cfg->method)->declaring;
 			EMIT_NEW_AOTCONST (cfg, method_ins, MONO_PATCH_INFO_METHODCONST, declaring);
-			ins = mono_emit_jit_icall (cfg, mono_get_method_object, &method_ins);
+			ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_get_method_object, &method_ins);
 			cfg->no_inline = TRUE;
 			if (cfg->method != cfg->current_method)
 				mini_set_inline_failure (cfg, "MethodBase:GetCurrentMethod ()");
