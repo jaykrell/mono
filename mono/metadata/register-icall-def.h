@@ -9,7 +9,7 @@
 
 // Changes to this file affect AOT file format.
 // Generic trampolines must come first, after zero. They have
-// their own enum, that overlays the other.
+// their own enum, that overlays MonoJitICallId.
 #define MONO_REGISTER_JIT_ICALLS \
 	\
 MONO_REGISTER_JIT_ICALL (mono_jit_icall_zero_is_reserved) \
@@ -28,24 +28,21 @@ MONO_REGISTER_JIT_ICALL (sdb_single_step_trampoline) \
 MONO_REGISTER_JIT_ICALL (sdb_breakpoint_trampoline) \
 MONO_REGISTER_JIT_ICALL (interp_to_native_trampoline) \
 MONO_REGISTER_JIT_ICALL (native_to_interp_trampoline) \
-/* all architectures must be present  */ \
+/* all architectures must be present, to ease enum management */ \
 MONO_REGISTER_JIT_ICALL (mono_amd64_throw_exception) \
 MONO_REGISTER_JIT_ICALL (mono_amd64_throw_corlib_exception) \
 MONO_REGISTER_JIT_ICALL (mono_amd64_resume_unwind) \
 MONO_REGISTER_JIT_ICALL (mono_amd64_start_gsharedvt_call) \
-MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception) \
-MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception_by_token) \
 MONO_REGISTER_JIT_ICALL (mono_arm_resume_unwind) \
 MONO_REGISTER_JIT_ICALL (mono_arm_start_gsharedvt_call) \
 MONO_REGISTER_JIT_ICALL (mono_arm_unaligned_stack) \
-MONO_REGISTER_JIT_ICALL (mono_arm_start_gsharedvt_call) \
 MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception) \
-MONO_REGISTER_JIT_ICALL (mono_arm_resume_unwind) \
+MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception_by_token) \
 MONO_REGISTER_JIT_ICALL (mono_ppc_throw_exception) \
 MONO_REGISTER_JIT_ICALL (mono_x86_throw_exception) \
 MONO_REGISTER_JIT_ICALL (mono_x86_throw_corlib_exception) \
 MONO_REGISTER_JIT_ICALL (mono_x86_start_gsharedvt_call) \
-/* all opcode emulation must be present */ \
+/* all opcode emulation must be present, to ease enum management */ \
 MONO_REGISTER_JIT_ICALL (__emul_fadd) \
 MONO_REGISTER_JIT_ICALL (__emul_fcmp_ceq) \
 MONO_REGISTER_JIT_ICALL (__emul_fcmp_cgt) \
@@ -137,7 +134,6 @@ MONO_REGISTER_JIT_ICALL (mini_llvmonly_resolve_iface_call_gsharedvt) \
 MONO_REGISTER_JIT_ICALL (mini_llvmonly_resolve_vcall_gsharedvt) \
 MONO_REGISTER_JIT_ICALL (mini_llvmonly_throw_nullref_exception) \
 	\
-MONO_REGISTER_JIT_ICALL (mono_amd64_throw_exception) \
 MONO_REGISTER_JIT_ICALL (mono_aot_init_gshared_method_mrgctx) \
 MONO_REGISTER_JIT_ICALL (mono_aot_init_gshared_method_this) \
 MONO_REGISTER_JIT_ICALL (mono_aot_init_gshared_method_vtable) \
@@ -145,9 +141,6 @@ MONO_REGISTER_JIT_ICALL (mono_aot_init_llvm_method) \
 MONO_REGISTER_JIT_ICALL (mono_arch_rethrow_exception) \
 MONO_REGISTER_JIT_ICALL (mono_arch_throw_corlib_exception) \
 MONO_REGISTER_JIT_ICALL (mono_arch_throw_exception) \
-MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception) \
-MONO_REGISTER_JIT_ICALL (mono_arm_throw_exception_by_token) \
-MONO_REGISTER_JIT_ICALL (mono_arm_unaligned_stack) \
 MONO_REGISTER_JIT_ICALL (mono_array_new_1) \
 MONO_REGISTER_JIT_ICALL (mono_array_new_2) \
 MONO_REGISTER_JIT_ICALL (mono_array_new_3) \
@@ -332,8 +325,6 @@ MONO_REGISTER_JIT_ICALL (ves_icall_runtime_class_init) \
 MONO_REGISTER_JIT_ICALL (ves_icall_string_alloc) \
 MONO_REGISTER_JIT_ICALL (ves_icall_string_new_wrapper) \
 MONO_REGISTER_JIT_ICALL (ves_icall_thread_finish_async_abort) \
-	\
-MONO_REGISTER_JIT_ICALL (mono_amd64_start_gsharedvt_call) \
 	\
 MONO_REGISTER_JIT_ICALL (count) \
 

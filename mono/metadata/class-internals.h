@@ -577,10 +577,9 @@ typedef struct MonoCachedClassInfo {
 
 typedef struct {
 	const char *name;
-	// FIXME try making these regular gpointer
-	gconstpointer func;
-	gconstpointer wrapper;
-	gconstpointer trampoline;
+	gpointer func;
+	gpointer wrapper;
+	gpointer trampoline;
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;
@@ -1096,8 +1095,6 @@ void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
 
 // Provide info-less signatures that provide info via token pasting.
-// The wrappers are for mono_ functions in class-internals.h and
-// for various similar non-mono_ functions in other files.
 //
 // Name parametere reduces diff, feeds, assert, and name parameter can be removed later.
 #define register_icall_with_wrapper(func, name, sig) do { 	\

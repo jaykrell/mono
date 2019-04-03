@@ -4903,7 +4903,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else if (ins->jit_icall_info)
-				code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, jit_icall_info, FALSE);
+				code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
 			ins->flags |= MONO_INST_GC_CALLSITE;
