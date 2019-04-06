@@ -513,7 +513,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 		if (!COMPILE_LLVM ((cfg)) && !(vartype)->byref && (vartype)->type == MONO_TYPE_R4) { \
 			MonoInst *iargs [1]; \
 			EMIT_NEW_VARLOADA (cfg, iargs [0], (var), (vartype)); \
-			(dest) = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fload_r4, iargs); \
+			(dest) = mono_emit_jit_icall (cfg, mono_fload_r4, iargs); \
 		} else { \
 			EMIT_NEW_VARLOAD ((cfg), (dest), (var), (vartype)); \
 		} \
@@ -524,7 +524,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 			MonoInst *iargs [2]; \
 			iargs [0] = (inst); \
 			EMIT_NEW_VARLOADA (cfg, iargs [1], (var), (vartype)); \
-			(dest) = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fstore_r4, iargs);	\
+			(dest) = mono_emit_jit_icall (cfg, mono_fstore_r4, iargs);	\
 		} else { \
 			EMIT_NEW_VARSTORE ((cfg), (dest), (var), (vartype), (inst)); \
 		} \

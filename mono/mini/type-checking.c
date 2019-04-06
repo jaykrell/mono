@@ -140,7 +140,7 @@ mini_emit_interface_bitmap_check (MonoCompile *cfg, int intf_bit_reg, int base_r
 	MONO_ADD_INS (cfg->cbb, ins);
 	args [0] = ins;
 	args [1] = mini_emit_runtime_constant (cfg, MONO_PATCH_INFO_IID, klass);
-	res = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_class_interface_match, args);
+	res = mono_emit_jit_icall (cfg, mono_class_interface_match, args);
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, intf_bit_reg, res->dreg);
 #else
 	int ibitmap_byte_reg = alloc_preg (cfg);

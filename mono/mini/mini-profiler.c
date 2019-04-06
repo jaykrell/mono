@@ -95,9 +95,9 @@ mini_profiler_emit_enter (MonoCompile *cfg)
 
 	/* void mono_profiler_raise_method_enter (MonoMethod *method, MonoProfilerCallContext *ctx) */
 	if (trace)
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_trace_enter_method, iargs);
+		mono_emit_jit_icall (cfg, mono_trace_enter_method, iargs);
 	else
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_profiler_raise_method_enter, iargs);
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_enter, iargs);
 }
 
 void
@@ -119,9 +119,9 @@ mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 
 	/* void mono_profiler_raise_method_leave (MonoMethod *method, MonoProfilerCallContext *ctx) */
 	if (trace)
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_trace_leave_method, iargs);
+		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
 	else
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_profiler_raise_method_leave, iargs);
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_leave, iargs);
 }
 
 void
@@ -145,9 +145,9 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 
 	/* void mono_profiler_raise_method_tail_call (MonoMethod *method, MonoMethod *target) */
 	if (trace)
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_trace_leave_method, iargs);
+		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
 	else
-		mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_profiler_raise_method_tail_call, iargs);
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
 }
 
 void
@@ -199,7 +199,7 @@ mini_profiler_emit_call_finally (MonoCompile *cfg, MonoMethodHeader *header, uns
 		EMIT_NEW_PCONST (cfg, iargs [3], NULL);
 
 	/* void mono_profiler_raise_exception_clause (MonoMethod *method, uint32_t index, MonoExceptionEnum type, MonoObject *exception) */
-	mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_profiler_raise_exception_clause, iargs);
+	mono_emit_jit_icall (cfg, mono_profiler_raise_exception_clause, iargs);
 
 	MONO_START_BB (cfg, ebb);
 }

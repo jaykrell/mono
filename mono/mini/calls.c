@@ -220,7 +220,7 @@ mini_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 				MonoInst *conv;
 
 				iargs [0] = in;
-				conv = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mono_fload_r4_arg, iargs);
+				conv = mono_emit_jit_icall (cfg, mono_fload_r4_arg, iargs);
 
 				/* The result will be in an int vreg */
 				call->args [i] = conv;
@@ -635,7 +635,7 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 }
 
 MonoInst*
-mono_emit_jit_icall (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
+mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
 {
 	g_assert (info);
 
@@ -734,7 +734,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [0] = vtable_ins;
 		EMIT_NEW_ICONST (cfg, icall_args [1], slot);
 		/* Make the icall return the vtable slot value to save some code space */
-		ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_init_vtable_slot, icall_args);
+		ins = mono_emit_jit_icall (cfg, mini_llvmonly_init_vtable_slot, icall_args);
 		ins->dreg = slot_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, non_null_bb);
 
@@ -842,9 +842,9 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		icall_args [2] = mini_emit_get_rgctx_method (cfg, context_used,
 													 cmethod, MONO_RGCTX_INFO_METHOD);
 		if (is_iface)
-			ftndesc_ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_resolve_generic_virtual_iface_call, icall_args);
+			ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_generic_virtual_iface_call, icall_args);
 		else
-			ftndesc_ins = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_resolve_generic_virtual_call, icall_args);
+			ftndesc_ins = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_generic_virtual_call, icall_args);
 		ftndesc_ins->dreg = ftndesc_reg;
 		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 
@@ -868,9 +868,9 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 	g_assert (is_gsharedvt);
 	if (is_iface)
-		call_target = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_resolve_iface_call_gsharedvt, icall_args);
+		call_target = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_iface_call_gsharedvt, icall_args);
 	else
-		call_target = mono_emit_jit_icall (cfg, &mono_jit_icall_info.mini_llvmonly_resolve_vcall_gsharedvt, icall_args);
+		call_target = mono_emit_jit_icall (cfg, mini_llvmonly_resolve_vcall_gsharedvt, icall_args);
 
 	/*
 	 * Pass the extra argument even if the callee doesn't receive it, most

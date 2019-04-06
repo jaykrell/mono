@@ -4892,7 +4892,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
-			else if (ins->jit_icall_info)
+			else if (call->jit_icall_info)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
