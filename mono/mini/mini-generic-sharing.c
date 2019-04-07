@@ -1834,6 +1834,10 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 MonoMethod*
 mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 {
+// FIXME
+	const char *name = jit_icall_info->name;
+	gpointer target = jit_icall_info->func;
+
 	MonoMethod *res = jit_icall_info->interp_lmf_wrapper;
 
 	if (res)
@@ -1874,7 +1878,11 @@ mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
+#if 0 // FIXME
 	info->d.jit_icall_info = jit_icall_info;
+#else
+	info->d.icall.func = (gpointer) target;
+#endif
 	res = mono_mb_create (mb, sig, 4, info);
 
 	gshared_lock ();
