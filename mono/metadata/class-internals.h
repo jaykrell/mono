@@ -1136,6 +1136,10 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
 
 // FIXME remove this
 MonoJitICallInfo *
+mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;
+
+// FIXME remove this
+MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
 
 // FIXME remove this

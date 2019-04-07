@@ -1861,7 +1861,9 @@ mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 	mono_mb_emit_byte (mb, CEE_LDARG_1);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL);
+	mono_mb_emit_i2 (mb, mono_jit_icall_info_index (jit_icall_info));
+	printf("%s %s\n", __func__, jit_icall_info->name);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif

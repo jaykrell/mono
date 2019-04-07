@@ -2192,7 +2192,7 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 
 		return args [0];
 	} else {
-		return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
+		return mono_emit_jit_icall_info (cfg, info, args);
 	}
 }
  
@@ -10101,15 +10101,29 @@ field_access_end:
 		 * Mono specific opcodes
 		 */
 
+		case MONO_CEE_MONO_JIT_ICALL:
 		case MONO_CEE_MONO_ICALL: {
+
+			const gboolean is_jit_icall = (il_op == MONO_CEE_MONO_JIT_ICALL);
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			MonoJitICallInfo *info = &mono_jit_icall_info.array [token];
-			g_assertf (info && info->func, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
+			g_assertf (is_jit_icall, "CEE_MONO_ICALL is unused");
+
+			MonoJitICallInfo *info;
+
+			if (is_jit_icall) {
+				info = &mono_jit_icall_info.array [token];
+			} else {
+				info = mono_find_jit_icall_by_addr (mono_method_get_wrapper_data (method, token));
+			}
+
+			g_assertf (info && info->func && info->name, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
+
+			printf("%s %s\n", __func__, info->name);
 
 			CHECK_STACK (info->sig->param_count);
 			sp -= info->sig->param_count;
 
-			if (token == MONO_JIT_ICALL_mono_threads_attach_coop) {
+			if (info == &mono_jit_icall_info.mono_threads_attach_coop) {
 				MonoInst *addr;
 				MonoBasicBlock *next_bb;
 

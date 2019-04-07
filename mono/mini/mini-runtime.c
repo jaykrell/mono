@@ -618,6 +618,9 @@ mono_icall_get_wrapper_method (MonoJitICallInfo* callinfo)
 {
 	gboolean check_exc = TRUE;
 
+	g_assert (callinfo);
+	g_assert (callinfo->name);
+
 	// FIXME Remove strcmp.
 	g_assert ((callinfo == &mono_jit_icall_info.mono_thread_interruption_checkpoint)
 		== !strcmp (callinfo->name, "mono_thread_interruption_checkpoint"));

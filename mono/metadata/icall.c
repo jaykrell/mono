@@ -8991,7 +8991,6 @@ mono_create_icall_signatures (void)
 	}
 }
 
-#if 0
 // FIXME remove this
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name)
@@ -9004,7 +9003,6 @@ mono_find_jit_icall_by_name (const char *name)
 	mono_icall_unlock ();
 	return info;
 }
-#endif
 
 // FIXME remove this
 MonoJitICallInfo *

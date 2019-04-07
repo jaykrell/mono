@@ -4917,26 +4917,28 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 					break;
 				}
-				case CEE_MONO_ICALL: {
-					guint32 token;
+				case CEE_MONO_ICALL:
+					g_assertf (FALSE, "CEE_MONO_ICALL is unused");
+					break;
+
+				case CEE_MONO_JIT_ICALL: {
 					MonoJitICallInfo *info;
 					int icall_op;
 
-					// FIXME enum instead of pointer would be good here
-
-					token = read32 (td->ip + 1);
-					td->ip += 5;
-					info = (MonoJitICallInfo*)mono_method_get_wrapper_data (method, token);
-					g_assert (info);
+					guint16 icall_index = read16 (td->ip + 1);
+					td->ip += 3;
+					g_assert (icall_index); // zero is reserved
+					info = &mono_jit_icall_info.array [icall_index];
+					g_assert (info && info->func && info->name);
 
 					CHECK_STACK (td, info->sig->param_count);
-					if (!strcmp (info->name, "mono_threads_attach_coop")) {
+					if (info == &mono_jit_icall_info.mono_threads_attach_coop) {
 						rtm->needs_thread_attach = 1;
 
 						/* attach needs two arguments, and has one return value: leave one element on the stack */
 						interp_add_ins (td, MINT_POP);
 						td->last_ins->data [0] = 0;
-					} else if (!strcmp (info->name, "mono_threads_detach_coop")) {
+					} else if (info == &mono_jit_icall_info.mono_threads_detach_coop) {
 						g_assert (rtm->needs_thread_attach);
 
 						/* detach consumes two arguments, and no return value: drop both of them */
@@ -4949,8 +4951,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						g_assert (icall_op != -1);
 
 						interp_add_ins (td, icall_op);
-						// FIXME try making info have gpointer instead of gconstpointer
-						td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+						td->last_ins->data [0] = get_data_item_index (td, info->func);
 					}
 					td->sp -= info->sig->param_count;
 

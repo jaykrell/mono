@@ -3016,6 +3016,142 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 } while (0);
 
 #ifndef DISABLE_JIT
+
+#if 1 // FIXME
+
+static guint8*
+emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
+{
+	gboolean no_patch = FALSE;
+
+	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||		// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
+			  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is MonoJitICallInfo*
+			  patch_type == MONO_PATCH_INFO_ABS);			// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
+
+	/* 
+	 * FIXME: Add support for thunks
+	 */
+	{
+		gboolean near_call = FALSE;
+
+		/*
+		 * Indirect calls are expensive so try to make a near call if possible.
+		 * The caller memory is allocated by the code manager so it is 
+		 * guaranteed to be at a 32 bit offset.
+		 */
+
+		if (patch_type != MONO_PATCH_INFO_ABS) {
+			/* The target is in memory allocated using the code manager */
+			near_call = TRUE;
+
+			if ((patch_type == MONO_PATCH_INFO_METHOD) || (patch_type == MONO_PATCH_INFO_METHOD_JUMP)) {
+				if (m_class_get_image (((MonoMethod*)data)->klass)->aot_module)
+					/* The callee might be an AOT method */
+					near_call = FALSE;
+				if (((MonoMethod*)data)->dynamic)
+					/* The target is in malloc-ed memory */
+					near_call = FALSE;
+			}
+
+			else if (patch_type == MONO_PATCH_INFO_JIT_ICALL) {
+				/* 
+				 * The call might go directly to a native function without
+				 * the wrapper.
+				 */
+				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ((const char *)data);
+				if (mi) {
+					gconstpointer target = mono_icall_get_wrapper (mi);
+					if ((((guint64)target) >> 32) != 0)
+						near_call = FALSE;
+				}
+			}
+		}
+		else {
+			MonoJumpInfo *jinfo = NULL;
+
+			if (cfg->abs_patches)
+				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
+			if (jinfo) {
+				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (jinfo->data.name);
+					if (mi && (((guint64)mi->func) >> 32) == 0)
+						near_call = TRUE;
+					no_patch = TRUE;
+				} else {
+					/* 
+					 * This is not really an optimization, but required because the
+					 * generic class init trampolines use R11 to pass the vtable.
+					 */
+					near_call = TRUE;
+				}
+			} else {
+				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+				if (info) {
+					if (info->func == info->wrapper) {
+						/* No wrapper */
+						if ((((guint64)info->func) >> 32) == 0)
+							near_call = TRUE;
+					}
+					else {
+						/* ?See the comment in mono_codegen ()? */
+						near_call = TRUE;
+					}
+				}
+				else if ((((guint64)data) >> 32) == 0) {
+					near_call = TRUE;
+					no_patch = TRUE;
+				}
+			}
+		}
+
+		if (cfg->method->dynamic)
+			/* These methods are allocated using malloc */
+			near_call = FALSE;
+
+#ifdef MONO_ARCH_NOMAP32BIT
+		near_call = FALSE;
+#endif
+		/* The 64bit XEN kernel does not honour the MAP_32BIT flag. (#522894) */
+		if (optimize_for_xen)
+			near_call = FALSE;
+
+		if (cfg->compile_aot) {
+			near_call = TRUE;
+			no_patch = TRUE;
+		}
+
+		if (near_call) {
+			/*
+			 * Align the call displacement to an address divisible by 4 so it does
+			 * not span cache lines. This is required for code patching to work on SMP
+			 * systems.
+			 */
+			if (!no_patch && ((guint32)(code + 1 - cfg->native_code) % 4) != 0) {
+				guint32 pad_size = 4 - ((guint32)(code + 1 - cfg->native_code) % 4);
+				amd64_padding (code, pad_size);
+			}
+			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+			amd64_call_code (code, 0);
+		}
+		else {
+			if (!no_patch && ((guint32)(code + 2 - cfg->native_code) % 8) != 0) {
+				guint32 pad_size = 8 - ((guint32)(code + 2 - cfg->native_code) % 8);
+				amd64_padding (code, pad_size);
+				g_assert ((guint64)(code + 2 - cfg->native_code) % 8 == 0);
+			}
+			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
+			amd64_set_reg_template (code, GP_SCRATCH_REG);
+			amd64_call_reg (code, GP_SCRATCH_REG);
+		}
+	}
+
+	set_code_cursor (cfg, code);
+
+	return code;
+}
+
+#else
+
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
@@ -3138,7 +3274,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 		}
 
 		if (near_call) {
-			/* 
+			/*
 			 * Align the call displacement to an address divisible by 4 so it does
 			 * not span cache lines. This is required for code patching to work on SMP
 			 * systems.
@@ -3166,6 +3302,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 
 	return code;
 }
+
+#endif
 
 static inline guint8*
 emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data, gboolean win64_adjust_stack)
@@ -4921,6 +5059,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL:
 		case OP_VCALL2:
 		case OP_VOIDCALL:
+#if 1 // FIXME
+			call = (MonoCallInst*)ins;
+
+			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+			if (ins->flags & MONO_INST_HAS_METHOD)
+				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
+			else
+				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
+			ins->flags |= MONO_INST_GC_CALLSITE;
+			ins->backend.pc_offset = code - cfg->native_code;
+			code = emit_move_return_value (cfg, ins, code);
+			break;
+#else
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
@@ -4934,6 +5085,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+#endif
 		case OP_FCALL_REG:
 		case OP_RCALL_REG:
 		case OP_LCALL_REG:

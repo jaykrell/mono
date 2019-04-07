@@ -18,6 +18,7 @@
 #include <string.h>
 #include <errno.h>
 #include "class-init.h"
+#include "register-icall-def.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -547,7 +548,9 @@ void
 mono_mb_emit_icall_info (MonoMethodBuilder *mb, MonoJitICallInfo *jit_icall_info)
 {
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL);
+	mono_mb_emit_i2 (mb, mono_jit_icall_info_index (jit_icall_info));
+	printf("%s %s\n", __func__, jit_icall_info->name);
 }
 
 void

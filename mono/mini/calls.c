@@ -639,8 +639,13 @@ MonoInst*
 mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
 {
 	g_assert (info);
+	g_assert (info->name);
 
-	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
+	MonoCallInst *call = (MonoCallInst*)mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
+
+	call->jit_icall_info = info;
+
+	return &call->inst;
 }
 
 /*
