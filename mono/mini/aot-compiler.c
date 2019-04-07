@@ -3608,9 +3608,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
-			{
+#if 1 // FIXME
+				encode_icall (info->d.icall.func, p, &p);
+#else
 				encode_value (mono_jit_icall_info_index (info->d.jit_icall_info), p, &p);
-			}
+#endif
 			else if (info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
 				encode_value (info->d.aot_init.subtype, p, &p);
 			break;

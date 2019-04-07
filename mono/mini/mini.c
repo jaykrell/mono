@@ -2836,9 +2836,15 @@ insert_safepoints (MonoCompile *cfg)
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
 		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
 		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
+#if 1 // FIXME
+				(info->d.icall.func == mono_threads_state_poll ||
+				 info->d.icall.func == mono_thread_interruption_checkpoint ||
+				 info->d.icall.func == mono_threads_exit_gc_safe_region_unbalanced)) {
+#else
 				(info->d.jit_icall_info == &mono_jit_icall_info.mono_threads_state_poll ||
 				 info->d.jit_icall_info == &mono_jit_icall_info.mono_thread_interruption_checkpoint ||
 				 info->d.jit_icall_info == &mono_jit_icall_info.mono_threads_exit_gc_safe_region_unbalanced)) {
+#endif
 			if (cfg->verbose_level > 1)
 				printf ("SKIPPING SAFEPOINTS for the polling function icall\n");
 			return;

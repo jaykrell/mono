@@ -1343,10 +1343,19 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			(ji1->data.token->context.method_inst != ji2->data.token->context.method_inst))
 			return 0;
 		break;
+#if 0 // FIXME
 	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return ji1->data.jit_icall_info == ji2->data.jit_icall_info;
+#else
+	case MONO_PATCH_INFO_JIT_ICALL:
+		return g_str_equal (ji1->data.name, ji2->data.name);
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		if (ji1->data.target == ji2->data.target)
+			return 1;
+#endif
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *e1 = ji1->data.rgctx_entry;
@@ -1413,6 +1422,21 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
 		break;
+#if 1 // FIXME
+	case MONO_PATCH_INFO_JIT_ICALL: {
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
+		target = mono_icall_get_wrapper (mi);
+		break;
+	}
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
+		target = mi->func;
+		break;
+	}
+#else
 	case MONO_PATCH_INFO_JIT_ICALL: {
 		MonoJitICallInfo *mi = patch_info->data.jit_icall_info;
 		g_assert (mi && "unknown MONO_PATCH_INFO_JIT_ICALL");
@@ -1422,16 +1446,12 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
-#if 0 // FIXME
 		MonoJitICallInfo *mi = patch_info->data.jit_icall_info;
 		g_assert (mi);
-#else
-		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
-#endif
 		target = mi->func;
 		break;
 	}
+#endif
 	case MONO_PATCH_INFO_METHOD_JUMP:
 		target = mono_create_jump_trampoline (domain, patch_info->data.method, FALSE, error);
 		if (!mono_error_ok (error))

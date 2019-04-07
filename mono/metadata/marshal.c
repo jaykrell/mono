@@ -2966,7 +2966,11 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 		csig->call_convention = 0;
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ICALL_WRAPPER);
+#if 0 // FIXME
 	info->d.jit_icall_info = callinfo;
+#else
+	info->d.icall.func = (gpointer)func;
+#endif
 	res = mono_mb_create_and_cache_full (cache, (gpointer) func, mb, csig, csig->param_count + 16, info, NULL);
 
 	mono_mb_free (mb);
