@@ -1419,10 +1419,16 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
+
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
+#if 0 // FIXME
 		MonoJitICallInfo *mi = patch_info->data.jit_icall_info;
 		g_assert (mi);
+#else
+		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
+#endif
 		target = mi->func;
 		break;
 	}

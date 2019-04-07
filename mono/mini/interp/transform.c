@@ -4925,11 +4925,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					MonoJitICallInfo *info;
 					int icall_op;
 
+#if 0 // FIXME
 					guint16 icall_index = read16 (td->ip + 1);
 					td->ip += 3;
 					g_assert (icall_index); // zero is reserved
 					info = &mono_jit_icall_info.array [icall_index];
 					g_assert (info && info->func && info->name);
+#else
+					g_assert(0);
+#endif
 
 					CHECK_STACK (td, info->sig->param_count);
 					if (info == &mono_jit_icall_info.mono_threads_attach_coop) {

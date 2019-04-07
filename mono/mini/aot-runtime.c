@@ -3777,11 +3777,23 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		}
 		break;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+#if 1 // FIXME
 	case MONO_PATCH_INFO_JIT_ICALL:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
+		guint32 len = decode_value (p, &p);
+
+		ji->data.name = (char*)p;
+		p += len + 1;
+		break;
+	}
+#else
+	case MONO_PATCH_INFO_JIT_ICALL:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
 		ji->data.jit_icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
 		break;
+#endif
 	case MONO_PATCH_INFO_METHODCONST:
 		/* Shared */
 		ji->data.method = decode_resolve_method_ref (aot_module, p, &p, error);

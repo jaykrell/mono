@@ -7015,7 +7015,11 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 			printf ("TYPE: %d\n", ji->type);
 			switch (ji->type) {
 			case MONO_PATCH_INFO_JIT_ICALL:
+#if 1 // FIXME
+				printf ("V: %s\n", ji->data.name);
+#else
 				printf ("V: %s\n", ji->data.jit_icall_info->name);
+#endif
 				break;
 			case MONO_PATCH_INFO_METHOD_JUMP:
 			case MONO_PATCH_INFO_METHOD:

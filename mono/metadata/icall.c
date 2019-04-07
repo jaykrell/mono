@@ -9001,6 +9001,7 @@ mono_find_jit_icall_by_name (const char *name)
 	mono_icall_lock ();
 	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
 	mono_icall_unlock ();
+	printf("%s %p %s\n", __func__, name, info);
 	return info;
 }
 
@@ -9015,7 +9016,29 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
 	mono_icall_unlock ();
 
+	printf("%s %p %p\n", __func__, addr, info);
+
 	return info;
+}
+
+// FIXME remove this
+/*
+ * mono_lookup_jit_icall_symbol:
+ *
+ *   Given the jit icall NAME, returns its C symbol if possible, or NULL.
+ */
+const char*
+mono_lookup_jit_icall_symbol (const char *name)
+{
+	MonoJitICallInfo *info;
+	const char *res = NULL;
+
+	mono_icall_lock ();
+	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
+	if (info)
+		res = info->c_symbol;
+	mono_icall_unlock ();
+	return res;
 }
 
 void
