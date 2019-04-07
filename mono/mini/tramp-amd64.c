@@ -35,7 +35,7 @@
 #include "interp/interp.h"
 #endif
 
-#include "mono/metadata/register-icall-def.h"
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
@@ -522,7 +522,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.rethrow_preserve_exception_addr);
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_rethrow_preserve_exception);
 	} else {
 		amd64_mov_reg_imm (code, AMD64_R11, (guint8*)mono_get_rethrow_preserve_exception_addr ());
 	}

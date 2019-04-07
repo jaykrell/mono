@@ -7,6 +7,7 @@
 #include "mini-runtime.h"
 
 #include <mono/metadata/abi-details.h>
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 void
 mono_arch_patch_callsite (guint8 *method_start, guint8 *code_ptr, guint8 *addr)

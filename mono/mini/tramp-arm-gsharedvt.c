@@ -22,6 +22,7 @@
 #include "mini.h"
 #include "mini-arm.h"
 #include "mini-runtime.h"
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 #ifdef MONO_ARCH_GSHAREDVT_SUPPORTED
 

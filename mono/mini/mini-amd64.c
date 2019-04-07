@@ -3054,8 +3054,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 			}
 
 			else if (patch_type == MONO_PATCH_INFO_JIT_ICALL) {
-				info = (MonoJitICallInfo*)data;
-				gconstpointer target = mono_icall_get_wrapper (mi);
+				gconstpointer target = mono_icall_get_wrapper ((MonoJitICallInfo*)data);
 				if ((((guint64)target) >> 32) != 0)
 					near_call = FALSE;
 			}
@@ -3072,7 +3071,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 					info = jinfo->data.jit_icall_info;
-					printf ("%s icall %d %s\n", __func__, info->type, info->name);
+					printf ("%s icall %d %s\n", __func__, jinfo->type, info->name);
 					g_assert (info);
 					if (info->func == info->wrapper) {
 						/* No wrapper */

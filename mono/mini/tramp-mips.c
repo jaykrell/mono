@@ -26,6 +26,7 @@
 #include "mini.h"
 #include "mini-mips.h"
 #include "mini-runtime.h"
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 /*
  * get_unbox_trampoline:

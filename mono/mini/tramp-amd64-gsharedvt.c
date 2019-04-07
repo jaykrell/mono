@@ -28,6 +28,7 @@
 #include "mini-amd64.h"
 #include "mini-amd64-gsharedvt.h"
 #include "debugger-agent.h"
+#include "mono/metadata/register-icall-def.h" // FIXME needed?
 
 #if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
 
