@@ -3512,6 +3512,17 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 	*endbuf = p;
 }
 
+// FIXME remove this
+static void
+encode_icall (gpointer func, guint8 *p, guint8 **end)
+{
+	MonoJitICallInfo *callinfo = mono_find_jit_icall_by_addr (func);
+	g_assert (callinfo);
+	strcpy ((char *) p, callinfo->name);
+	p += strlen (callinfo->name) + 1;
+	*end = p;
+}
+
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -3608,7 +3619,11 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+#if 0 // FIXME
 				encode_value (mono_jit_icall_info_index (info->d.jit_icall_info), p, &p);
+#else
+				encode_icall (info->d.icall.func, p, &p);
+#endif
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			} else {

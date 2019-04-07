@@ -1161,8 +1161,16 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			char *name;
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+#if 0 // FIXME
 				MonoJitICallInfo *info = &mono_jit_icall_info.array [decode_value (p, &p)];
 				ref->method = mono_icall_get_wrapper_method (info);
+#else
+				name = (char*)p;
+
+				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
+				g_assert (info);
+				ref->method = mono_icall_get_wrapper_method (info);
+#endif
 			} else {
 				m = decode_resolve_method_ref (module, p, &p, error);
 				if (!m)

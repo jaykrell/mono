@@ -173,6 +173,14 @@ typedef struct {
 	MonoMethod *method;
 } GenericArrayHelperWrapperInfo;
 
+#if 1 // FIXME remove this
+
+typedef struct {
+	gpointer func;
+} ICallWrapperInfo;
+
+#endif
+
 typedef struct {
 	MonoMethod *method;
 } ArrayAccessorWrapperInfo;
@@ -247,7 +255,11 @@ typedef struct {
 		/* GENERIC_ARRAY_HELPER */
 		GenericArrayHelperWrapperInfo generic_array_helper;
 		/* ICALL_WRAPPER */
+#if 1 // FIXME
+		ICallWrapperInfo icall;
+#else
 		MonoJitICallInfo *jit_icall_info;
+#endif
 		/* ARRAY_ACCESSOR */
 		ArrayAccessorWrapperInfo array_accessor;
 		/* PROXY_ISINST etc. */

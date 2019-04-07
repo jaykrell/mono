@@ -2343,7 +2343,11 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
 	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
+#if 0 // FIXME
 		callinfo = winfo->d.jit_icall_info;
+#else
+		callinfo = mono_find_jit_icall_by_addr (winfo->d.icall.func);
+#endif
 		g_assert (callinfo);
 
 		/* Must be domain neutral since there is only one copy */
