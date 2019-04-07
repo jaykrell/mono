@@ -881,9 +881,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 
 	if (aot) {
 		if (single_step)
-			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_single_step_from_context);
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_single_step_from_context);
 		else
-			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_breakpoint_from_context);
+			code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_breakpoint_from_context);
 	} else {
 		if (single_step)
 			amd64_mov_reg_imm (code, AMD64_R11, mini_get_dbg_callbacks ()->single_step_from_context);

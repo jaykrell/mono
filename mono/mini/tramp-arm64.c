@@ -590,9 +590,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	arm_addx_imm (code, ARMREG_R0, ARMREG_FP, ctx_offset);
 	if (aot) {
 		if (single_step)
-			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_single_step_from_context);
+			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_single_step_from_context);
 		else
-			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_breakpoint_from_context);
+			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_breakpoint_from_context);
 	} else {
 		void (*addr) (MonoContext *ctx) = single_step ? mini_get_dbg_callbacks ()->single_step_from_context : mini_get_dbg_callbacks ()->breakpoint_from_context;
 

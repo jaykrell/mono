@@ -800,9 +800,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/* call */
 	if (aot) {
 		if (single_step)
-			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_single_step_from_context);
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_single_step_from_context);
 		else
-			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.debugger_agent_breakpoint_from_context);
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_debugger_agent_breakpoint_from_context);
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
