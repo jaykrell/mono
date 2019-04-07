@@ -3020,6 +3020,13 @@ static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	gboolean no_patch = FALSE;
+	MonoJitICallInfo *info = NULL;
+
+	g_assert (data);
+
+	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||		// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
+			  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is MonoJitICallInfo*
+			  patch_type == MONO_PATCH_INFO_ABS);			// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
 
 	/* 
 	 * FIXME: Add support for thunks
@@ -3046,8 +3053,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 					near_call = FALSE;
 			}
 
-			MonoJitICallInfo *mi = (MonoJitICallInfo*)data;
-			if (mi) {
+			else if (patch_type == MONO_PATCH_INFO_JIT_ICALL) {
+				info = (MonoJitICallInfo*)data;
 				gconstpointer target = mono_icall_get_wrapper (mi);
 				if ((((guint64)target) >> 32) != 0)
 					near_call = FALSE;
@@ -3058,17 +3065,36 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 
 			if (cfg->abs_patches)
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
-			if (jinfo) {
-				g_assert (jinfo->type != MONO_PATCH_INFO_JIT_ICALL_ADDR);
 
-				/*
-				 * This is not really an optimization, but required because the
-				 * generic class init trampolines use R11 to pass the vtable.
-				 */
-				near_call = TRUE;
+			if (jinfo) {
+				switch (jinfo->type) {
+				case MONO_PATCH_INFO_JIT_ICALL:
+				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+				case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+					info = jinfo->data.jit_icall_info;
+					printf ("%s icall %d %s\n", __func__, info->type, info->name);
+					g_assert (info);
+					if (info->func == info->wrapper) {
+						/* No wrapper */
+						if ((((guint64)info->func) >> 32) == 0)
+							near_call = TRUE;
+					}
+					else {
+						/* ?See the comment in mono_codegen ()? */
+						near_call = TRUE;
+					}
+					break;
+				default:
+					/*
+					 * This is not really an optimization, but required because the
+					 * generic class init trampolines use R11 to pass the vtable.
+					 */
+					near_call = TRUE;
+					break
 				}
 			} else {
-				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+				info = mono_find_jit_icall_by_addr (data);
+				g_assert (!info);
 				if (info) {
 					if (info->func == info->wrapper) {
 						/* No wrapper */

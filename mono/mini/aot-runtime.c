@@ -520,7 +520,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		}
 		klass = mono_class_get_checked (image, token, error);
 		break;
-	case MONO_AOT_TYPEREF_GINST: {:
+	case MONO_AOT_TYPEREF_GINST: {
 		MonoClass *gclass;
 		MonoGenericContext ctx;
 		MonoType *type;
@@ -543,7 +543,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		mono_metadata_free_type (type);
 		break;
 	}
-	case MONO_AOT_TYPEREF_VAR: {:
+	case MONO_AOT_TYPEREF_VAR: {
 		MonoType *t = NULL;
 		MonoGenericContainer *container = NULL;
 		gboolean has_constraint = decode_value (p, &p);
@@ -620,7 +620,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 			return NULL;
 		klass = mono_class_create_array (eklass, rank);
 		break;
-	case MONO_AOT_TYPEREF_PTR: {:
+	case MONO_AOT_TYPEREF_PTR: {
 		MonoType *t;
 
 		t = decode_type (module, p, &p, error);
@@ -630,7 +630,7 @@ decode_klass_ref (MonoAotModule *module, guint8 *buf, guint8 **endbuf, MonoError
 		g_free (t);
 		break;
 	}
-	case MONO_AOT_TYPEREF_BLOB_INDEX: {:
+	case MONO_AOT_TYPEREF_BLOB_INDEX: {
 		guint32 offset = decode_value (p, &p);
 		guint8 *p2;
 
@@ -5314,7 +5314,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 
 	/* Load the code */
 
-	symbol = g_strdup ("%s", name);
+	symbol = g_strdup (name);
 	find_amodule_symbol (amodule, symbol, (gpointer *)&code);
 	g_free (symbol);
 	if (!code)
@@ -5399,30 +5399,19 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				case MONO_JIT_ICALL_mono_exception_from_token:
 					target = (gpointer)mono_exception_from_token;
 					break;
-				case MONO_JIT_ICALL_mono_throw_exception:
-					target = (gpointer)mono_get_throw_exception ();
-					break;
-#if 0 // FIXME
-				case MONO_JIT_ICALL_mono_rethrow_preserve_exception:
-					target = (gpointer)mono_get_rethrow_preserve_exception ();
-					break;
-#endif
-				case MONO_JIT_ICALL_debugger_agent_single_step_from_context:
+				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
 					break;
-				case MONO_JIT_ICALL_debugger_agent_breakpoint_from_context:
+				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
 					break;
-				case MONO_JIT_ICALL_throw_exception:
+				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();
 					break;
-#if 0 // FIXME
-				case MONO_JIT_ICALL_rethrow_preserve_exception:
+				case MONO_JIT_ICALL_mono_rethrow_preserve_exception:
 					target = mono_get_rethrow_preserve_exception_addr ();
 					break;
-#endif
-
-				// FIXME more string vs. enum? Well, if this is all that is left, rest.
+				// FIXME fewer strings, more enums.
 				case MONO_JIT_ICALL_generic_trampoline_jit:
 					g_assert (!1); // temporary
 					target = mono_aot_get_trampoline ("generic_trampoline_jit");
@@ -5933,9 +5922,7 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	num_trampolines ++;
 
 	if (!generic_trampolines [tramp_type]) {
-		char *symbol;
-
-		symbol = mono_get_generic_trampoline_name (tramp_type);
+		const char *symbol = mono_get_generic_trampoline_name (tramp_type);
 		generic_trampolines [tramp_type] = mono_aot_get_trampoline (symbol);
 	}
 

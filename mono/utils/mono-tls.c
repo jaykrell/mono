@@ -279,7 +279,10 @@ mono_tls_get_tls_offset (MonoTlsKey key)
 gpointer
 mono_tls_get_tls_getter (MonoTlsKey key)
 {
-	// FIXME Integrate with jit_icall.
+	// FIXME Integrate better with jit_icall.
+	// i.e. the key enum can be a MonoJitICallId and
+	// this can be synonymous with mono_jit_icall_info.array [key].func.
+	// Note that get/set would need separate enum values.
 	switch (key) {
 	case TLS_KEY_THREAD:
 		return mono_tls_get_thread;
@@ -300,7 +303,10 @@ mono_tls_get_tls_getter (MonoTlsKey key)
 gpointer
 mono_tls_get_tls_setter (MonoTlsKey key)
 {
-	// FIXME Integrate with jit_icall.
+	// FIXME Integrate better with jit_icall.
+	// i.e. the key enum can be a MonoJitICallId and
+	// this can be synonymous with mono_jit_icall_info.array [key].func.
+	// Note that get/set would need separate enum values.
 	switch (key) {
 	case TLS_KEY_THREAD:
 		return mono_tls_set_thread;

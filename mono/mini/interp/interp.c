@@ -5653,7 +5653,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			goto exit_frame;
 		MINT_IN_CASE(MINT_MONO_TLS) {
 			MonoTlsKey key = (MonoTlsKey)*(gint32 *)(ip + 1);
-			sp->data.p = ((gpointer (*)(void)) mono_tls_get_tls_getter (key, FALSE)) ();
+			sp->data.p = ((gpointer (*)(void)) mono_tls_get_tls_getter (key)) ();
 			sp++;
 			ip += 3;
 			MINT_IN_BREAK;

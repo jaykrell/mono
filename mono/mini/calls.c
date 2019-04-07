@@ -17,6 +17,7 @@
 #include <mono/metadata/class-abi-details.h>
 #include <mono/utils/mono-utils-debug.h>
 #include "mono/metadata/icall-signatures.h"
+#include "mono/metadata/register-icall-def.h"
 
 static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
@@ -24,7 +25,7 @@ static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint
 void
 mono_call_add_patch_info (MonoCompile *cfg, MonoCallInst *call, int ip)
 {
-	if (call->flags & MONO_INST_HAS_METHOD)
+	if (call->inst.flags & MONO_INST_HAS_METHOD)
 		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_METHOD, call->method);
 	else if (call->jit_icall_info)
 		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info);

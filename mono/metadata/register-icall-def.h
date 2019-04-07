@@ -4,9 +4,15 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-// FIXME "register" in file name
-#ifndef __MONO_METADATA_JIT_ICALL_DEF_H__
-#define __MONO_METADATA_JIT_ICALL_DEF_H__
+// FIXME This belong here:
+// #include "mono/mini/jit-icalls.h"
+// but that requires some factoring.
+//
+// This file is is misnamed.
+// It is not "register" or "def".
+
+#ifndef __MONO_METADATA_REGISTER_JIT_ICALL_DEF_H__
+#define __MONO_METADATA_REGISTER_JIT_ICALL_DEF_H__
 
 // Changes to this file affect AOT file format.
 #define MONO_JIT_ICALLS \
@@ -35,9 +41,9 @@ MONO_JIT_ICALL (mono_amd64_resume_unwind)	\
 MONO_JIT_ICALL (mono_amd64_start_gsharedvt_call)	\
 MONO_JIT_ICALL (mono_arm_resume_unwind)	\
 MONO_JIT_ICALL (mono_arm_start_gsharedvt_call)	\
-MONO_JIT_ICALL (mono_arm_unaligned_stack)	\
 MONO_JIT_ICALL (mono_arm_throw_exception)	\
 MONO_JIT_ICALL (mono_arm_throw_exception_by_token)	\
+MONO_JIT_ICALL (mono_arm_unaligned_stack)	\
 MONO_JIT_ICALL (mono_ppc_throw_exception)	\
 MONO_JIT_ICALL (mono_x86_throw_exception)	\
 MONO_JIT_ICALL (mono_x86_throw_corlib_exception)	\
@@ -163,13 +169,14 @@ MONO_JIT_ICALL (mono_create_corlib_exception_1) \
 MONO_JIT_ICALL (mono_create_corlib_exception_2) \
 MONO_JIT_ICALL (mono_debug_personality) \
 MONO_JIT_ICALL (mono_debugger_agent_user_break) \
-MONO_JIT_ICALL (user_break) /* FIXME? */ \
-MONO_JIT_ICALL (debugger_agent_breakpoint_from_context) \
+MONO_JIT_ICALL (mono_debugger_agent_breakpoint_from_context) \
+MONO_JIT_ICALL (mono_debugger_agent_single_step_from_context) \
 MONO_JIT_ICALL (mono_delegate_begin_invoke) \
 MONO_JIT_ICALL (mono_delegate_end_invoke) \
 MONO_JIT_ICALL (mono_delegate_to_ftnptr) \
 MONO_JIT_ICALL (mono_domain_get) \
 MONO_JIT_ICALL (mono_dummy_jit_icall) \
+MONO_JIT_ICALL (mono_exception_from_token) \
 MONO_JIT_ICALL (mono_fill_class_rgctx) \
 MONO_JIT_ICALL (mono_fill_method_rgctx) \
 MONO_JIT_ICALL (mono_fload_r4) \

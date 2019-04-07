@@ -4507,6 +4507,7 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_isinst_with_cache ());
 
 		/* JIT icall wrappers */
+		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall data */
 		for (int i = 0; i < mono_jit_icall_count; ++i)
 			add_jit_icall_wrapper (acfg, &mono_jit_icall_info.array [i]);
 	}
@@ -5989,7 +5990,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						}
 					}
 				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					MonoJitICallInfo jit_icall_info = patch_info->data.jit_icall_info;
+					MonoJitICallInfo *jit_icall_info = patch_info->data.jit_icall_info;
 					g_assert (jit_icall_info);
 					const char *sym = jit_icall_info->c_symbol;
 					if (!got_only && sym && acfg->aot_opts.direct_icalls) {
@@ -6003,7 +6004,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 					MonoJitICallInfo *jit_icall_info = patch_info->data.jit_icall_info;
 					g_assert (jit_icall_info);
 					const char *sym = jit_icall_info->c_symbol;
-					if (!got_only && sym && acfg->aot_opts.direct_icalls && info->func == info->wrapper) {
+					if (!got_only && sym && acfg->aot_opts.direct_icalls && jit_icall_info->func == jit_icall_info->wrapper) {
 						/* Call to a jit icall without a wrapper */
 						direct_call = TRUE;
 						external_call = TRUE;
@@ -7035,12 +7036,12 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 	}
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 		// FIXME Is this alive?
-		g_assert (false && "MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR");
+		g_assert (FALSE && "MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR");
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_trampoline_func_%d", prefix, ji->data.index);
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		// FIXME Is this alive?
-		g_assert (false && "MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR");
+		g_assert (FALSE && "MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR");
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%u", prefix, ji->data.uindex);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
@@ -9354,10 +9355,8 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 				sym = get_pinvoke_import (llvm_acfg, method);
 
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL) {
-			MonoJitICallInfo *info = NULL;
-			const char *name = NULL;
-			info = (MonoJitICallInfo*)data;
-			name = info ? info->c_symbol : NULL;
+			MonoJitICallInfo *info = (MonoJitICallInfo*)data;
+			const char *name = info ? info->c_symbol : NULL;
 			if (name && info->func == info->wrapper)
 				sym = name;
 		}
@@ -12667,6 +12666,7 @@ static void aot_dump (MonoAotCompile *acfg)
 }
 
 // FIXME Could be 2 or 4 bytes each and position independent.
+// Could even be 1 one with careful ordering of the enum.
 static MonoJitICallInfo * const preinited_jit_icalls[] = {
 	&mono_jit_icall_info.mini_llvm_init_method,
 	&mono_jit_icall_info.mini_llvm_init_gshared_method_this,

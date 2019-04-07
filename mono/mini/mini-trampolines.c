@@ -26,6 +26,8 @@
 
 #include "interp/interp.h"
 
+#include "mono/metadata/register-icall-def.h"
+
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -1619,8 +1621,9 @@ mono_get_generic_trampoline_simple_name (MonoTrampolineType tramp_type)
 MonoJitICallInfo*
 mono_get_generic_trampoline_info (MonoTrampolineType tramp_type)
 {
+	// FIXME Hacky?
 	// Zero is reserved in MonoJitICallInfos and MonoTrampolineType starts at 0.
-	return &MonoJitICallInfos.array [1 + (guint)tramp_type];
+	return &mono_jit_icall_info.array [1 + (guint)tramp_type];
 }
 
 /*
@@ -1628,7 +1631,7 @@ mono_get_generic_trampoline_info (MonoTrampolineType tramp_type)
  *
  *   Returns a pointer to static memory.
  */
-char*
+const char*
 mono_get_generic_trampoline_name (MonoTrampolineType tramp_type)
 {
 	return tramp_names [tramp_type];

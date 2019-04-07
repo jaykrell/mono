@@ -634,7 +634,7 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 {
 	ERROR_DECL (error);
 	MonoMethod *wrapper;
-	gconstpointer trampoline;
+	gpointer trampoline;
 
 	if (callinfo->wrapper)
 		return callinfo->wrapper;

@@ -24,6 +24,7 @@
 #include "mini-runtime.h"
 #include "trace.h"
 #include "mini-arch.h"
+#include "mono/metadata/register-icall-def.h"
 
 #ifndef DISABLE_JIT
 
@@ -623,8 +624,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 
 			g_string_append_printf (sbuf, " ");
 			mono_print_ji (ji);
-		} else if (ins->jit_icall_id) {
-			g_string_append_printf (sbuf, " [%s]", mono_jit_icall_info.array [ins->jit_icall_id].name);
+		} else if (call->jit_icall_info) {
+			g_string_append_printf (sbuf, " [%s]", call->jit_icall_info->name);
 		}
 
 		list = call->out_ireg_args;
