@@ -8872,6 +8872,35 @@ mono_create_icall_signatures (void)
 	}
 }
 
+#if 0
+// FIXME remove this
+MonoJitICallInfo *
+mono_find_jit_icall_by_name (const char *name)
+{
+	MonoJitICallInfo *info;
+	g_assert (jit_icall_hash_name);
+
+	mono_icall_lock ();
+	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
+	mono_icall_unlock ();
+	return info;
+}
+#endif
+
+// FIXME remove this
+MonoJitICallInfo *
+mono_find_jit_icall_by_addr (gconstpointer addr)
+{
+	MonoJitICallInfo *info;
+	g_assert (jit_icall_hash_addr);
+
+	mono_icall_lock ();
+	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
+	mono_icall_unlock ();
+
+	return info;
+}
+
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 {

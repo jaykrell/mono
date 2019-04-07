@@ -3053,7 +3053,11 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 					near_call = FALSE;
 			}
 
-			else if (patch_type == MONO_PATCH_INFO_JIT_ICALL) {
+			if (patch_type == MONO_PATCH_INFO_JIT_ICALL) {
+				/*
+				 * The call might go directly to a native function without
+				 * the wrapper.
+				 */
 				gconstpointer target = mono_icall_get_wrapper ((MonoJitICallInfo*)data);
 				if ((((guint64)target) >> 32) != 0)
 					near_call = FALSE;
@@ -3070,6 +3074,9 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				case MONO_PATCH_INFO_JIT_ICALL:
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+
+					g_assertf (FALSE, "1 ABS patches should no longer rely on hashing of JIT icalls.");
+
 					info = jinfo->data.jit_icall_info;
 					printf ("%s icall %d %s\n", __func__, jinfo->type, info->name);
 					g_assert (info);
@@ -3089,11 +3096,13 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 					 * generic class init trampolines use R11 to pass the vtable.
 					 */
 					near_call = TRUE;
-					break
+					break;
 				}
 			} else {
+				// The JIT icall hash tables are yet populated,
+				// but nothing should require them.
 				info = mono_find_jit_icall_by_addr (data);
-				g_assert (!info);
+				g_assertf (!info, "2 ABS patches should no longer rely on hashing of JIT icalls.");
 				if (info) {
 					if (info->func == info->wrapper) {
 						/* No wrapper */
