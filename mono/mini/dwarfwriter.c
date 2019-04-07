@@ -1398,7 +1398,7 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 
 		switch (ip [1]) {
 		case CEE_MONO_ICALL: {
-			g_assertf (FALSE, "CEE_MONO_ICALL is unused");
+			//g_assertf (FALSE, "CEE_MONO_ICALL is unused");
 			MonoJitICallInfo *info;
 
 			token = read32 (ip + 2);

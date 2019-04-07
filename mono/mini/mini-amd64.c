@@ -5059,33 +5059,26 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_VCALL:
 		case OP_VCALL2:
 		case OP_VOIDCALL:
-#if 1 // FIXME
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
+#if 1 // FIXME
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
-			ins->flags |= MONO_INST_GC_CALLSITE;
-			ins->backend.pc_offset = code - cfg->native_code;
-			code = emit_move_return_value (cfg, ins, code);
-			break;
 #else
-			call = (MonoCallInst*)ins;
-
-			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else if (call->jit_icall_info)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info, FALSE);
 			else
 				code = emit_call (cfg, code, MONO_PATCH_INFO_ABS, call->fptr, FALSE);
+#endif
 			ins->flags |= MONO_INST_GC_CALLSITE;
 			ins->backend.pc_offset = code - cfg->native_code;
 			code = emit_move_return_value (cfg, ins, code);
 			break;
-#endif
 		case OP_FCALL_REG:
 		case OP_RCALL_REG:
 		case OP_LCALL_REG:

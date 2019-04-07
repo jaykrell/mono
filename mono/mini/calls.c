@@ -643,7 +643,8 @@ mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **a
 
 	MonoCallInst *call = (MonoCallInst*)mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
 
-	call->jit_icall_info = info;
+	// FIXME
+	//call->jit_icall_info = info;
 
 	return &call->inst;
 }

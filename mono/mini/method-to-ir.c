@@ -10106,7 +10106,7 @@ field_access_end:
 
 			const gboolean is_jit_icall = (il_op == MONO_CEE_MONO_JIT_ICALL);
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			g_assertf (is_jit_icall, "CEE_MONO_ICALL is unused");
+			//g_assertf (is_jit_icall, "CEE_MONO_ICALL is unused");
 
 			MonoJitICallInfo *info;
 
