@@ -9005,7 +9005,7 @@ mono_find_jit_icall_by_name (const char *name)
 	mono_icall_lock ();
 	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
 	mono_icall_unlock ();
-	printf("%s %s %p\n", __func__, name, info);
+	//printf("%s %s %p\n", __func__, name, info);
 	return info;
 }
 
@@ -9024,7 +9024,7 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)addr);
 	mono_icall_unlock ();
 
-	printf("%s %p %p\n", __func__, addr, info);
+	//printf("%s %p %p\n", __func__, addr, info);
 
 	return info;
 }

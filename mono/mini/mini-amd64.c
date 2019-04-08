@@ -3017,12 +3017,14 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 
 #ifndef DISABLE_JIT
 
-#if 1 // FIXME
+#if 1 // FIXMEjiticall
 
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	gboolean no_patch = FALSE;
+
+	data = mono_temporary_translate_jit_icall_info_name (data);
 
 	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||		// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
 			  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is MonoJitICallInfo*
@@ -8495,6 +8497,8 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 guint8*
 mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
+	target = mono_temporary_translate_jit_icall_info_name (target);
+
 	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
 

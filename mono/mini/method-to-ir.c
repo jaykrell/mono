@@ -10118,7 +10118,7 @@ field_access_end:
 
 			g_assertf (info && info->func && info->name, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 
-			printf("%s %s\n", __func__, info->name);
+			//printf("%s %s\n", __func__, info->name);
 
 			CHECK_STACK (info->sig->param_count);
 			sp -= info->sig->param_count;
@@ -10197,10 +10197,16 @@ mono_ldptr:
 		}
 		case MONO_CEE_MONO_JIT_ICALL_ADDR: {
 			MonoJitICallInfo *callinfo;
-
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
+#if 0 // FIXMEjiticall
 			callinfo = &mono_jit_icall_info.array [token];
 			EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, callinfo);
+#else
+			gpointer ptr = mono_method_get_wrapper_data (method, token);
+			callinfo = mono_find_jit_icall_by_addr (ptr);
+			g_assert (callinfo);
+			EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, (char*)callinfo->name);
+#endif
 			*sp++ = ins;
 			inline_costs += CALL_COST * MIN(10, num_calls++);
 			break;

@@ -15,16 +15,20 @@ MonoJitICallInfos mono_jit_icall_info = { 0 };
 gconstpointer
 mono_temporary_translate_jit_icall_info_name (gconstpointer data)
 {
+	g_assert (data);
 	if ((char*)data >= (char*)&mono_jit_icall_info && data < (char*)(1 + &mono_jit_icall_info))
 		data = ((MonoJitICallInfo*)data)->name;
+	g_assert (data);
 	return data;
 }
 
 gconstpointer
 mono_temporary_translate_jit_icall_info_func (gconstpointer data)
 {
+	g_assert (data);
 	if ((char*)data >= (char*)&mono_jit_icall_info && data < (char*)(1 + &mono_jit_icall_info))
 		data = ((MonoJitICallInfo*)data)->func;
+	g_assert (data);
 	return data;
 }
 

@@ -1068,6 +1068,8 @@ mini_thread_cleanup (MonoNativeThreadId tid)
 MonoJumpInfo *
 mono_patch_info_list_prepend (MonoJumpInfo *list, int ip, MonoJumpInfoType type, gconstpointer target)
 {
+	target = mono_temporary_translate_jit_icall_info_name (target);
+
 	MonoJumpInfo *ji = g_new0 (MonoJumpInfo, 1);
 
 	ji->ip.i = ip;
