@@ -1115,7 +1115,7 @@ mono_print_ji (const MonoJumpInfo *ji)
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL:
-		printf ("[JIT_ICALL_INFO %s]", ji->data.jit_icall_info->name);
+		printf ("[JIT_ICALL_INFO %s]", "FIXMIEjiticall ji->data.jit_icall_info->name");
 		break;
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
@@ -1225,7 +1225,7 @@ mono_patch_info_dup_mp (MonoMemPool *mp, MonoJumpInfo *patch_info)
 guint
 mono_patch_info_hash (gconstpointer data)
 {
-	const MonoJumpInfo *ji = (MonoJumpInfo*)data;
+	/* FIXMEjiticall const*/ MonoJumpInfo *ji = (MonoJumpInfo*)data;
 
 	switch (ji->type) {
 	case MONO_PATCH_INFO_RVA:
@@ -1238,8 +1238,13 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+#if 0 // FIXMEjiticall
 		// There are presently between 256 and 512 of these, so shift by 9 is lossless.
 		return (ji->type << 9) | mono_jit_icall_info_index (ji->data.jit_icall_info);
+#else
+		ji->data.name = mono_temporary_translate_jit_icall_info_name (ji->data.name);
+		return (ji->type << 8) | g_str_hash (ji->data.target);
+#endif
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
@@ -1324,8 +1329,8 @@ mono_patch_info_hash (gconstpointer data)
 gint
 mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 {
-	const MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
-	const MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
+	/* FIXMEjiticall const*/ MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
+	/* FIXMEjiticall const*/ MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
 
 	if (ji1->type != ji2->type)
 		return 0;
@@ -1343,16 +1348,20 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 			(ji1->data.token->context.method_inst != ji2->data.token->context.method_inst))
 			return 0;
 		break;
-#if 0 // FIXME
+#if 0 // FIXMEjiticall
 	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return ji1->data.jit_icall_info == ji2->data.jit_icall_info;
 #else
 	case MONO_PATCH_INFO_JIT_ICALL:
+		ji1->data.name = mono_temporary_translate_jit_icall_info_name (ji1->data.name);
+		ji2->data.name = mono_temporary_translate_jit_icall_info_name (ji2->data.name);
 		return g_str_equal (ji1->data.name, ji2->data.name);
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		ji1->data.name = mono_temporary_translate_jit_icall_info_func (ji1->data.name);
+		ji2->data.name = mono_temporary_translate_jit_icall_info_func (ji2->data.name);
 		if (ji1->data.target == ji2->data.target)
 			return 1;
 #endif
@@ -1422,8 +1431,9 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
 		break;
-#if 1 // FIXME
+#if 1 // FIXMEjiticall
 	case MONO_PATCH_INFO_JIT_ICALL: {
+		patch_info->data.name = mono_temporary_translate_jit_icall_info_name (patch_info->data.name);
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
 		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
 		target = mono_icall_get_wrapper (mi);

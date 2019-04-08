@@ -238,7 +238,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 		else
 			jit_icall_info = &mono_jit_icall_info.mono_arm_throw_exception;
 
-		code = mono_arm_emit_aotconst (&ji, code, start, ARMREG_LR, MONO_PATCH_INFO_JIT_ICALL_ADDR, jit_icall_info);
+		code = mono_arm_emit_aotconst (&ji, code, start, ARMREG_LR, MONO_PATCH_INFO_JIT_ICALL_ADDR, jit_icall_info);// FIXMEjiticall
 	} else {
 		gpointer icall_func;
 

@@ -369,4 +369,13 @@ mono_jit_icall_info_cast (gconstpointer jit_icall_info)
 	return (MonoJitICallInfo*)jit_icall_info;
 }
 
+gconstpointer
+mono_temporary_translate_jit_icall_info_name (gconstpointer data);
+
+gconstpointer
+mono_temporary_translate_jit_icall_info_func (gconstpointer data);
+
+gconstpointer
+mono_temporary_translate_jit_icall_info (gconstpointer data);
+
 #endif // __MONO_METADATA_JIT_ICALL_DEF_H__

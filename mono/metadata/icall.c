@@ -8991,24 +8991,32 @@ mono_create_icall_signatures (void)
 	}
 }
 
+void* mono_temporary_translate_jit_icall_info_name (const void*);
+
 // FIXME remove this
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name)
 {
+	name = (const char*)mono_temporary_translate_jit_icall_info_name (name);
+
 	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_name);
 
 	mono_icall_lock ();
 	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
 	mono_icall_unlock ();
-	printf("%s %p %s\n", __func__, name, info);
+	printf("%s %s %p\n", __func__, name, info);
 	return info;
 }
+
+void* mono_temporary_translate_jit_icall_info_func (const void*);
 
 // FIXME remove this
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr)
 {
+	addr = mono_temporary_translate_jit_icall_info_func (addr);
+
 	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_addr);
 

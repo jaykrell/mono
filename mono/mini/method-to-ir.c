@@ -10133,7 +10133,7 @@ field_access_end:
 					 * infrastructure. Use an indirect call through a got slot initialized at load time
 					 * instead.
 					 */
-#if 0 // FIXME
+#if 0 // FIXMEjiticall
 					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, mono_jit_icall_info_index (info));
 #else
 					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, (char*)info->name);

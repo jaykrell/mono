@@ -547,13 +547,13 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 void
 mono_mb_emit_icall_info (MonoMethodBuilder *mb, MonoJitICallInfo *jit_icall_info)
 {
-#if 0 // FIXME
+#if 0 // FIXMEjiticall
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL);
 	mono_mb_emit_i2 (mb, mono_jit_icall_info_index (jit_icall_info));
 #else
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
+	mono_mb_emit_op (mb, CEE_MONO_ICALL, mono_temporary_translate_jit_icall_info_func (jit_icall_info));
 #endif
 	printf("%s %s\n", __func__, jit_icall_info->name);
 }

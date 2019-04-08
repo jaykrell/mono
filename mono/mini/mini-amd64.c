@@ -3058,6 +3058,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				 * The call might go directly to a native function without
 				 * the wrapper.
 				 */
+				data = mono_temporary_translate_jit_icall_info_name (data);
 				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ((const char *)data);
 				if (mi) {
 					gconstpointer target = mono_icall_get_wrapper (mi);
@@ -3073,7 +3074,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (jinfo->data.name);
+					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (mono_temporary_translate_jit_icall_info_name (jinfo->data.name));
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
@@ -3308,6 +3309,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 static inline guint8*
 emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data, gboolean win64_adjust_stack)
 {
+	data = mono_temporary_translate_jit_icall_info (data);
+
 #ifdef TARGET_WIN32
 	if (win64_adjust_stack)
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 32);
@@ -7015,7 +7018,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 			printf ("TYPE: %d\n", ji->type);
 			switch (ji->type) {
 			case MONO_PATCH_INFO_JIT_ICALL:
-#if 1 // FIXME
+#if 1 // FIXMEjiticall
 				printf ("V: %s\n", ji->data.name);
 #else
 				printf ("V: %s\n", ji->data.jit_icall_info->name);

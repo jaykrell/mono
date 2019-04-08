@@ -6544,7 +6544,7 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gcons
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func);
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func); // FIXMEjiticall
 	mono_mb_emit_calli (mb, csig2);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);

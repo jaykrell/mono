@@ -27,8 +27,10 @@ mono_call_add_patch_info (MonoCompile *cfg, MonoCallInst *call, int ip)
 {
 	if (call->inst.flags & MONO_INST_HAS_METHOD)
 		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_METHOD, call->method);
+#if 0 // FIXMEjiticall
 	else if (call->jit_icall_info)
 		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_JIT_ICALL, call->jit_icall_info);
+#endif
 	else
 		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_ABS, call->fptr);
 }
