@@ -2041,7 +2041,7 @@ MonoJitInfo* mini_lookup_method             (MonoDomain *domain, MonoMethod *met
 guint32   mono_reverse_branch_op            (guint32 opcode);
 void      mono_disassemble_code             (MonoCompile *cfg, guint8 *code, int size, char *id);
 void      mono_call_add_patch_info          (MonoCompile *cfg, MonoCallInst *call, int ip);
-void	  mono_check_patch					(MonoJumpInfoType type, gconstpointer target);
+void      mono_check_patch                  (MonoJumpInfoType type, gconstpointer target);
 void      mono_add_patch_info               (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target) MONO_LLVM_INTERNAL;
 void      mono_add_patch_info_rel           (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation) MONO_LLVM_INTERNAL;
 void      mono_remove_patch_info            (MonoCompile *cfg, int ip);
