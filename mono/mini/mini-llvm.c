@@ -1742,6 +1742,21 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	LLVMValueRef callee;
 	char *callee_name = NULL;
 
+#if 1 // FIXMEjiticall
+
+	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
+		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+		g_assert (info);
+
+		if (info->func != info->wrapper) {
+			type = MONO_PATCH_INFO_METHOD;
+			data = mono_icall_get_wrapper_method (info);
+			callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+		}
+	}
+
+#endif
+
 	if (!callee_name)
 		callee_name = mono_aot_get_direct_call_symbol (type, data);
 	if (callee_name) {
@@ -1768,9 +1783,12 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 * Change references to jit icalls to the icall wrappers when in corlib, so
 	 * they can be called directly.
 	 */
-	if (ctx->module->assembly->image == mono_get_corlib () &&
-			type == MONO_PATCH_INFO_JIT_ICALL) {
+	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
+#if 1 // FIXMEjiticall
+		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+#else
 		MonoJitICallInfo *info = (MonoJitICallInfo*)data;
+#endif
 		g_assert (info);
 
 		if (info->func != info->wrapper) {

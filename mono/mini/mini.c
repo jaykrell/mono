@@ -1897,6 +1897,8 @@ mono_destroy_compile (MonoCompile *cfg)
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
+	target = mono_temporary_translate_jit_icall_info_name (target);
+
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
 
 	ji->ip.i = ip;
@@ -2072,6 +2074,32 @@ mono_postprocess_patches (MonoCompile *cfg)
 
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
+#if 1 // FIXMEjiticall
+		case MONO_PATCH_INFO_ABS: {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
+
+			/*
+			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
+			 * absolute address.
+			 */
+			if (info) {
+				patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
+				patch_info->data.name = info->name;
+			}
+
+			if (patch_info->type == MONO_PATCH_INFO_ABS) {
+				if (cfg->abs_patches) {
+					MonoJumpInfo *abs_ji = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
+					if (abs_ji) {
+						patch_info->type = abs_ji->type;
+						patch_info->data.target = abs_ji->data.target;
+					}
+				}
+			}
+
+			break;
+		}
+#endif
 		case MONO_PATCH_INFO_SWITCH: {
 			gpointer *table;
 			if (cfg->method->dynamic) {

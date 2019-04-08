@@ -626,6 +626,10 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 			mono_print_ji (ji);
 		} else if (call->jit_icall_info) {
 			g_string_append_printf (sbuf, " [%s]", call->jit_icall_info->name);
+		} else if (call->fptr) {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
+			if (info)
+				g_string_append_printf (sbuf, " [%s]", info->name);
 		}
 
 		list = call->out_ireg_args;
