@@ -5526,8 +5526,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					break;
 #endif
 				default:
-					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
-					g_assert_not_reached ();
+					g_error ("Unknown relocation '%s'\n", ji->data.name);
 					target = NULL;
 					break;
 				}

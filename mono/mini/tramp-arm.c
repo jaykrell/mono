@@ -416,7 +416,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.rethrow_preserve_exception_addr);
+		mono_jit_icall_info.mono_rethrow_preserve_exception.name = "rethrow_preserve_exception";
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_rethrow_preserve_exception);
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);

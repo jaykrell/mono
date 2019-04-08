@@ -301,6 +301,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * from emit_prolog in mini-ppc.c
 	 */
 	if (aot) {
+		mono_jit_icall_info.mono_get_lmf_addr.name = "mono_get_lmf_addr";
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_get_lmf_addr);
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);

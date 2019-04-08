@@ -1651,6 +1651,8 @@ mini_emit_runtime_constant (MonoCompile *cfg, MonoJumpInfoType patch_type, gpoin
 {
 	MonoInst *ins;
 
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+
 	if (cfg->compile_aot) {
 MONO_DISABLE_WARNING (4306) // 'type cast': conversion from 'MonoJumpInfoType' to 'MonoInst *' of greater size
 		EMIT_NEW_AOTCONST (cfg, ins, patch_type, data);
@@ -2074,6 +2076,8 @@ handle_enum:
 MonoJumpInfo *
 mono_patch_info_new (MonoMemPool *mp, int ip, MonoJumpInfoType type, gconstpointer target)
 {
+	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
+
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc (mp, sizeof (MonoJumpInfo));
 
 	ji->ip.i = ip;
@@ -2456,6 +2460,8 @@ emit_get_rgctx (MonoCompile *cfg, int context_used)
 static MonoJumpInfoRgctxEntry *
 mono_patch_info_rgctx_entry_new (MonoMemPool *mp, MonoMethod *method, gboolean in_mrgctx, MonoJumpInfoType patch_type, gconstpointer patch_data, MonoRgctxInfoType info_type)
 {
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || patch_data);
+
 	MonoJumpInfoRgctxEntry *res = (MonoJumpInfoRgctxEntry *)mono_mempool_alloc0 (mp, sizeof (MonoJumpInfoRgctxEntry));
 	if (in_mrgctx)
 		res->d.method = method;

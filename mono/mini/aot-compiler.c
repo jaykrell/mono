@@ -9392,9 +9392,13 @@ mono_aot_mark_unused_llvm_plt_entry (MonoJumpInfo *patch_info)
 char*
 mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 {
+	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+
 	const char *sym = NULL;
 
 	data = mono_temporary_translate_jit_icall_info_name (data);
+
+	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
 
 	if (llvm_acfg->aot_opts.direct_icalls) {
 
@@ -9425,11 +9429,15 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 char*
 mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 {
+	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc (llvm_acfg->mempool, sizeof (MonoJumpInfo));
 	MonoPltEntry *plt_entry;
 	const char *sym = NULL;
 
 	data = mono_temporary_translate_jit_icall_info_name (data);
+
+	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
 
 	ji->type = type;
 	ji->data.target = data;

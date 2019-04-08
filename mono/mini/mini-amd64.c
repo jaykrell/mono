@@ -3022,6 +3022,8 @@ mono_arch_finish_dyn_call (MonoDynCallInfo *info, guint8 *buf)
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+
 	gboolean no_patch = FALSE;
 
 	data = mono_temporary_translate_jit_icall_info_name (data);
@@ -3076,7 +3078,9 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+					g_assert (jinfo->data.name);
 					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (mono_temporary_translate_jit_icall_info_name (jinfo->data.name));
+					g_assert (mi);
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
@@ -3158,6 +3162,8 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 static guint8*
 emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data)
 {
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+
 	gboolean no_patch = FALSE;
 	MonoJitICallInfo *info = NULL;
 
@@ -3311,7 +3317,9 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 static inline guint8*
 emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data, gboolean win64_adjust_stack)
 {
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
 	data = mono_temporary_translate_jit_icall_info (data);
+	g_assert (patch_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
 
 #ifdef TARGET_WIN32
 	if (win64_adjust_stack)
@@ -8497,7 +8505,11 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 guint8*
 mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
+	g_assert (tramp_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
+
 	target = mono_temporary_translate_jit_icall_info_name (target);
+
+	g_assert (tramp_type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
 
 	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
