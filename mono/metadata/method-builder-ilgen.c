@@ -555,7 +555,7 @@ mono_mb_emit_icall_info (MonoMethodBuilder *mb, MonoJitICallInfo *jit_icall_info
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_op (mb, CEE_MONO_ICALL, mono_temporary_translate_jit_icall_info_func (jit_icall_info));
 #endif
-	printf("%s %s\n", __func__, jit_icall_info->name);
+	//printf("%s %s\n", __func__, jit_icall_info->name);
 }
 
 void
