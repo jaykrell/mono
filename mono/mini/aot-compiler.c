@@ -3621,7 +3621,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-#if 0 // FIXME
+#if 0 // FIXMEjiticall
 				encode_value (mono_jit_icall_info_index (info->d.jit_icall_info), p, &p);
 #else
 				encode_icall (info->d.icall.func, p, &p);
@@ -9392,13 +9392,13 @@ mono_aot_mark_unused_llvm_plt_entry (MonoJumpInfo *patch_info)
 char*
 mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 {
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+	mono_check_patch (type, data);
 
 	const char *sym = NULL;
 
 	data = mono_temporary_translate_jit_icall_info_name (data);
 
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+	mono_check_patch (type, data);
 
 	if (llvm_acfg->aot_opts.direct_icalls) {
 
@@ -9429,7 +9429,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 char*
 mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 {
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+	mono_check_patch (type, data);
 
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc (llvm_acfg->mempool, sizeof (MonoJumpInfo));
 	MonoPltEntry *plt_entry;
@@ -9437,7 +9437,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 
 	data = mono_temporary_translate_jit_icall_info_name (data);
 
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || data);
+	mono_check_patch (type, data);
 
 	ji->type = type;
 	ji->data.target = data;

@@ -1895,13 +1895,31 @@ mono_destroy_compile (MonoCompile *cfg)
 }
 
 void
+mono_check_patch (MonoJumpInfoType type, gconstpointer data)
+{
+	// Whatever lightweight checking can be done.
+	switch (type) {
+	default:
+		return;
+	case MONO_PATCH_INFO_JIT_ICALL:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		break;
+	}
+	g_assert (data);
+	MonoJitICallInfo const * const jit_icall_info = mono_jit_icall_info_cast (data);
+	g_assert (jit_icall_info);
+	g_assert (jit_icall_info->name);
+}
+
+void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
+	mono_check_patch (type, target);
 
 	target = mono_temporary_translate_jit_icall_info_name (target);
 
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
+	mono_check_patch (type, target);
 
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
 
@@ -1916,7 +1934,7 @@ mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpoin
 void
 mono_add_patch_info_rel (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target, int relocation)
 {
-	g_assert (type != MONO_PATCH_INFO_JIT_ICALL_ADDR || target);
+	mono_check_patch (type, target);
 
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
 
