@@ -8997,8 +8997,6 @@ void* mono_temporary_translate_jit_icall_info_name (const void*);
 MonoJitICallInfo *
 mono_find_jit_icall_by_name (const char *name)
 {
-	name = (const char*)mono_temporary_translate_jit_icall_info_name (name);
-
 	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_name);
 
@@ -9009,14 +9007,10 @@ mono_find_jit_icall_by_name (const char *name)
 	return info;
 }
 
-void* mono_temporary_translate_jit_icall_info_func (const void*);
-
 // FIXME remove this
 MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr)
 {
-	addr = mono_temporary_translate_jit_icall_info_func (addr);
-
 	MonoJitICallInfo *info;
 	g_assert (jit_icall_hash_addr);
 

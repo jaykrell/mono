@@ -3026,13 +3026,9 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 
 	gboolean no_patch = FALSE;
 
-	data = mono_temporary_translate_jit_icall_info_name (data);
-
-	mono_check_patch (patch_type, data);
-
-	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||		// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
-			  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is MonoJitICallInfo*
-			  patch_type == MONO_PATCH_INFO_ABS);			// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
+	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||	// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
+		  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is MonoJitICallInfo*
+		  patch_type == MONO_PATCH_INFO_ABS);		// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
 
 	/* 
 	 * FIXME: Add support for thunks
@@ -3064,9 +3060,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				 * The call might go directly to a native function without
 				 * the wrapper.
 				 */
-				data = mono_temporary_translate_jit_icall_info_name (data);
-				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ((const char *)data);
+				MonoJitICallInfo *mi = mono_check_jit_icall_info (data);
 				if (mi) {
+					g_assert (mi->name);
+					g_assert (mi->func);
 					gconstpointer target = mono_icall_get_wrapper (mi);
 					if ((((guint64)target) >> 32) != 0)
 						near_call = FALSE;
@@ -3076,13 +3073,17 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 		else {
 			MonoJumpInfo *jinfo = NULL;
 
+			// FIXMEjitcall Remove this hashing, of JIT icalls.
+			//
 			if (cfg->abs_patches)
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 					g_assert (jinfo->data.name);
-					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (mono_temporary_translate_jit_icall_info_name (jinfo->data.name));
+					MonoJitICallInfo *mi = mono_check_jit_icall_info (jinfo->data.jit_icall_info);
 					g_assert (mi);
+					g_assert (mi->name);
+					g_assert (mi->func);
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
@@ -3094,7 +3095,11 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 					near_call = TRUE;
 				}
 			} else {
+				// The JIT icall hash tables are still populated,
+				// but nothing should require them.
+				//
 				MonoJitICallInfo *info = mono_find_jit_icall_by_addr (data);
+				g_assertf (!info, "2 ABS patches should no longer rely on hashing of JIT icalls.");
 				if (info) {
 					if (info->func == info->wrapper) {
 						/* No wrapper */
@@ -3222,10 +3227,11 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 				case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 
-					g_assertf (FALSE, "1 ABS patches should no longer rely on hashing of JIT icalls.");
+					// FIXMEjiticall
+					//g_assertf (FALSE, "1 ABS patches should no longer rely on hashing of JIT icalls.");
 
 					info = jinfo->data.jit_icall_info;
-					printf ("%s icall %d %s\n", __func__, jinfo->type, info->name);
+					//printf ("%s should not get here icall %d %s\n", __func__, jinfo->type, info->name);
 					g_assert (info);
 					if (info->func == info->wrapper) {
 						/* No wrapper */
@@ -3319,8 +3325,6 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 static inline guint8*
 emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gconstpointer data, gboolean win64_adjust_stack)
 {
-	mono_check_patch (patch_type, data);
-	data = mono_temporary_translate_jit_icall_info (data);
 	mono_check_patch (patch_type, data);
 
 #ifdef TARGET_WIN32
@@ -5077,7 +5081,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			call = (MonoCallInst*)ins;
 
 			code = amd64_handle_varargs_call (cfg, code, call, FALSE);
-#if 1 // FIXME
+#if 0 // FIXMEjiticall
 			if (ins->flags & MONO_INST_HAS_METHOD)
 				code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, call->method, FALSE);
 			else
@@ -7030,7 +7034,7 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 			printf ("TYPE: %d\n", ji->type);
 			switch (ji->type) {
 			case MONO_PATCH_INFO_JIT_ICALL:
-#if 1 // FIXMEjiticall
+#if 0 // FIXMEjiticall
 				printf ("V: %s\n", ji->data.name);
 #else
 				printf ("V: %s\n", ji->data.jit_icall_info->name);
@@ -8507,10 +8511,6 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 guint8*
 mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
-	mono_check_patch (tramp_type, target);
-
-	target = mono_temporary_translate_jit_icall_info_name (target);
-
 	mono_check_patch (tramp_type, target);
 
 	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);

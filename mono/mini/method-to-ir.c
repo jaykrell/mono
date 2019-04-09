@@ -6928,9 +6928,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 						|| info_type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
 						|| info_type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
 					tailcall = FALSE;
+					// FIXMEjiticall reduce hashing more
 					ins = (MonoInst*)mini_emit_abs_call (cfg, info_type, info_data, fsig, sp);
-					// FIXME avoid abs patches; retain icall info
-					//((MonoCallInst*)ins)->? = ?;
 					NULLIFY_INS (addr);
 					goto calli_end;
 				}
@@ -10139,8 +10138,8 @@ field_access_end:
 					 * infrastructure. Use an indirect call through a got slot initialized at load time
 					 * instead.
 					 */
-#if 0 // FIXMEjiticall
-					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, mono_jit_icall_info_index (info));
+#if 1 // FIXMEjiticall
+					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, info);
 #else
 					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, (char*)info->name);
 #endif
@@ -10204,8 +10203,12 @@ mono_ldptr:
 		case MONO_CEE_MONO_JIT_ICALL_ADDR: {
 			MonoJitICallInfo *callinfo;
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-#if 0 // FIXMEjiticall
-			callinfo = &mono_jit_icall_info.array [token];
+#if 1 // FIXMEjiticall
+			callinfo = &mono_jit_icall_info.array [token]; // FIXMEjiticall 2byte index should suffice
+			mono_check_jit_icall_info (callinfo);
+			g_assert (callinfo);
+			g_assert (callinfo->name);
+			g_assert (callinfo->func);
 			EMIT_NEW_JIT_ICALL_ADDRCONST (cfg, ins, callinfo);
 #else
 			gpointer ptr = mono_method_get_wrapper_data (method, token);

@@ -4249,7 +4249,7 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 					nthrows ++;
 				}
 
-				patch_info->data.name = &mono_jit_icall_info.mono_arch_throw_corlib_exception;
+				patch_info->data.jit_icall_info = &mono_jit_icall_info.mono_arch_throw_corlib_exception;
 				patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
 				patch_info->ip.i = (guint8*)code - cfg->native_code;
 

@@ -343,8 +343,9 @@ struct MonoJumpInfo {
 		MonoDelegateClassMethodPair *del_tramp;
 		/* MONO_PATCH_INFO_VIRT_METHOD */
 		MonoJumpInfoVirtMethod *virt_method;
-		// FIXMEjiticall
-		//MonoJitICallInfo *jit_icall_info;
+#if 1		// FIXMEjiticall
+		MonoJitICallInfo *jit_icall_info;
+#endif
 	} data;
 };
 

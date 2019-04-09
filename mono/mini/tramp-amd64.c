@@ -524,7 +524,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		// This is not "registered". Register it now. FIXMEjiticall remove this later.
 		mono_jit_icall_info.mono_rethrow_preserve_exception.name = "rethrow_preserve_exception";
 		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, &mono_jit_icall_info.mono_rethrow_preserve_exception);
 	} else {

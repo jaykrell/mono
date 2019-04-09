@@ -1834,7 +1834,8 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 MonoMethod*
 mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 {
-// FIXME
+// FIXMEjiticall
+// Are there only ever two of these? Use a tiny fixed size cache and linear search if so.
 	const char *name = jit_icall_info->name;
 	gpointer target = jit_icall_info->func;
 
@@ -1864,14 +1865,20 @@ mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 	mono_mb_emit_byte (mb, CEE_LDARG_0);
 	mono_mb_emit_byte (mb, CEE_LDARG_1);
 
-#if 0 // FIXMEjiticall
+#if 1 // FIXMEjiticall
+
+	// Put a four byte integer into the IL stream instead of a full pointer.
+	// This is the same integer that AOT uses.
+	// FIXMEjiticall could be 2 bytes (9 bits).
+
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL);
-	mono_mb_emit_i2 (mb, mono_jit_icall_info_index (jit_icall_info));
+	g_assert (MONO_JIT_ICALL_count < 0x200);
+	mono_mb_emit_i4 /* mono_mb_emit_i2 */ (mb, mono_jit_icall_info_index (jit_icall_info));
 	printf("%s %s\n", __func__, jit_icall_info->name);
 #else
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	//FIXMEjiticall mono_mb_emit_op (mb, CEE_MONO_ICALL, mono_temporary_translate_jit_icall_info_name (jit_icall_info));
+	//FIXMEjiticall mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
 	//mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info);
 	mono_mb_emit_op (mb, CEE_MONO_ICALL, jit_icall_info->name);
 	printf("%s %s\n", __func__, jit_icall_info->name);
@@ -1880,7 +1887,7 @@ mini_get_interp_lmf_wrapper (MonoJitICallInfo *jit_icall_info)
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
-#if 0 // FIXME
+#if 1 // FIXMEjiticall
 	info->d.jit_icall_info = jit_icall_info;
 #else
 	info->d.icall.func = (gpointer) target;

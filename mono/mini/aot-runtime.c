@@ -1161,7 +1161,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			char *name;
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-#if 0 // FIXME
+#if 1 // FIXMEjiticall
 				MonoJitICallInfo *info = &mono_jit_icall_info.array [decode_value (p, &p)];
 #else
 				name = (char*)p;
@@ -3784,7 +3784,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		}
 		break;
 	}
-#if 1 // FIXMEjiticall
+#if 0 // FIXMEjiticall
 	case MONO_PATCH_INFO_JIT_ICALL:
 		//ji->data.jit_icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
 		//break;
@@ -3801,6 +3801,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		ji->data.jit_icall_info = &mono_jit_icall_info.array [decode_value (p, &p)];
+		//printf("%s decoded %d %p\n", __func__, ji->type, ji->data.jit_icall_info);
 		break;
 #endif
 	case MONO_PATCH_INFO_METHODCONST:
@@ -5409,7 +5410,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-				switch (ji->data.uindex) {
+				//g_print ("relocation '%p'\n", ji->data.target);
+				switch (mono_jit_icall_info_index (ji->data.jit_icall_info)) {
 				case MONO_JIT_ICALL_mono_get_lmf_addr:
 					target = (gpointer)mono_get_lmf_addr;
 					break;
@@ -5468,7 +5470,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					g_assert (!8); // temporary
 					target = mono_aot_get_trampoline ("generic_trampoline_vcall");
 					break;
-
 #ifdef HOST_AMD64
 				case MONO_JIT_ICALL_mono_amd64_throw_exception:
 					target = mono_amd64_throw_exception;
@@ -5526,7 +5527,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					break;
 #endif
 				default:
-					g_error ("Unknown relocation '%s'\n", ji->data.name);
+					g_error ("Unknown relocation '%p'\n", ji->data.target);
 					target = NULL;
 					break;
 				}

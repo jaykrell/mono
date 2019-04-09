@@ -1742,10 +1742,23 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	LLVMValueRef callee;
 	char *callee_name = NULL;
 
-#if 1 // FIXMEjiticall
+#if 0 // FIXMEjiticall
 
 	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
 		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+		g_assert (info);
+
+		if (info->func != info->wrapper) {
+			type = MONO_PATCH_INFO_METHOD;
+			data = mono_icall_get_wrapper_method (info);
+			callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+		}
+	}
+
+#else
+
+	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
+		MonoJitICallInfo *info = mono_check_jit_icall_info (data);
 		g_assert (info);
 
 		if (info->func != info->wrapper) {
@@ -1784,10 +1797,10 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 * they can be called directly.
 	 */
 	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
-#if 1 // FIXMEjiticall
+#if 0 // FIXMEjiticall
 		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
 #else
-		MonoJitICallInfo *info = (MonoJitICallInfo*)data;
+		MonoJitICallInfo *info = mono_check_jit_icall_info (data);
 #endif
 		g_assert (info);
 

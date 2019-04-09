@@ -1413,7 +1413,7 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 			MonoJitICallInfo *info;
 
 			guint icall_index = read16 (ip + 2);
-			g_assert (icall_index); // zero is reservec
+			g_assert (icall_index); // zero is reserved
 			info = &mono_jit_icall_info.array [icall_index];
 			g_assert (info && info->func && info->name);
 

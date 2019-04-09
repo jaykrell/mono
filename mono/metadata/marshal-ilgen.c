@@ -6535,7 +6535,7 @@ emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_
 }
 
 static void
-emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
+emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoJitICallInfo *jit_icall_info, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 	if (sig->hasthis)
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
@@ -6544,7 +6544,14 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gcons
 		mono_mb_emit_ldarg (mb, i + sig->hasthis);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func); // FIXMEjiticall
+#if 0 // FIXMEjiticall
+	mono_mb_emit_op (mb, CEE_MONO_JIT_ICALL_ADDR, (gpointer)func);
+#else
+	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
+	g_assert (MONO_JIT_ICALL_count < 0x200); // or 0x10000, but 0x200 works
+	mono_mb_emit_i4 /* mono_mb_emit_i2 */ (mb, mono_jit_icall_info_index (jit_icall_info));
+	//printf("%s %s\n", __func__, jit_icall_info->name);
+#endif
 	mono_mb_emit_calli (mb, csig2);
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);

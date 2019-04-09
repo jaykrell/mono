@@ -344,7 +344,7 @@ MONO_JIT_ICALL (count) \
 typedef enum MonoJitICallId {
 #define MONO_JIT_ICALL(x) MONO_JIT_ICALL_ ## x,
 MONO_JIT_ICALLS
-	mono_jit_icall_count = MONO_JIT_ICALL_count,
+	//MONO_JIT_ICALL_count = MONO_JIT_ICALL_count,
 #undef MONO_JIT_ICALL
 } MonoJitICallId;
 
@@ -354,28 +354,24 @@ typedef union MonoJitICallInfos {
 MONO_JIT_ICALLS
 #undef MONO_JIT_ICALL
 	};
-	MonoJitICallInfo array [mono_jit_icall_count];
+	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_jit_icall_info_index(x) ((x) - mono_jit_icall_info.array)
 
-static inline
-MonoJitICallInfo*
-mono_jit_icall_info_cast (gconstpointer jit_icall_info)
+static inline MonoJitICallInfo*
+mono_check_jit_icall_info (gconstpointer jit_icall_info)
 {
+	// All pointers to MonoJitICallInfo must be within mono_jit_icall_info.
+	// This enables converting to and from a small integer or enum.
 	g_assert ((char*)jit_icall_info >= (char*)&mono_jit_icall_info && (char*)jit_icall_info < (char*)(&mono_jit_icall_info + 1));
+
+	// Allow encoding in 16 bits, and maybe 9 (but not 8). FIXME static_assert.
+	g_assert (MONO_JIT_ICALL_count < 0x200);
+
 	return (MonoJitICallInfo*)jit_icall_info;
 }
-
-gconstpointer
-mono_temporary_translate_jit_icall_info_name (gconstpointer data);
-
-gconstpointer
-mono_temporary_translate_jit_icall_info_func (gconstpointer data);
-
-gconstpointer
-mono_temporary_translate_jit_icall_info (gconstpointer data);
 
 #endif // __MONO_METADATA_JIT_ICALL_DEF_H__

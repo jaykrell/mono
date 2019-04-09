@@ -6222,8 +6222,6 @@ mono_arch_emit_load_got_addr (guint8 *start, guint8 *code, MonoCompile *cfg, Mon
 guint8*
 mono_arch_emit_load_aotconst (guint8 *start, guint8 *code, MonoJumpInfo **ji, MonoJumpInfoType tramp_type, gconstpointer target)
 {
-	target = mono_temporary_translate_jit_icall_info_name (target);
-
 	/* Load the mscorlib got address */
 	x86_mov_reg_membase (code, X86_EAX, MONO_ARCH_GOT_REG, sizeof (target_mgreg_t), 4);
 	*ji = mono_patch_info_list_prepend (*ji, code - start, tramp_type, target);

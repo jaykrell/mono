@@ -1907,18 +1907,16 @@ mono_check_patch (MonoJumpInfoType type, gconstpointer data)
 		break;
 	}
 	g_assert (data);
-	MonoJitICallInfo const * const jit_icall_info = mono_jit_icall_info_cast (data);
+	MonoJitICallInfo const * const jit_icall_info = mono_check_jit_icall_info (data);
 	g_assert (jit_icall_info);
 	g_assert (jit_icall_info->name);
+	// not true with AOT
+	//g_assert (jit_icall_info->func);
 }
 
 void
 mono_add_patch_info (MonoCompile *cfg, int ip, MonoJumpInfoType type, gconstpointer target)
 {
-	mono_check_patch (type, target);
-
-	target = mono_temporary_translate_jit_icall_info_name (target);
-
 	mono_check_patch (type, target);
 
 	MonoJumpInfo *ji = (MonoJumpInfo *)mono_mempool_alloc0 (cfg->mempool, sizeof (MonoJumpInfo));
@@ -2102,13 +2100,19 @@ mono_postprocess_patches (MonoCompile *cfg)
 		case MONO_PATCH_INFO_ABS: {
 			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
 
+			g_assertf (!info, "3 avoid ABS patches depending on jit icall hashing");
+
 			/*
 			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
 			 * absolute address.
 			 */
 			if (info) {
 				patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
+#if 1 // FIXMEjiticall
+				patch_info->data.jit_icall_info = info;
+#else
 				patch_info->data.name = info->name;
+#endif
 			}
 
 			if (patch_info->type == MONO_PATCH_INFO_ABS) {
@@ -2888,7 +2892,7 @@ insert_safepoints (MonoCompile *cfg)
 		WrapperInfo *info = mono_marshal_get_wrapper_info (cfg->method);
 		/* These wrappers are called from the wrapper for the polling function, leading to potential stack overflow */
 		if (info && info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER &&
-#if 1 // FIXME
+#if 0 // FIXMEjiticall
 				(info->d.icall.func == mono_threads_state_poll ||
 				 info->d.icall.func == mono_thread_interruption_checkpoint ||
 				 info->d.icall.func == mono_threads_exit_gc_safe_region_unbalanced)) {

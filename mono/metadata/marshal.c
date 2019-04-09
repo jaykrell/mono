@@ -2915,7 +2915,7 @@ mono_marshal_get_runtime_invoke_for_sig (MonoMethodSignature *sig)
 
 #ifndef ENABLE_ILGEN
 static void
-emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
+emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoJitICallInfo *callinfo, MonoMethodSignature *csig2, gboolean check_exceptions);
 {
 }
 
@@ -2958,7 +2958,7 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 	else
 		csig2 = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 
-	get_marshal_cb ()->emit_icall_wrapper (mb, sig, func, csig2, check_exceptions);
+	get_marshal_cb ()->emit_icall_wrapper (mb, sig, callinfo, csig2, check_exceptions);
 
 	csig = mono_metadata_signature_dup_full (mono_defaults.corlib, sig);
 	csig->pinvoke = 0;
@@ -2966,7 +2966,7 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 		csig->call_convention = 0;
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ICALL_WRAPPER);
-#if 0 // FIXMEjiticall
+#if 1 // FIXMEjiticall
 	info->d.jit_icall_info = callinfo;
 #else
 	info->d.icall.func = (gpointer)func;

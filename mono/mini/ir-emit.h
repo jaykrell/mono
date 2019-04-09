@@ -337,7 +337,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		} \
 	} while (0)
 
-#define NEW_JIT_ICALL_ADDRCONST(cfg,dest,jit_icall_info) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, mono_temporary_translate_jit_icall_info_name (jit_icall_info))
+#define NEW_JIT_ICALL_ADDRCONST(cfg,dest,jit_icall_info) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, jit_icall_info)
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
         MONO_INST_NEW ((cfg), (dest), OP_MOVE); \
