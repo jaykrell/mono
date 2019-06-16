@@ -179,12 +179,20 @@ static gint32 joinable_thread_count;
 /* in a separate table (only affecting callers interested in this internal join detail) and look at that table in mono_thread_join */
 /* will close this race. */
 static GHashTable *pending_native_thread_join_calls;
+#ifdef MONO_COOP_COND_INIT
+static MonoCoopCond pending_native_thread_join_calls_event = MONO_COOP_COND_INIT;
+#else
 static MonoCoopCond pending_native_thread_join_calls_event;
+#endif
 
 static GHashTable *pending_joinable_threads;
 static gint32 pending_joinable_thread_count;
 
+#ifdef MONO_COOP_COND_INIT
+static MonoCoopCond zero_pending_joinable_thread_event = MONO_COOP_COND_INIT;
+#else
 static MonoCoopCond zero_pending_joinable_thread_event;
+#endif
 
 static void threads_add_pending_joinable_runtime_thread (MonoThreadInfo *mono_thread_info);
 static gboolean threads_wait_pending_joinable_threads (uint32_t timeout);
@@ -237,6 +245,9 @@ static void ref_stack_destroy (gpointer rs);
 /* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
 #define mono_interlocked_lock() mono_os_mutex_lock (&interlocked_mutex)
 #define mono_interlocked_unlock() mono_os_mutex_unlock (&interlocked_mutex)
+#ifdef MONO_MUTEX_INIT_MAYBE
+static mono_mutex_t interlocked_mutex = MONO_MUTEX_INIT_MAYBE;
+#else
 static mono_mutex_t interlocked_mutex;
 #endif
 
@@ -3353,11 +3364,12 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_os_mutex_init (&interlocked_mutex);
 #endif
 	mono_coop_mutex_init_recursive(&joinable_threads_mutex);
-
 	mono_os_event_init (&background_change_event, FALSE);
 	
+#ifndef MONO_COOP_COND_INIT
 	mono_coop_cond_init (&pending_native_thread_join_calls_event);
 	mono_coop_cond_init (&zero_pending_joinable_thread_event);
+#endif
 
 	mono_init_static_data_info (&thread_static_info);
 	mono_init_static_data_info (&context_static_info);

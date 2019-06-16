@@ -280,12 +280,18 @@ mono_runtime_init (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAtt
 void
 mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoThreadAttachCB attach_cb, MonoError *error)
 {
+	g_assert (!mono_inittialized);
+	g_assert (mono_initializing);
+
 	HANDLE_FUNCTION_ENTER ();
 
 	MonoAppDomainSetupHandle setup;
 	MonoAppDomainHandle ad;
 
 	error_init (error);
+
+	mono_sleep_initialize ();
+	mono_w32error_init ();
 
 	mono_portability_helpers_init ();
 	

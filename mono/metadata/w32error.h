@@ -81,13 +81,47 @@
 
 #endif
 
+// Three implementations:
+//  1. Win32
+//  2. Posix with MONO_KEYWORD_THREAD.
+//  3. Posix without MONO_KEYWORD_THREAD.
+
+#ifdef HOST_WIN32
+
+#define mono_w32error_get_last() ((guint32)GetLastError ())
+
+#define mono_w32error_set_last(error) (SetLastError (error))
+
+#define mono_w32error_init() /* nothing */
+
+#else
+
+#ifdef MONO_KEYWORD_THREAD
+
+extern MONO_KEYWORD_THREAD guint32 mono_w32error;
+
+#define mono_w32error_get_last() (mono_w32error)
+
+#define mono_w32error_set_last(error) (mono_w32error = (error))
+
+// Force underlying thread local initialization, on platforms that have it.
+#define mono_w32error_init() (*(volatile guint32*)&mono_w32error)
+
+#else
+
 guint32
 mono_w32error_get_last (void);
 
 void
 mono_w32error_set_last (guint32 error);
 
+#define mono_w32error_init() ((void)mono_w32error_get_last ())
+
+#endif // MONO_KEYWORD_THREAD
+
 guint32
 mono_w32error_unix_to_win32 (guint32 error);
+
+#endif // win32
 
 #endif /* _MONO_METADATA_W32ERROR_H_ */

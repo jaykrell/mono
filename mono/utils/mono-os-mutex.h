@@ -32,12 +32,69 @@
 #include <sys/time.h>
 #endif
 
+
+// Static mutexes:
+//   - statically initializable, only
+//   - requires no cleanup
+//   - is exclusive, not shared
+//   - is not recursive
+//   - is not coop-aware
+//
+// Works well for example, to serialize overall runtime initialization,
+// Not much else.
+// The no-cleanup aspect suggests a Posix spinlock
+// instead of a mutex. Instead, in the event
+// that Mono is unloaded and reloaded, these leak.
+//
+// FIXME: The naming is maybe too subtle.
+// "static" implies not Win32 critical section, implies SRWLOCK, implies not recursive
+//
+// FIXME: Coop-aware versions can also be provided
+//
+#ifdef HOST_WIN32
+typedef SRWLOCK				mono_static_mutex_t
+//
+// MONO_STATIC_MUTEX_INIT_ALWAYS is always defined.
+// It approximates mono_os_mutex_init, but might not be precise.
+// In particular, it does not use PTHREAD_PRIO_INHERIT.
+//
+// MONO_STATIC_MUTEX_INIT_MAYBE is defined sometimes.
+// If it is defined, it is an extremely close approximation
+// to mono_os_mutex_init. The difference is per
+// Posix PTHREAD_MUTEX_INITIALIZER vs. pthread_mutex_init:
+//  1. Lack of error checking.
+//  2. Inefficiency (but still works) on obscure systems that
+//     put mutexes in special memory.
+//
+#define MONO_STATIC_MUTEX_INIT_MAYBE	SRWLOCK_INIT
+#define MONO_STATIC_MUTEX_INIT_ALWAYS	SRWLOCK_INIT
+#define mono_static_mutex_lock          AcquireSRWLockExclusive
+#define mono_static_mutex_unlock        ReleaseSRWLockExclusive
+
+// Initialize condition variables statically, if it is the same as dynamic.
+#define MONO_COOP_COND_INIT			{ CONDITION_VARIABLE_INIT }
+
+#else
+typedef mono_mutex_t			mono_static_mutex_t
+#define MONO_STATIC_MUTEX_INIT_ALWAYS	PTHREAD_MUTEX_INITIALIZER
+#define mono_static_mutex_lock          pthread_mutex_lock
+#define mono_static_mutex_unlock        pthread_mutex_unlock
+#endif
+
+#if !defined(HOST_WIN32) && defined (PTHREAD_PRIO_INHERIT) && HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL
+
+#define MONO_MUTEX_INIT_MAYBE		PTHREAD_MUTEX_INITIALIZER
+
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
 #if !defined(HOST_WIN32)
 
 #if !defined(CLOCK_MONOTONIC) || defined(HOST_DARWIN) || defined(HOST_ANDROID) || defined(HOST_WASM)
 #define BROKEN_CLOCK_SOURCE
+
+// Initialize condition variables statically, if it is the same as dynamic.
+#define MONO_COOP_COND_INIT { PTHREAD_COND_INITIALIZE }
+
 #endif
 
 typedef pthread_mutex_t mono_mutex_t;

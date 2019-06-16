@@ -4078,9 +4078,20 @@ mini_is_interpreter_enabled (void)
 static const char*
 mono_get_runtime_build_version (void);
 
+gboolean mono_initializing;
+gboolean mono_initialized;
+static mono_static_mutex_t mono_init_lock = MONO_MUTEX_INIT_ALWAYS;
+
 MonoDomain *
 mini_init (const char *filename, const char *runtime_version)
 {
+	mono_static_mutex_lock (&mono_init_lock);
+
+	g_assert (!mono_initializing);
+	g_assert (!mono_initialized);
+
+	mono_initializing = TRUE;
+
 	ERROR_DECL (error);
 	MonoDomain *domain;
 	MonoRuntimeCallbacks callbacks;
@@ -4368,6 +4379,11 @@ mini_init (const char *filename, const char *runtime_version)
 	MONO_PROFILER_RAISE (runtime_initialized, ());
 
 	MONO_VES_INIT_END ();
+
+	mono_initializing = FALSE;
+	mono_initialized = TRUE;
+
+	mono_static_mutex_unlock (&mono_init_lock);
 
 	return domain;
 }

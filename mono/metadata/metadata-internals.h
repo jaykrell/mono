@@ -21,6 +21,9 @@
 #include "mono/utils/mono-conc-hashtable.h"
 #include "mono/utils/refcount.h"
 
+extern gboolean mono_initializing;
+extern gboolean mono_initialized;
+
 struct _MonoType {
 	union {
 		MonoClass *klass; /* for VALUETYPE and CLASS */

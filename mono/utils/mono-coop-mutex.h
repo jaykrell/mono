@@ -11,6 +11,8 @@
 #include "mono-os-mutex.h"
 #include "mono-threads-api.h"
 
+extern gboolean mono_initializing;
+
 /* We put the OS sync primitives in struct, so the compiler will warn us if
  * we use mono_os_(mutex|cond|sem)_... on MonoCoop(Mutex|Cond|Sem) structures */
 

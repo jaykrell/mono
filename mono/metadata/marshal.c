@@ -197,6 +197,8 @@ ves_icall_string_new_wrapper_impl (const char *text, MonoError *error)
 void
 mono_marshal_init (void)
 {
+	g_assert (mono_initializing); // i.e. serialized
+
 	static gboolean module_initialized = FALSE;
 
 	if (!module_initialized) {

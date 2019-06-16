@@ -25,6 +25,8 @@ void mono_portability_helpers_init (void)
 {
         gchar *env;
 
+	g_assert (mono_initializing); // i.e. serialized
+
 	if (mono_io_portability_helpers != PORTABILITY_UNKNOWN)
 		return;
 	

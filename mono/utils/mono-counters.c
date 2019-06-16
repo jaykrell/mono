@@ -25,7 +25,12 @@ struct _MonoCounter {
 };
 
 static MonoCounter *counters = NULL;
+
+#ifdef MONO_MUTEX_INIT_MAYBE
+static mono_mutex_t counters_mutex = MONO_MUTEX_INIT_MAYBE;
+#else
 static mono_mutex_t counters_mutex;
+#endif
 
 static volatile gboolean initialized = FALSE;
 
@@ -126,10 +131,18 @@ mono_counters_enable (int section_mask)
 void
 mono_counters_init (void)
 {
+	// FIXME: This is called from a few places.
+	// Other than the mutex, it is safe to call
+	// multiple times, concurrently or not.
+	//
+	//g_assert (mono_initializing); // i.e. serialized
+
 	if (initialized)
 		return;
 
+#ifndef MONO_MUTEX_INIT_MAYBE
 	mono_os_mutex_init (&counters_mutex);
+#endif
 
 	initialize_system_counters ();
 

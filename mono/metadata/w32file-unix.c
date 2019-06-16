@@ -4944,6 +4944,8 @@ UnlockFile (gpointer handle, guint32 offset_low, guint32 offset_high, guint32 le
 void
 mono_w32file_init (void)
 {
+	g_assert (mono_initializing); // i.e. serialized
+
 	MonoFDHandleCallback file_data_callbacks;
 	memset (&file_data_callbacks, 0, sizeof (file_data_callbacks));
 	file_data_callbacks.close = file_data_close;

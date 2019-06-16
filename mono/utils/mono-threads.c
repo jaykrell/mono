@@ -1578,13 +1578,21 @@ mono_thread_info_yield (void)
 	return mono_threads_platform_yield ();
 }
 
-static mono_lazy_init_t sleep_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+#ifdef MONO_STATIC_MUTEX_INIT_MAYBE;
+static MonoCoopMutex sleep_mutex = { MONO_STATIC_MUTEX_INIT_MAYBE };
+#else
 static MonoCoopMutex sleep_mutex;
+#endif
 static MonoCoopCond sleep_cond;
 
-static void
-sleep_initialize (void)
+static gboolean mono_sleep_initialized;
+
+void
+mono_sleep_initialize (void)
 {
+	g_assert (mono_initializing); // i.e. serialized
+	g_assert (!mono_sleep_initialized);
+	mono_sleep_initialized = TRUE;
 	mono_coop_mutex_init (&sleep_mutex);
 	mono_coop_cond_init (&sleep_cond);
 }
@@ -1610,7 +1618,7 @@ sleep_interruptable (guint32 ms, gboolean *alerted)
 	if (ms != MONO_INFINITE_WAIT)
 		end = mono_msec_ticks() + ms;
 
-	mono_lazy_initialize (&sleep_init, sleep_initialize);
+	g_assert (mono_sleep_initialized);
 
 	mono_coop_mutex_lock (&sleep_mutex);
 

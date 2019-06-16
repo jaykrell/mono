@@ -15,22 +15,33 @@
 #include "mono-threads.h"
 #include "mono-time.h"
 
+#ifdef MONO_MUTEX_INIT_MAYBE
+static mono_mutex_t signal_mutex = MONO_MUTEX_INIT_MAYBE;
+#else
 static mono_lazy_init_t status = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
-
 static mono_mutex_t signal_mutex;
+#endif
 
-static void
+#ifndef MONO_MUTEX_INIT_MAYBE
+
+void
 initialize (void)
 {
 	mono_os_mutex_init (&signal_mutex);
 }
+
+#endif
 
 void
 mono_os_event_init (MonoOSEvent *event, gboolean initial)
 {
 	g_assert (event);
 
+#ifndef MONO_MUTEX_INIT_MAYBE
+	// FIXME: This initialization is on-demand, because
+	// os-event.h is public, w/o a public initialization.
 	mono_lazy_initialize (&status, initialize);
+#endif
 
 	event->conds = g_ptr_array_new ();
 	event->signalled = initial;
@@ -39,7 +50,9 @@ mono_os_event_init (MonoOSEvent *event, gboolean initial)
 void
 mono_os_event_destroy (MonoOSEvent *event)
 {
+#ifndef MONO_MUTEX_INIT_MAYBE
 	g_assert (mono_lazy_is_initialized (&status));
+#endif
 
 	g_assert (event);
 
@@ -60,8 +73,9 @@ mono_os_event_set (MonoOSEvent *event)
 {
 	gsize i;
 
+#ifndef MONO_MUTEX_INIT_MAYBE
 	g_assert (mono_lazy_is_initialized (&status));
-
+#endif
 	g_assert (event);
 
 	mono_os_mutex_lock (&signal_mutex);
@@ -77,8 +91,9 @@ mono_os_event_set (MonoOSEvent *event)
 void
 mono_os_event_reset (MonoOSEvent *event)
 {
+#ifndef MONO_MUTEX_INIT_MAYBE
 	g_assert (mono_lazy_is_initialized (&status));
-
+#endif
 	g_assert (event);
 
 	mono_os_mutex_lock (&signal_mutex);
@@ -117,14 +132,14 @@ MonoOSEventWaitRet
 mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waitall, guint32 timeout, gboolean alertable)
 {
 	MonoOSEventWaitRet ret;
-	mono_cond_t signal_cond;
 	OSEventWaitData *data = NULL;
 	gboolean alerted;
 	gint64 start = 0;
 	gint i;
 
+#ifndef MONO_MUTEX_INIT_MAYBE
 	g_assert (mono_lazy_is_initialized (&status));
-
+#endif
 	g_assert (events);
 	g_assert (nevents > 0);
 	g_assert (nevents <= MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS);
@@ -149,7 +164,12 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	if (timeout != MONO_INFINITE_WAIT)
 		start = mono_msec_ticks ();
 
+#ifdef MONO_COOP_COND_INIT
+	mono_cond_t signal_cond = MONO_COOP_COND_INIT;
+#else
+	mono_cond_t signal_cond;
 	mono_os_cond_init (&signal_cond);
+#endif
 
 	mono_os_mutex_lock (&signal_mutex);
 

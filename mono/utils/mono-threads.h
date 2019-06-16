@@ -839,4 +839,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 
 #endif
 
+void
+mono_sleep_initialize (void);
+
 #endif /* __MONO_THREADS_H__ */

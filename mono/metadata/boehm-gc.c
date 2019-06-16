@@ -118,6 +118,8 @@ mono_gc_base_init (void)
 {
 	char *env;
 
+	g_assert (mono_initializing); // i.e. serialized
+
 	if (gc_initialized)
 		return;
 

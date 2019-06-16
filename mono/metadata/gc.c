@@ -78,7 +78,12 @@ static GSList *domains_to_finalize;
 
 static gboolean finalizer_thread_exited;
 /* Uses finalizer_mutex */
+
+#ifdef MONO_COOP_COND_INIT
+static MonoCoopCond exited_cond = MONO_COOP_COND_INIT;
+#else
 static MonoCoopCond exited_cond;
+#endif
 
 static MonoInternalThread *gc_thread;
 
@@ -1007,16 +1012,16 @@ mono_gc_init_finalizer_thread (void)
 	mono_error_assert_ok (error);
 }
 
-static void
-reference_queue_mutex_init (void)
-{
-	mono_coop_mutex_init_recursive (&reference_queue_mutex);
-}
+static gboolean mono_gc_inited;
 
 void
 mono_gc_init (void)
 {
-	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
+	g_assert (mono_initializing); // i.e. serialized
+	g_assert (!mono_gc_inited);
+	mono_gc_inited = TRUE;
+
+	mono_coop_mutex_init_recursive (&reference_queue_mutex);
 	mono_coop_mutex_init_recursive (&finalizer_mutex);
 
 	mono_counters_register ("Minor GC collections", MONO_COUNTER_GC | MONO_COUNTER_INT, &mono_gc_stats.minor_gc_count);
@@ -1289,7 +1294,8 @@ mono_gc_reference_queue_new_internal (mono_reference_queue_callback callback)
 	MonoReferenceQueue *res = g_new0 (MonoReferenceQueue, 1);
 	res->callback = callback;
 
-	mono_lazy_initialize (&reference_queue_mutex_inited, reference_queue_mutex_init);
+	g_assert (mono_initialized);
+
 	mono_coop_mutex_lock (&reference_queue_mutex);
 	res->next = ref_queues;
 	ref_queues = res;

@@ -15,9 +15,18 @@
 #include "mono/sgen/sgen-client.h"
 #include "mono/utils/mono-os-mutex.h"
 
+#ifdef MONO_MUTEX_INIT_MAYBE
+static mono_mutex_t lock = MONO_MUTEX_INIT_MAYBE;
+#else
 static mono_mutex_t lock;
+#endif
+#ifdef MONO_COOP_COND_INIT
+static mono_cond_t work_cond = MONO_COOP_COND_INIT;
+static mono_cond_t done_cond = MONO_COOP_COND_INIT;
+#else
 static mono_cond_t work_cond;
 static mono_cond_t done_cond;
+#endif
 
 static int threads_num;
 static MonoNativeThreadId threads [SGEN_THREADPOOL_MAX_NUM_THREADS];
@@ -277,9 +286,14 @@ sgen_thread_pool_start (void)
 	if (!threads_num)
 		return;
 
+#ifndef MONO_MUTEX_INIT_MAYBE
 	mono_os_mutex_init (&lock);
+#endif
+
+#ifndef MONO_COOP_COND_INIT
 	mono_os_cond_init (&work_cond);
 	mono_os_cond_init (&done_cond);
+#endif
 
 	threads_finished = 0;
 	threadpool_shutdown = FALSE;

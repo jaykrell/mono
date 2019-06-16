@@ -27,6 +27,8 @@ static gboolean gc_inited = FALSE;
 void
 mono_gc_base_init (void)
 {
+	g_assert (mono_initializing); // i.e. serialized
+
 	if (gc_inited)
 		return;
 

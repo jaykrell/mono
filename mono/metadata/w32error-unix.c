@@ -4,35 +4,31 @@
 
 #include "w32error.h"
 
-#include "utils/mono-lazy-init.h"
-
-static mono_lazy_init_t error_key_once = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+#ifndef MONO_KEYWORD_THREAD // Most platforms have this.
 
 static pthread_key_t error_key;
-
-static void
-error_key_init (void)
-{
-	gint ret;
-	ret = pthread_key_create (&error_key, NULL);
-	g_assert (ret == 0);
-}
 
 guint32
 mono_w32error_get_last (void)
 {
-	mono_lazy_initialize (&error_key_once, error_key_init);
 	return GPOINTER_TO_UINT (pthread_getspecific (error_key));
 }
 
 void
 mono_w32error_set_last (guint32 error)
 {
-	gint ret;
-	mono_lazy_initialize (&error_key_once, error_key_init);
 	ret = pthread_setspecific (error_key, GUINT_TO_POINTER (error));
 	g_assert (ret == 0);
 }
+
+void
+mono_w32error_init (void)
+{
+	const int ret = pthread_key_create (&error_key, NULL);
+	g_assert (ret == 0);
+}
+
+#endif
 
 guint32
 mono_w32error_unix_to_win32 (guint32 error)

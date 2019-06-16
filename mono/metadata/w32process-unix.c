@@ -1510,6 +1510,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	Process *process;
 	ERROR_DECL (error);
 
+	// FIXME: Replace with pthread_once.
 #if HAVE_SIGACTION
 	mono_lazy_initialize (&process_sig_chld_once, process_add_sigchld_handler);
 #endif
