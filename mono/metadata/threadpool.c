@@ -353,10 +353,9 @@ worker_callback (void)
 		domains_unlock ();
 
 		// Thread Pool Worker
-		mono_thread_set_name_constant (mono_thread_internal_current (),
-			MonoSetThreadNameFlag_Reset, error,
+		mono_thread_set_name_constant_ignore_error (mono_thread_internal_current (),
+			MonoSetThreadNameFlag_Reset,
 			'T','h','r','e','a','d',' ','P','o','o','l',' ','W','o','r','k','e','r');
-		mono_error_assert_ok (error); // FIXME: Does failure here matter?
 
 		mono_thread_clear_and_set_state (thread,
 			(MonoThreadState)~ThreadState_Background,
@@ -365,6 +364,8 @@ worker_callback (void)
 		mono_thread_push_appdomain_ref (tpdomain->domain);
 		if (mono_domain_set_fast (tpdomain->domain, FALSE)) {
 			MonoObject *exc = NULL, *res;
+
+			ERROR_DECL (error);
 
 			res = try_invoke_perform_wait_callback (&exc, error);
 			if (exc || !mono_error_ok(error)) {
