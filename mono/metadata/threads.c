@@ -1209,11 +1209,10 @@ start_wrapper_internal (StartInfo *start_info, gsize *stack_ptr)
 	fire_attach_profiler_events ((MonoNativeThreadId) tid);
 
 	/* if the name was set before starting, we didn't invoke the profiler callback */
-	if (internal->name) {
-		char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
+	char *tname = internal->name.utf8.data;
+	if (tname) {
 		MONO_PROFILER_RAISE (thread_name, (internal->tid, tname));
 		mono_native_thread_set_name (MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid), tname);
-		g_free (tname);
 	}
 
 	/* start_func is set only for unmanaged start functions */
@@ -1836,7 +1835,7 @@ mono_thread_get_name_utf8 (MonoThread *thread)
 
 	LOCK_THREAD (internal);
 
-	char *tname = g_utf16_to_utf8 (internal->name, internal->name_len, NULL, NULL, NULL);
+	char *tname = g_memdup (internal->name.utf8.data, internal->utf8.length + 1, NULL, NULL, NULL);
 
 	UNLOCK_THREAD (internal);
 
@@ -1883,71 +1882,91 @@ ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle thr
 }
 #endif
 
-void 
-mono_thread_set_name_internal (MonoInternalThread *this_obj, const char* name8, size_t name8_length,
+mono_thread_set_name_internal (MonoInternalThread *thread, const char* name8, size_t name8_length,
 		const gunichar2 *name16, size_t name16_length, MonoSetThreadNameFlags flags, MonoError *error)
 {
 	// Mostly setting thread name is best-effort, and failure does not matter,
 	// but it is also a public API with a documented failure mode.
 
 	MonoNativeThreadId tid = 0;
+	
+	// We pretty much always want utf8 and utf16, or neither.
+	// Constants trivially provide both.
+	// Managed provides utf16.
+	// Crash dump wants utf8.
+	// Profiler wants utf8.
+	// Windows presently wants utf8 and later utf16.
+	// pthread wants utf8.
 
-	LOCK_THREAD (this_obj);
+	// Constants must specify both 8 and 16.
+	const gboolean constant = !!(flags & MonoSetThreadNameFlag_Constant);
+	g_assert (!constant || (name8 && name16));
+	
+	GExtendedString name = { 0 };
 
-	// Constants must specify both 8 and 16, for future flexibility.
-	g_assert (!(flags & MonoSetThreadNameFlag_Constant) || (name8 && name16));
+	LOCK_THREAD (thread);
 
 	if (flags & MonoSetThreadNameFlag_Reset) {
-		this_obj->flags &= ~MONO_THREAD_FLAG_NAME_SET;
-	} else if (this_obj->flags & MONO_THREAD_FLAG_NAME_SET) {
-		UNLOCK_THREAD (this_obj);
+		thread->flags &= ~MONO_THREAD_FLAG_NAME_SET;
+	} else if (thread->flags & MONO_THREAD_FLAG_NAME_SET) {
+		UNLOCK_THREAD (thread);
 		
 		if (error)
 			mono_error_set_invalid_operation (error, "%s", "Thread.Name can only be set once.");
 		return;
 	}
-	if (this_obj->name) {
-		g_free (this_obj->name);
-		this_obj->name_len = 0;
-	}
-	// FIXME: Store UTF8 for dump_thread (needs more space in MonoInternaThread -- netcore compatible?)
-	// FIXME: Avoid making a copy if it is a constant (needs more space in MonoInternaThread -- netcore compatible?)
+	
+	// FIXME: Do less work under lock.
+
+	g_extended_string_cleanup (&thread->name);
 	if (name8 || name16) {
-		if (name16) {
-			this_obj->name = g_memdup (name16, (name16_length + 1) * sizeof (gunichar2));
-			this_obj->name_len = name16_length;
-		} else {
-			long length = 0;
-			this_obj->name = g_utf8_to_utf16 (name8, name8_length, NULL, &length, NULL);
-			this_obj->name_len = length;
+		// To keep
+		//  MONO_PROFILER_RAISE
+		//  mono_native_thread_set_name
+		// outside of thread lock as it historical, two copies
+		// of thread name are made, sort of.
+		// The second utf16 is just a pointer, no copy.
+		// The second utf8 matches earlier behavior, outside of thread lock.
+		//
+		if (name8) {
+			g_extended_string_init_utf8 (&name, name8, name8_length, FALSE);
+			g_extended_string_init_utf8 (&thread->name, name8, name8_length, !constant);
 		}
+		if (name16) {
+			g_extended_string_init_utf16 (&name, name16, name16_length, FALSE);
+			g_extended_string_init_utf16 (&thread->name, name16, name16_length, !constant);
+		}
+		g_extended_string_make_utf8 (&thread->name);
+		g_extended_string_make_utf16 (&thread->name);
 
 		if (flags & MonoSetThreadNameFlag_Permanent)
-			this_obj->flags |= MONO_THREAD_FLAG_NAME_SET;
+			thread->flags |= MONO_THREAD_FLAG_NAME_SET;
 	}
-	else
-		this_obj->name = NULL;
 
-	if (!(this_obj->state & ThreadState_Stopped))
-		tid = thread_get_tid (this_obj);
+	if (!(thread->state & ThreadState_Stopped))
+		tid = thread_get_tid (thread);
 
-	UNLOCK_THREAD (this_obj);
+	UNLOCK_THREAD (thread);
 
-	if (this_obj->name && tid) {
-		char *tname = name8 ? (char*)name8 : g_utf16_to_utf8 (name16, name16_length, NULL, NULL, NULL);
-		if (!tname)
-			return;
-		MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, tname));
-		mono_native_thread_set_name (tid, tname);
-		if (!name8)
-			mono_free (tname);
+	if ((name8 || name16) && tid) {
+		g_extended_string_make_utf8 (&name);
+		if (name.utf8.data) {
+			MONO_PROFILER_RAISE (thread_name, ((uintptr_t)tid, name.utf8.data));
+			mono_native_thread_set_name (tid, name.utf8.data);
+		}
+#ifdef HOST_WIN32
+		g_extended_string_make_utf16 (&name);
+		if (name.utf16.data)
+			mono_windows_thread_set_name (thread->native_handle, name.utf16.data);
+#endif
+		g_extended_string_cleanup (&name);
 	}
 }
 
 void 
-ves_icall_System_Threading_Thread_SetName_icall (MonoThreadObjectHandle this_obj, const gunichar2* name, gint32 name_length, MonoError* error)
+ves_icall_System_Threading_Thread_SetName_icall (MonoThreadObjectHandle thread, const gunichar2* name, gint32 name_length, MonoError* error)
 {
-	mono_thread_set_name_internal (thread_handle_to_internal_ptr (this_obj),
+	mono_thread_set_name_internal (thread_handle_to_internal_ptr (thread),
 		NULL, 0, name, name_length, MonoSetThreadNameFlag_Permanent, error);
 }
 
@@ -4058,7 +4077,6 @@ static void
 dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_file)
 {
 	GString* text = g_string_new (0);
-	char *name;
 	GError *gerror = NULL;
 	int i;
 
@@ -4074,19 +4092,12 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 
 	/*
 	 * Do all the non async-safe work outside of get_thread_dump.
-	 * FIXME: Retain utf8 in mono_thread_set_name_internal.
 	 */
-	if (thread->name) {
-		name = g_utf16_to_utf8 (thread->name, thread->name_len, NULL, NULL, &gerror);
-		g_assert (!gerror);
-		g_string_append_printf (text, "\n\"%s\"", name);
-		g_free (name);
-	}
-	else if (thread->threadpool_thread) {
-		g_string_append (text, "\n\"<threadpool thread>\"");
-	} else {
-		g_string_append (text, "\n\"<unnamed thread>\"");
-	}
+	g_string_append (text, "\n\"");
+	g_string_append (text,
+			thread->name.utf8.data ? thread->name.utf8.data :
+			thread->threadpool_thread ? "<threadpool thread>" : "<unnamed thread>");
+	g_string_append (text, "\"");
 
 	for (i = 0; i < ud->nframes; ++i) {
 		MonoStackFrameInfo *frame = &ud->frames [i];
@@ -4106,8 +4117,8 @@ dump_thread (MonoInternalThread *thread, ThreadDumpUserData *ud, FILE* output_fi
 
 	g_fprintf (output_file, "%s", text->str);
 
-#if PLATFORM_WIN32 && TARGET_WIN32 && _DEBUG
-	OutputDebugStringA(text->str);
+#if HOST_WIN32 && _DEBUG
+	OutputDebugStringA (text->str);
 #endif
 
 	g_string_free (text, TRUE);

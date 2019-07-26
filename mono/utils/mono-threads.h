@@ -863,4 +863,9 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 
 #endif
 
+#if HOST_WIN32
+void
+mono_windows_thread_set_name (HANDLE thread_handle, const gunichar2* thread_name);
+#endif
+
 #endif /* __MONO_THREADS_H__ */

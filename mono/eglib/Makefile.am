@@ -38,6 +38,7 @@ libeglib_la_SOURCES = \
 	goutput.c    	\
 	gqsort.c	\
 	gstr.c       	\
+	gstrx.c       	\
 	gslist.c     	\
 	gstring.c    	\
 	gptrarray.c     \

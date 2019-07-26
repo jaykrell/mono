@@ -53,10 +53,13 @@ namespace System.Threading {
 		// stores a thread handle
 		IntPtr handle;
 		IntPtr native_handle; // used only on Win32
-		IntPtr unused3;
 		/* accessed only from unmanaged code */
-		private IntPtr name;
-		private int name_len; 
+		private IntPtr name0; // See GExtendedString.
+		private int name1; // See GExtendedString.
+		private int name2; // See GExtendedString.
+		private IntPtr name3; // See GExtendedString.
+		private int name4; // See GExtendedString.
+		private int name5; // See GExtendedString.
 		private ThreadState state;
 		private object abort_exc;
 		private int abort_state_handle;

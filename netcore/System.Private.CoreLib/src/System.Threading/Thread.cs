@@ -20,10 +20,11 @@ namespace System.Threading
 		// stores a thread handle
 		IntPtr handle;
 		IntPtr native_handle; // used only on Win32
-		IntPtr unused3;
 		/* accessed only from unmanaged code */
-		private IntPtr name;
-		private int name_len;
+		private IntPtr name8;
+		private IntPtr name16;
+		private int name_len8;
+		private int name_len16;
 		private ThreadState state;
 		private object abort_exc;
 		private int abort_state_handle;
@@ -50,7 +51,6 @@ namespace System.Threading
 		internal int managed_id;
 		private int small_id;
 		private IntPtr manage_callback;
-		private IntPtr unused4;
 		private IntPtr flags;
 		private IntPtr thread_pinning_ref;
 		private IntPtr abort_protected_block_count;

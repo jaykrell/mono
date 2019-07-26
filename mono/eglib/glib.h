@@ -1386,7 +1386,33 @@ glong     g_utf8_pointer_to_offset (const gchar *str, const gchar *pos);
 #define G_HAVE_API_SUPPORT(x) (x)
 #define G_UNSUPPORTED_API "%s:%d: '%s' not supported.", __FILE__, __LINE__
 #define g_unsupported_api(name) G_STMT_START { g_warning (G_UNSUPPORTED_API, name); } G_STMT_END
- 
+
+typedef struct GGenericString {
+	void* data;
+	gint32 length;
+	gboolean free; // gint32
+} GGenericString;
+
+typedef struct GExtendedString {
+	GGenericString utf8;
+	GGenericString utf16;
+} GExtendedString;
+
+void
+g_extended_string_cleanup (GExtendedString* str);
+
+void
+g_extended_string_make_utf8 (GExtendedString* str);
+
+void
+g_extended_string_make_utf16 (GExtendedString* str);
+
+void
+g_extended_string_init_utf8 (GExtendedString* str, char*, gint32 length, gboolean copy);
+
+void
+g_extended_string_init_utf16 (GExtendedString* str, gunichar2*, gint32 length, gboolean copy);
+
 G_END_DECLS
 
 // G_STRING_CONSTANT_8_AND_16 (foo, 'f','o,'o');
