@@ -26,13 +26,14 @@ typedef enum
 	MintOpShortAndInt
 } MintOpArgType;
 
-#define OPDEF(a,b,c,d) \
-	a,
-enum {
 #include "mintops.def"
-	MINT_LASTOP
+
+#define OP_SYM(a, b, c, d) a,
+
+enum {
+MONO_INTERPRETER_OPCODES(OP_SYM)
+	MINT_LASTOP // FIXME Is this needed?
 };
-#undef OPDEF
 
 #if NO_UNALIGNED_ACCESS
 #  if G_BYTE_ORDER == G_LITTLE_ENDIAN

@@ -9,31 +9,26 @@
 #include <glib.h>
 #include <stdio.h>
 #include "mintops.h"
+#include "mintops.def"
 
-#define OPDEF(a,b,c,d) \
-	b,
+#define OP_NAME(a, b, c, d) b,
+#define OP_LEN(a, b, c, d) c,
+#define OP_ARGTYPE(a, b, c, d) d,
+
 const char *mono_interp_opname[] = {
-#include "mintops.def"
-	""
+MONO_INTERPRETER_OPCODES(OP_NAME)
+	"" // FIXME: Why this line?
 };
-#undef OPDEF
 
-#define OPDEF(a,b,c,d) \
-	c,
 unsigned char mono_interp_oplen[] = {
-#include "mintops.def"
-	0
+MONO_INTERPRETER_OPCODES(OP_LEN)
+	0 // FIXME: Why this line?
 };
-#undef OPDEF
 
-
-#define OPDEF(a,b,c,d) \
-	d,
 MintOpArgType mono_interp_opargtype[] = {
-#include "mintops.def"
-	(MintOpArgType)0
+MONO_INTERPRETER_OPCODES(OP_ARGTYPE)
+	(MintOpArgType)0 // FIXME: Why this line?
 };
-#undef OPDEF
 
 const guint16*
 mono_interp_dis_mintop_len (const guint16 *ip)

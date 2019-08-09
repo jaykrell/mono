@@ -71,6 +71,7 @@
 #include <mono/mini/debugger-agent.h>
 #include <mono/mini/ee.h>
 #include <mono/mini/trace.h>
+#include "mintops.def"
 
 #ifdef TARGET_ARM
 #include <mono/mini/mini-arm.h>
@@ -214,22 +215,71 @@ static void debug_enter (InterpFrame *frame, int *tracing)
 #if defined(__GNUC__) && !defined(TARGET_WASM)
 #define USE_COMPUTED_GOTO 1
 #endif
+
+// Computed goto can be simulated portably, but the results
+// compile excruciatingly slowly with gcc and clang.
+//
+// Computed goto is not just a switch, but an additional
+// switch/goto/branch per case/break to form the loop, thereby
+// allocating additional processor branch prediction resources,
+// in the event that such resources are per branch location/instruction,
+// and not only the more advanced path sensitive branch prediction
+// that Intel implements.
+//
+// That is, the break does a dispatch, not just goto the shared dispatch.
+//
+
 #if USE_COMPUTED_GOTO
 #define MINT_IN_SWITCH(op) COUNT_OP(op); goto *in_labels[op];
-#define MINT_IN_CASE(x) LAB_ ## x:
 #define MINT_IN_DISPATCH(op) goto *in_labels[op];
 #if DEBUG_INTERP
 #define MINT_IN_BREAK if (tracing > 1) MINT_IN_DISPATCH(*ip); else { COUNT_OP(*ip); goto *in_labels[*ip]; }
 #else
 #define MINT_IN_BREAK { COUNT_OP(*ip); goto *in_labels[*ip]; }
 #endif
-#define MINT_IN_DEFAULT mint_default: if (0) goto mint_default; /* make gcc shut up */
+
+#define MINT_IN_CASE(x) LAB_ ## x:
+#define MINT_IN_DEFAULT mint_default: if (0) goto mint_default; /* quash warning */
+
 #else
-#define MINT_IN_SWITCH(op) switch (op)
-#define MINT_IN_CASE(x) case x:
-#define MINT_IN_DISPATCH(op) goto main_loop;
-#define MINT_IN_BREAK break
-#define MINT_IN_DEFAULT default:
+
+#if _MSC_VER
+
+#if 0 // This is portable, but compiles too slowly with gcc and clang.
+
+// Switch is turned back into goto label.
+
+#define OP_CASE_GOTO(a, b, c, d) case a: goto LAB_ ## a;
+#define MINT_IN_DISPATCH(op)     switch (op) { MONO_INTERPRETER_OPCODES(OP_CASE_GOTO) default: goto mint_default; }
+#define MINT_IN_SWITCH(op)       MINT_IN_DISPATCH (op)
+#define MINT_IN_BREAK            MINT_IN_DISPATCH (*ip) // This is the key, duplicate instead of goto.
+#define MINT_IN_CASE(x)          LAB_ ## x:
+#define MINT_IN_DEFAULT          goto mint_default; mint_default:
+
+
+#else // equivalent or close -- only breaks are optimized, other rarer dispatches are not
+// This is also portable and still compiles very slowly with gcc/clang.
+// This does increase msvc compile time from 30 seconds to 180 seconds for interp.c.
+// That is not nearly as bad as gcc/clang.
+
+#define OP_CASE_GOTO(a, b, c, d) case a: goto LAB_ ## a;
+#define MINT_IN_DISPATCH(op)     goto main_loop // uncommon cases, can work either way
+#define MINT_IN_SWITCH(op)       switch (op) // simplification of main switch
+#define MINT_IN_BREAK            switch (*ip) { MONO_INTERPRETER_OPCODES(OP_CASE_GOTO) default: goto mint_default; } // the key again
+#define MINT_IN_CASE(x)          LAB_ ## x: case x: // both case and label
+#define MINT_IN_DEFAULT          goto mint_default; mint_default: default: // again case and label, usable with either dispatch
+
+#endif
+
+#else
+
+#define MINT_IN_DISPATCH(op) goto main_loop
+#define MINT_IN_SWITCH(op)   switch (op)
+#define MINT_IN_BREAK        goto main_loop
+#define MINT_IN_CASE(x)      case x:
+#define MINT_IN_DEFAULT      default:
+
+#endif
 #endif
 
 static void
@@ -2916,7 +2966,7 @@ static int opcode_counts[512];
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
  */
-static void 
+static void
 interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpFrame child_frame;
@@ -2934,11 +2984,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO
-	static void *in_labels[] = {
-#define OPDEF(a,b,c,d) \
-	&&LAB_ ## a,
-#include "mintops.def"
-	0 };
+	static void * const in_labels[] = {
+#define OP_ADDRESS_OF_LABEL(a,b,c,d) &&LAB_ ## a,
+	MONO_INTERPRETER_OPCODES(OP_ADDRESS_OF_LABEL)
+	0 }; // FIXME Why this line?
 #endif
 
 	MonoMethodPInvoke* piinfo = NULL;
@@ -2997,9 +3046,8 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	 * but it may be useful for debug
 	 */
 	while (1) {
-#ifndef USE_COMPUTED_GOTO
+	goto main_loop;
 	main_loop:
-#endif
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= imethod->vt_stack_size); */
 		DUMP_INSTR();

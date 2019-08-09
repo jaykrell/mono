@@ -64,7 +64,7 @@ g_strndup (const gchar *str, gsize n)
 
 gint g_vasprintf (gchar **ret, const gchar *fmt, va_list ap)
 {
-#if defined (HAVE_VASPRINTF) && !defined (ENABLE_OVERRIDABLE_ALLOCATORS)
+#if defined (HAVE_VASPRINTF) && !defined (ENABLE_OVERRIDABLE_ALLOCATORS) && !_MSC_VER
   return vasprintf (ret, fmt, ap);
 #else
 	char *buf;
@@ -206,12 +206,13 @@ Last this was checked was June-2017.
 Apple is at 106.
 Android is at 133.
 
-Haiku starts numbering at 0x8000_7000 (like HRESULT on Win32) for POSIX errno,
+Haiku starts numbering at 0x80007000 for POSIX errno,
 but errors from BeAPI or custom user libraries could be lower or higher.
-(Technically, this is C and old POSIX compliant, but not new POSIX compliant.)
-The big problem with this is that it effectively means errors start at a
-negative offset. As such, disable the whole strerror caching mechanism.
-
+This is C and old POSIX compliant, but not new POSIX compliant.
+The problem with this is that it means errors start at a
+non-constant offset. Negative numbers are not the problem, as
+they could be offset, if there was a fixed base.
+Disable the whole strerror caching mechanism.
 */
 #define MONO_ERRNO_MAX 200
 #define str(s) #s
@@ -220,7 +221,7 @@ negative offset. As such, disable the whole strerror caching mechanism.
 static pthread_mutex_t strerror_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#if defined(__HAIKU__)
+#if defined(__HAIKU__) || _MSC_VER
 const gchar *
 g_strerror (gint errnum)
 {
