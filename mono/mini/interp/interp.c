@@ -255,7 +255,10 @@ set_resume_state (ThreadContext *context, InterpFrame *frame, GSList *finally_ip
 			++sp;														\
 		} \
 		finally_ips = set_resume_state ((context), (frame), finally_ips);	\
-		MINT_IN_DISPATCH(*ip);											\
+		/* goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.	\
+		 * This is a slow/rare path and conserving stack is preferred over its performance otherwise.	\
+		 */												\
+		goto main_loop;											\
 	} while (0)
 
 /*
@@ -3260,9 +3263,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	 * but it may be useful for debug
 	 */
 	while (1) {
-#ifndef USE_COMPUTED_GOTO
 	main_loop:
-#endif
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= imethod->vt_stack_size); */
 		DUMP_INSTR();
@@ -5913,7 +5914,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				/* Throw abort after the last finally block to avoid confusing EH */
 				if (pending_abort && !finally_ips)
 					EXCEPTION_CHECKPOINT;
-				MINT_IN_DISPATCH(*ip);
+				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
+				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
+				goto main_loop;
 			}
 			ves_abort();
 			MINT_IN_BREAK;
@@ -5986,7 +5989,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				finally_ips = g_slist_remove (finally_ips, ip);
 				sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
 				vt_sp = (unsigned char *) sp + imethod->stack_size;
-				MINT_IN_DISPATCH (*ip);
+				// goto main_loop instead of MINT_IN_DISPATCH helps the compiler and therefore conserves stack.
+				// This is a slow/rare path and conserving stack is preferred over its performance otherwise.
+				goto main_loop;
 			}
 
 			ves_abort();
