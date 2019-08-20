@@ -3542,15 +3542,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_JMP) {
-#if 0
-			InterpMethod *new_method = (InterpMethod*)IMETHOD->data_items [* (guint16 *)(ip + 1)];
 
-			if (IMETHOD->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
-				MONO_PROFILER_RAISE (method_tail_call, (IMETHOD->method, new_method->method));
+			InterpMethod* new_method = (InterpMethod*)frame->imethod->data_items [* (guint16 *)(ip + 1)];
 
-#define NEW_METHOD ((InterpMethod*)IMETHOD->data_items [* (guint16 *)(ip + 1)])
-
-			new_method = NEW_METHOD;
+			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL)
+				MONO_PROFILER_RAISE (method_tail_call, (frame->imethod->method, new_method->method));
 
 			if (!new_method->transformed) {
 				MONO_API_ERROR_INIT (error);
@@ -3561,10 +3557,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				if (frame->ex)
 					goto exit_frame;
 			}
-			new_method = NEW_METHOD; // Refetch to conserve stack.
-			ip += 2;
+
 			const gboolean realloc_frame = new_method->alloca_size > IMETHOD->alloca_size;
 			frame->imethod = new_method;
+
 			/*
 			 * We allocate the stack frame from scratch and store the arguments in the
 			 * locals again since it's possible for the caller stack frame to be smaller
@@ -3575,6 +3571,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				memset (frame->args, 0, IMETHOD->alloca_size);
 				sp = frame->stack = (stackval *) frame->args;
 			}
+
 			vt_sp = (unsigned char *) sp + IMETHOD->stack_size;
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
@@ -3582,9 +3579,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			locals = vt_sp + IMETHOD->vt_stack_size;
 			frame->locals = locals;
 			ip = IMETHOD->code;
-#endif
-#undef NEW_METHOD
-			MINT_IN_BREAK;
+			goto exit_frame;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
 #if 0
