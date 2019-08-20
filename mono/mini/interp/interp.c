@@ -3390,7 +3390,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #if 1
 	while (1) {
 
-//main_loop:
+main_loop:
+		//if (frame->ex)
+		//	goto exit_frame;
+
 		/* g_assert (sp >= frame->stack); */
 		/* g_assert(vt_sp - vtalloc <= IMETHOD->vt_stack_size); */
 		DUMP_INSTR();
@@ -3555,12 +3558,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				mono_interp_transform_method (new_method, context, error);
 				frame->ex = mono_error_convert_to_exception (error);
 				if (frame->ex)
-					goto exit_frame;
+					goto main_loop;
 			}
-
 			const gboolean realloc_frame = new_method->alloca_size > IMETHOD->alloca_size;
 			frame->imethod = new_method;
-
 			/*
 			 * We allocate the stack frame from scratch and store the arguments in the
 			 * locals again since it's possible for the caller stack frame to be smaller
@@ -3576,13 +3577,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #if DEBUG_INTERP
 			vtalloc = vt_sp;
 #endif
-			locals = vt_sp + IMETHOD->vt_stack_size;
-			frame->locals = locals;
+// FIXME
+//			locals = vt_sp + IMETHOD->vt_stack_size;
+//			frame->locals = locals;
 			ip = IMETHOD->code;
-			goto exit_frame;
+			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI) {
-#if 0
+#if 1
 			frame->ip = ip;
 			--sp;
 			InterpMethod* child_method = (InterpMethod*)sp->data.p;
@@ -3594,10 +3596,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			MonoMethodSignature* csignature = (MonoMethodSignature*)IMETHOD->data_items [* (guint16 *)(ip + 1)];
 			sp -= csignature->param_count + csignature->hasthis;
-			child_frame->stack_args = sp;
+			child_frame.stack_args = sp;
 
 			if (child_method->method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) {
-				child_frame->imethod = mono_interp_get_imethod (IMETHOD->domain, mono_marshal_get_native_wrapper (child_method->method, FALSE, FALSE), error);
+				child_frame.imethod = mono_interp_get_imethod (IMETHOD->domain, mono_marshal_get_native_wrapper (child_method->method, FALSE, FALSE), error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
 			}
 
@@ -3613,7 +3615,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
-			MonoMethodSignature* csignature = (MonoMethodSignature*)IMETHOD->data_items [* (guint16 *)(ip + 1)];
+			csignature = (MonoMethodSignature*)IMETHOD->data_items [* (guint16 *)(ip + 1)];
 
 //			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -3625,7 +3627,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
-#if 0
+#if 1
 			gpointer target_ip = sp [-1].data.p;
 			MonoMethodSignature *csignature = (MonoMethodSignature*)IMETHOD->data_items [* (guint16 *)(ip + 1)];
 			int opcode = *(guint16 *)(ip + 2);
@@ -3642,7 +3644,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
-#if 0
+#if 1
 			frame->ip = ip;
 
 #define CSIGNATURE ((MonoMethodSignature*)IMETHOD->data_items [* (guint16 *)(ip + 1)])
@@ -3669,7 +3671,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			CHECK_RESUME_STATE (context);
 
-			csignature = CSIGNATURE; // Refetch to conserve stack.
+//			csignature = CSIGNATURE; // Refetch to conserve stack.
 
 			/* need to handle typedbyref ... */
 			if (csignature->ret->type != MONO_TYPE_VOID) {
@@ -4762,7 +4764,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CPOBJ_VT) {
-#if 0
+#if 1
 			MonoClass* const c = (MonoClass*)IMETHOD->data_items[* (guint16 *)(ip + 1)];
 			mono_value_copy_internal (sp [-2].data.vt, sp [-1].data.vt, c);
 #endif
@@ -4779,7 +4781,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSTR)
-#if 0
+#if 1
 			sp->data.p = IMETHOD->data_items [* (guint16 *)(ip + 1)];
 			++sp;
 			ip += 2;
@@ -5166,7 +5168,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LDFLD_R8_UNALIGNED) LDFLD_UNALIGNED(f, double, TRUE); MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_LDFLD_VT) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 
@@ -5180,7 +5182,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 
 		MINT_IN_CASE(MINT_LDRMFLD) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			mono_interp_load_remote_field (IMETHOD, o, ip, sp);
@@ -5189,7 +5191,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDRMFLD_VT) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			vt_sp = mono_interp_load_remote_field_vt (IMETHOD, o, ip, sp, vt_sp);
