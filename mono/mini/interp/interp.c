@@ -1078,7 +1078,7 @@ ves_array_get (InterpFrame *frame, stackval *sp, stackval *retval, MonoMethodSig
 	stackval_from_data (mt, retval, ea, FALSE);
 }
 
-static gpointer
+static MONO_NEVER_INLINE gpointer
 ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArray *ao, stackval *sp, gboolean needs_typecheck)
 {
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
@@ -3248,6 +3248,14 @@ mono_interp_enum_hasflag (stackval* sp, MonoClass* klass)
 	stackval_to_data (m_class_get_byval_arg (klass), --sp, &b_val, FALSE);
 	stackval_to_data (m_class_get_byval_arg (klass), --sp, &a_val, FALSE);
 	sp->data.i = (a_val & b_val) == b_val;
+}
+
+static MONO_NEVER_INLINE void
+mono_interp_load_element_address (InterpFrame* frame, ThreadContext* context, const guint16* ip, MonoObject* obj, stackval* sp)
+{
+	MonoClass *klass = (MonoClass*)frame->imethod->data_items [*(guint16 *) (ip - 3 + 1)];
+
+	sp->data.p = ves_array_element_address (frame, klass, (MonoArray*)obj, &sp [1], ip [-3] == MINT_LDELEMA_TC);
 }
 
 #if 0
@@ -5581,7 +5589,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_BOX_VT)
-#if 0
+#if 1
 			vt_sp -= mono_interp_box_vt (frame, ip, sp);
 #endif
 		ip += 3;
@@ -5614,7 +5622,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_NEWARR) {
-#if 0
+#if 1
 			MonoVTable *vtable = (MonoVTable*)IMETHOD->data_items[*(guint16 *)(ip + 1)];
 			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
 			if (!is_ok (error)) {
@@ -5631,7 +5639,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDLEN) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			sp [-1].data.nati = mono_array_length_internal ((MonoArray *)o);
@@ -5640,7 +5648,7 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDLEN_SPAN) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			gsize offset_length = (gsize) *(gint16 *) (ip + 1);
@@ -5650,53 +5658,53 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETCHR) {
-#if 0
 			MonoString *s;
 			s = (MonoString*)sp [-2].data.p;
 			NULL_CHECK (s);
-			int const i32 = sp [-1].data.i;
-			if (i32 < 0 || i32 >= mono_string_length_internal (s))
+			int i32 = sp [-1].data.i;
+			if (i32 < 0 || i32 >= s->length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
-			--sp;
-			sp [-1].data.i = mono_string_chars_internal (s)[i32];
+			else {
+				--sp;
+				sp [-1].data.i = s->chars [i32];
+			}
 			++ip;
-#endif
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_GETITEM_SPAN) {
-#if 0
+#if 1
 			guint8 * const span = (guint8 *) sp [-2].data.p;
+			NULL_CHECK (span);
 			const int index = sp [-1].data.i;
 			sp--;
-
-			NULL_CHECK (span);
 
 			const gsize offset_length = (gsize) *(gint16 *) (ip + 2);
 
 			const gint32 length = *(gint32 *) (span + offset_length);
 			if (index < 0 || index >= length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
+			else {
+				const gsize element_size = (gsize) *(gint16 *) (ip + 1);
+				const gsize offset_pointer = (gsize) *(gint16 *) (ip + 3);
+				const gpointer pointer = *(gpointer *)(span + offset_pointer);
 
-			const gsize element_size = (gsize) *(gint16 *) (ip + 1);
-			const gsize offset_pointer = (gsize) *(gint16 *) (ip + 3);
-
-			const gpointer pointer = *(gpointer *)(span + offset_pointer);
-			sp [-1].data.p = (guint8 *) pointer + index * element_size;
+				sp [-1].data.p = (guint8 *) pointer + index * element_size;
+			}
 #endif
 			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STRLEN) {
-#if 0
+#if 1
 			++ip;
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
-			sp [-1].data.i = mono_string_length_internal ((MonoString*) o);
+			sp [-1].data.i = ((MonoString*) o)->length;
 #endif
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_ARRAY_RANK) {
-#if 0
+#if 1
 			MonoObject* const o = sp [-1].data.o; // See the comment about GC safety above.
 			NULL_CHECK (o);
 			sp [-1].data.i = m_class_get_rank (mono_object_class (sp [-1].data.p));
@@ -5705,16 +5713,18 @@ main_loop:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDELEMA_FAST) {
-#if 0
+#if 1
 			/* No bounds, one direction */
-			gint32 index = sp [-1].data.i;
 
 			MonoArray *ao = (MonoArray*)sp [-2].data.o;
 			NULL_CHECK (ao);
+			gint32 const index = sp [-1].data.i;
 			if (index >= ao->max_length)
 				THROW_EX (mono_get_exception_index_out_of_range (), ip);
-			gint32 size = READ32 (ip + 1);
-			sp [-2].data.p = mono_array_addr_with_size_fast (ao, size, index);
+			else {
+				gint32 const size = READ32 (ip + 1);
+				sp [-2].data.p = mono_array_addr_with_size_fast (ao, size, index);
+			}
 			ip += 3;
 			sp --;
 #endif
@@ -5722,24 +5732,19 @@ main_loop:
 		}
 		MINT_IN_CASE(MINT_LDELEMA)
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
-#if 0
-			guint16 numargs = *(guint16 *) (ip + 2);
+			guint16 const numargs = *(guint16 *) (ip + 2);
 			ip += 3;
 			sp -= numargs;
 
-#define OBJ (sp [0].data.o)
-			NULL_CHECK (OBJ);
-
-			MonoClass *klass = (MonoClass*)IMETHOD->data_items [*(guint16 *) (ip - 3 + 1)];
-			const gboolean needs_typecheck = ip [-3] == MINT_LDELEMA_TC;
-			sp->data.p = ves_array_element_address (frame, klass, (MonoArray*)OBJ, &sp [1], needs_typecheck);
+			MonoObject* obj = sp [0].data.o;
+			if (!obj)
+				NULL_CHECK (obj);
+			else
+				mono_interp_load_element_address (frame, context, ip, obj, sp);
 			if (frame->ex)
 				THROW_EX (frame->ex, ip);
 			++sp;
-#endif
 			MINT_IN_BREAK;
-
-#undef OBJ
 		}
 		MINT_IN_CASE(MINT_LDELEM_I1) /* fall through */
 		MINT_IN_CASE(MINT_LDELEM_U1) /* fall through */
