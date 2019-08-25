@@ -739,10 +739,10 @@ stackval_from_data (MonoType *type_, stackval *result, void *data, gboolean pinv
 	}
 }
 
-static void inline
-stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
+static MONO_NEVER_INLINE void
+stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 {
-	MonoType *type = mini_native_type_replace_type (type_);
+	type = mini_native_type_replace_type (type);
 	if (type->byref) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
@@ -840,6 +840,12 @@ stackval_to_data (MonoType *type_, stackval *val, void *data, gboolean pinvoke)
 	default:
 		g_error ("got type %x", type->type);
 	}
+}
+
+static MONO_NEVER_INLINE void
+stackval_to_data_noinline (MonoType *type, stackval *val, void *data)
+{
+	return stackval_to_data (type, val, data, FALSE);
 }
 
 /*
@@ -5326,7 +5332,7 @@ main_loop:
 
 			guint16 offset = * (guint16 *)(ip + 2);
 
-			stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)), FALSE);
+			stackval_to_data_noinline (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)));
 
 			sp [-1 - offset].data.p = frame_objref (frame);
 
