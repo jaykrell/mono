@@ -487,9 +487,7 @@ MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW (func, rettype, n, argtypes)		\
 										\
 	MONO_HANDLE_RETURN_BEGIN (rettype)					\
 										\
-	func ## _impl (MONO_HANDLE_REGISTER_ICALL_CALL_ ## n error);			\
-										\
-	MONO_HANDLE_REGISTER_ICALL_OUT_ ## n argtypes				\
+	func ## _impl (MONO_HANDLE_CALL_ ## n argtypes MONO_HANDLE_COMMA_ ## n error); \
 										\
 	mono_error_set_pending_exception (error);				\
 										\

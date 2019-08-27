@@ -6325,8 +6325,18 @@ signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *gen
 		return ICALL_HANDLES_WRAP_NONE;
 }
 
+gboolean
+sig_uses_handles (MonoMethodSignature *sig)
+{
+	for (int i = 0; i < sig->param_count; ++i) {
+		if (signature_param_uses_handles (sig, NULL, i) != ICALL_HANDLES_WRAP_NONE)
+			return TRUE;
+	}
+	return FALSE;
+}
+
 static void
-emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
+emit_native_icall_wrapper_ilgen2 (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo, MonoJitICallInfo *jit_callinfo)
 {
 	// FIXME:
 	MonoMethodSignature *call_sig = csig;
@@ -6337,25 +6347,29 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	gboolean need_gc_safe = FALSE;
 	GCSafeTransitionBuilder gc_safe_transition_builder;
 
-	(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles, &foreign_icall);
+	if (!jit_callinfo) {
+		(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles, &foreign_icall);
+		if (G_UNLIKELY (foreign_icall)) {
+			/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
+			need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);
 
-	if (G_UNLIKELY (foreign_icall)) {
-		/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
-		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);
+			if (need_gc_safe)
+				gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
+		}
 
-		if (need_gc_safe)
-			gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
-	}
+		if (sig->hasthis) {
+			/*
+			 * Add a null check since public icalls can be called with 'call' which
+			 * does no such check.
+			 */
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+			const int pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
+			mono_mb_emit_exception (mb, "NullReferenceException", NULL);
+			mono_mb_patch_branch (mb, pos);
+		}
 
-	if (sig->hasthis) {
-		/*
-		 * Add a null check since public icalls can be called with 'call' which
-		 * does no such check.
-		 */
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
-		const int pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
-		mono_mb_emit_exception (mb, "NullReferenceException", NULL);
-		mono_mb_patch_branch (mb, pos);
+	} else {
+		uses_handle = TRUE;
 	}
 
 	if (uses_handles) {
@@ -6371,7 +6385,7 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		// Add a MonoError argument (due to a fragile test external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe),
 		// vs. on the native side.
 		// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
-		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count + 1);
+		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count + !jit_callinfo);
 		call_sig->param_count = csig->param_count + 1;
 		call_sig->ret = csig->ret;
 		call_sig->pinvoke = csig->pinvoke;
@@ -6380,9 +6394,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
 
 		/* Add MonoError* param */
-		MonoClass * const error_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
-		int const error_var = mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
-		call_sig->params [csig->param_count] = mono_class_get_byref_type (error_class);
+		MonoClass * const error_class = jit_callinfo ? NULL : mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
+		int const error_var = jit_callinfo ? NULL : mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
+		if (!jit_callinfo)
+			call_sig->params [csig->param_count] = mono_class_get_byref_type (error_class);
 
 		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
 
@@ -6470,7 +6485,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					g_assert_not_reached ();
 			}
 		}
-		mono_mb_emit_ldloc_addr (mb, error_var);
+		if (!jit_callinfo)
+			mono_mb_emit_ldloc_addr (mb, error_var);
 	} else {
 		for (int i = 0; i < csig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i);
@@ -6479,7 +6495,12 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (need_gc_safe)
 		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, aot);
 
-	if (aot) {
+	if (jit_callinfo) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
+		mono_mb_emit_i4 (mb, mono_jit_icall_info_index (callinfo));
+		mono_mb_emit_calli (mb, call_sig);
+	} else if (aot) {
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
 		mono_mb_emit_calli (mb, call_sig);
@@ -6515,6 +6536,12 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 }
 
 static void
+emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
+{
+	emit_native_icall_wrapper_ilgen (mb, method, csig, check_exceptions, aot, piinfo, NULL);
+}
+
+static void
 mb_emit_exception_ilgen (MonoMethodBuilder *mb, const char *exc_nspace, const char *exc_name, const char *msg)
 {
 	mono_mb_emit_exception_full (mb, exc_nspace, exc_name, msg);
@@ -6544,19 +6571,32 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, Mon
 {
 	MonoMethodSignature *const sig = callinfo->sig;
 
-	if (sig->hasthis)
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
+	g_assert (sig->param_count == csig2->param_count);
 
-	for (int i = 0; i < sig->param_count; i++)
-		mono_mb_emit_ldarg (mb, i + sig->hasthis);
+	for (int i = 0; i < sig->param_count; ++i)
+		g_assertf (signature_param_uses_handles (sig, NULL, i) == signature_param_uses_handles (csig2, NULL, i));
 
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
-	mono_mb_emit_i4 (mb, mono_jit_icall_info_index (callinfo));
-	mono_mb_emit_calli (mb, csig2);
-	if (check_exceptions)
-		emit_thread_interrupt_checkpoint (mb);
-	mono_mb_emit_byte (mb, CEE_RET);
+	if (!sig_uses_handles (sig)) {
+
+		// FIXME Remove all this and just use common code.
+
+		if (sig->hasthis)
+			mono_mb_emit_byte (mb, CEE_LDARG_0);
+
+		for (int i = 0; i < sig->param_count; i++)
+			mono_mb_emit_ldarg (mb, i + sig->hasthis);
+
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
+		mono_mb_emit_i4 (mb, mono_jit_icall_info_index (callinfo));
+		mono_mb_emit_calli (mb, csig2);
+		if (check_exceptions)
+			emit_thread_interrupt_checkpoint (mb);
+		mono_mb_emit_byte (mb, CEE_RET);
+		return;
+	}
+
+	emit_native_icall_wrapper_ilgen2 (mb, method, csig2, check_exceptions, 0, NULL, callinfo);
 }
 
 static void
