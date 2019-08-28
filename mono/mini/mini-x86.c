@@ -41,6 +41,8 @@
 #include "aot-runtime.h"
 #include "mini-runtime.h"
 
+#define THUNK_SIZE (4)
+
 #ifndef TARGET_WIN32
 #ifdef MONO_XEN_OPT
 static gboolean optimize_for_xen = TRUE;

@@ -158,6 +158,8 @@ typedef struct {
 	CallInfo *cinfo;
 	MonoInst *ss_tramp_var;
 	MonoInst *bp_tramp_var;
+	guint8 *thunks;
+	int thunks_size;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
