@@ -427,9 +427,12 @@ set_control_chars (gchar *control_chars, const guchar *cc)
 MonoBoolean
 ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHandle teardown, MonoArrayHandleOut control_chars, int **size, MonoError* error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	// FIXME Lock around the globals?
 
 	int dims;
+	MonoBoolean result = TRUE;
 
 	dims = terminal_get_dimensions ();
 	if (dims == -1){
@@ -463,7 +466,7 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 
 	MONO_HANDLE_ASSIGN (control_chars, control_chars_arr);
 	if (tcgetattr (STDIN_FILENO, &initial_attr) == -1)
-		return FALSE;
+		goto return_false;
 
 	mono_attr = initial_attr;
 	mono_attr.c_lflag &= ~(ICANON);
@@ -482,14 +485,14 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 	} while (ret == -1 && errno == EINTR);
 
 	if (ret == -1)
-		return FALSE;
+		goto return_false;
 
 	uint32_t h;
 	set_control_chars (MONO_ARRAY_HANDLE_PIN (control_chars_arr, gchar, 0, &h), mono_attr.c_cc);
 	mono_gchandle_free_internal (h);
 	/* If initialized from another appdomain... */
 	if (setup_finished)
-		return TRUE;
+		goto return_true;
 
 	keypad_xmit_str = NULL;
 	if (!MONO_HANDLE_IS_NULL (keypad)) {
@@ -508,7 +511,13 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoStringHandle keypad, MonoStringHand
 		mono_atexit (tty_teardown);
 	}
 
-	return TRUE;
+return_true:
+	result = TRUE;
+	goto exit;
+return_false:
+	result = FALSE;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 #else /* ENABLE_NETCORE */

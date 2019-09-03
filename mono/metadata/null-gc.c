@@ -310,14 +310,14 @@ mono_gc_is_critical_method (MonoMethod *method)
 gpointer
 mono_gc_thread_attach (MonoThreadInfo* info)
 {
-	info->handle_stack = mono_handle_stack_alloc ();
+	mono_handle_thread_init (&info->handles);
 	return info;
 }
 
 void
 mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 {
-	mono_handle_stack_free (p->handle_stack);
+	mono_handle_thread_cleanup (&info->handles);
 }
 
 gboolean

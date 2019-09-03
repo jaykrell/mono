@@ -25,21 +25,54 @@
 #include <mono/utils/checked-build.h>
 #include <mono/metadata/class-internals.h>
 
-/*
-Handle stack.
-
-The handle stack is designed so it's efficient to pop a large amount of entries at once.
-The stack is made out of a series of fixed size segments.
-
-To do bulk operations you use a stack mark.
-	
-*/
-
-/*
-3 is the number of fields besides the data in the struct;
-128 words makes each chunk 512 or 1024 bytes each
-*/
-#define OBJECTS_PER_HANDLES_CHUNK (128 - 3)
+// Handle stack is a singly list list of "frames", through thread local storage.
+//
+// Handle frame contains a linked list of elements, formerly known as "chunks".
+//
+// Elements represent one handle -- a raw pointer and next.
+//
+// Elements are allocated with alloca (small fixed sized).
+// Note that while alloca (dynamic) is a function call on Windows, alloca (fixed size) is not.
+// Besides it is just sub rsp on Unix.
+//
+// "chunks" used to be larger, and occasionally heap allocated.
+//
+// There is, perhaps, an extra level of indirection to support the historical programming model.
+// i.e. the handles could just be linked into the frame, and not have their address taken.
+//
+// handles can maybe be linked into the stack itself.
+// Frames are still needed to maintain a handle count and for mass-pop, but
+// that does not likely require them having a list, just a count and previous link.
+//
+// Frames contain a special entry for return values, for returning to them.
+//
+// The previous model allowed "frame skipping", where a function
+// could call MONO_HANDLE_NEW without HANDLE_FUNCTION_ENTER.
+// This is no longer supported.
+//
+// However, "return MONO_HANDLE_NEW" can be replaced
+// with "MONO_HANDLE_NEW_RETURN", and still skip frame.
+//
+// Returning handles must still be done with care.
+//   void bad ()
+//   {
+//	HANDLE_FUNCTION_ENTER ();
+//      MonoObjectHandle h1 = f2 ();
+//      MonoObjectHandle h2 = f3 (); // h1 is clobbered.
+//  }
+//
+//   void ok ()
+//   {
+//	HANDLE_FUNCTION_ENTER ();
+//      MonoObjectHandle h1 = MONO_HANDLE_NEW ();
+//      MonoObjectHandle h2 = MONO_HANDLE_NEW ();
+//      MONO_HANDLE_ASSIGN (h1, f2 ());
+//      MONO_HANDLE_ASSIGN (h2, f3 ());
+//  }
+//
+// MONO_HANDLE_NEW is not otherwise allowed without HANDLE_FUNCTION_ENTER, and
+// will fail to compile.
+//
 
 /*
 Whether this config needs stack watermark recording to know where to start scanning from.
@@ -48,7 +81,8 @@ Whether this config needs stack watermark recording to know where to start scann
 #define MONO_NEEDS_STACK_WATERMARK 1
 #endif
 
-typedef struct _HandleChunk HandleChunk;
+typedef struct MonoHandleFrame MonoHandleFrame;
+typedef struct MonoHandleValue MonoHandleValue;
 
 /*
  * Define MONO_HANDLE_TRACK_OWNER to store the file and line number of each call to MONO_HANDLE_NEW
@@ -64,8 +98,10 @@ typedef struct _HandleChunk HandleChunk;
  */
 /*#define MONO_HANDLE_TRACK_SP*/
 
-typedef struct {
-	gpointer o; /* MonoObject ptr */
+// MONO_HANDLE_NEW is alloca of this, and updates the linked list
+struct MonoHandleValue {
+	 MonoHandleValue* previous;
+	 void* o; // handles point to this
 #ifdef MONO_HANDLE_TRACK_OWNER
 	const char *owner;
 	gpointer backtrace_ips[7]; /* result of backtrace () at time of allocation */
@@ -73,30 +109,16 @@ typedef struct {
 #ifdef MONO_HANDLE_TRACK_SP
 	gpointer alloc_sp; /* sp from HandleStack:stackmark_sp at time of allocation */
 #endif
-} HandleChunkElem;
-
-struct _HandleChunk {
-	int size; //number of handles
-	HandleChunk *prev, *next;
-	HandleChunkElem elems [OBJECTS_PER_HANDLES_CHUNK];
 };
 
-typedef struct MonoHandleStack {
-	HandleChunk *top; //alloc from here
-	HandleChunk *bottom; //scan from here
-#ifdef MONO_HANDLE_TRACK_SP
-	gpointer stackmark_sp; // C stack pointer top when from most recent mono_stack_mark_init
-#endif
-} HandleStack;
-
-// Keep this in sync with RuntimeStructs.cs
-typedef struct {
-	int size;
-	HandleChunk *chunk;
-#ifdef MONO_HANDLE_TRACK_SP
-	gpointer prev_sp; // C stack pointer from prior mono_stack_mark_init
-#endif
-} HandleStackMark;
+// HANDLE_FUNCTION_ENTER allocates a local of this and updates the linked list
+struct MonoHandleFrame {
+	MonoHandleFrame* previous;
+	MonoHandleValue* handles;
+	MonoThreadInfo* thread; // store this to avoid a TLS access at function exit; worth it?
+	MonoHandleValue return_value; // special storage for returning handles across frames
+	int count; // track excess allocation
+};
 
 // There are two types of handles.
 //  Pointers to volatile pointers in managed frames.
@@ -124,17 +146,41 @@ typedef void (*GcScanFunc) (gpointer*, gpointer);
 #endif
 
 #ifndef MONO_HANDLE_TRACK_OWNER
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info);
+MonoRawHandle mono_handle_new (MonoHandleFrame* frame, MonoObject* object);
 #else
-MonoRawHandle mono_handle_new (MonoObject *object, MonoThreadInfo *info, const char* owner);
+MonoRawHandle mono_handle_new (MonoHandleFrame* frame, MonoObject* object, const char* owner);
 #endif
 
 void mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check);
 gboolean mono_handle_stack_is_empty (HandleStack *stack);
-HandleStack* mono_handle_stack_alloc (void);
-void mono_handle_stack_free (HandleStack *handlestack);
-MonoRawHandle mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value);
-MonoThreadInfo* mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name);
+
+typedef struct MonoHandleThread {
+	// This could be reduced to just one pointer, the stack,
+	// if the frame is stored in each stack element.
+	MonoHandleStack* stack;
+	MonoHandleFrame* frame;
+} MonoHandleThread;
+
+static inline void
+mono_handle_thread_init (MonoHandleThread* handles)
+{
+	memset (handles, 0, sizeof (*handles));
+}
+
+static inline void
+mono_handle_thread_cleanup (MonoHandleThread* handles)
+{
+	g_assert (handles->stack == NULL);
+	g_assert (handles->frame == NULL);
+	mono_handle_thread_init (handles);
+}
+
+MonoRawHandle
+mono_stack_mark_pop_value (MonoHandleFrame* frame, MonoRawHandle value);
+
+void
+mono_stack_mark_pop (MonoHandleFrame* frame);
+
 void mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain);
 
 #ifdef MONO_HANDLE_TRACK_SP
@@ -160,7 +206,7 @@ static inline void
 mono_stack_mark_pop (MonoThreadInfo *info, HandleStackMark *stackmark)
 {
 	HandleStack *handles = info->handle_stack;
-	HandleChunk *old_top = stackmark->chunk;
+	MonoHandleFrameElement *old_top = stackmark->chunk;
 	old_top->size = stackmark->size;
 	mono_memory_write_barrier ();
 	handles->top = old_top;
@@ -194,11 +240,11 @@ Icall macros
 
 // FIXME This should be one function call since it is not fully inlined.
 #define CLEAR_ICALL_FRAME	\
-	mono_stack_mark_pop (mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__), &__mark);
+	mono_handle_frame_pop (&mono_handle_frame, NULL);
 
 // FIXME This should be one function call since it is not fully inlined.
 #define CLEAR_ICALL_FRAME_VALUE(RESULT, HANDLE)				\
-	(RESULT) = g_cast (mono_stack_mark_pop_value (mono_stack_mark_record_size (mono_thread_info_current_var, &__mark, __FUNCTION__), &__mark, (HANDLE)));
+	(RESULT) = g_cast (mono_stack_mark_pop_value (&mono_handle_frame, (HANDLE)));
 
 #define HANDLE_FUNCTION_ENTER() do {				\
 	MONO_DISABLE_WARNING(4459) /* declaration of 'identifier' hides global declaration */ \
@@ -568,10 +614,19 @@ mono_handle_unsafe_field_addr (MonoObjectHandle h, MonoClassField *field)
 }
 
 //FIXME this should go somewhere else
-MonoStringHandle mono_string_new_handle (MonoDomain *domain, const char *data, MonoError *error);
-MonoArrayHandle mono_array_new_handle (MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+MonoStringHandle mono_string_new_handle_function (MonoHandleFrame *frame, MonoHandleValue *handle, MonoDomain *domain, const char *data, MonoError *error);
+
+#define mono_string_new_handle(domain, data, error) (mono_string_new_handle_function (&mono_handle_frame, g_alloca (MonoHandleValue), (domain), (data), (error)))
+
+MonoArrayHandle mono_array_new_handle_function (MonoHandleFrame *frame, MonoHandleValue *handle, MonoDomain *domain, MonoClass *eclass, uintptr_t n, MonoError *error);
+
+#define mono_array_new_handle(domain, eclass, n, error) (mono_array_new_handle_function (&frame, g_alloca (MonoHandleValue), (domain), (eclass), (n), (error)))
+
 MonoArrayHandle
-mono_array_new_full_handle (MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+mono_array_new_full_handle_handle_function (MonoHandleFrame *frame, MonoHandleValue *handle, MonoDomain *domain, MonoClass *array_class, uintptr_t *lengths, intptr_t *lower_bounds, MonoError *error);
+
+#define mono_array_new_full_handle(domain, array_class, lengths, lower_bounds, error) \
+	(mono_array_new_full_handle_handle_function (&mono_handle_frame, g_alloca (MonoHandleValue), (domain), (array_class), (lengths), (lower_bounds), (error)))
 
 #define mono_array_handle_setref(array,index,value) MONO_HANDLE_ARRAY_SETREF ((array), (index), (value))
 

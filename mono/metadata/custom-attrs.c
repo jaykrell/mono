@@ -1498,7 +1498,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 {
 	HANDLE_FUNCTION_ENTER ();
 
-	MonoArrayHandle result;
+	MonoArrayHandle result = NULL_HANDLE;
 	int i, n;
 
 	error_init (error);
@@ -1509,7 +1509,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 			/* The cattr type is not finished yet */
 			/* We should include the type name but cinfo doesn't contain it */
 			mono_error_set_type_load_name (error, NULL, NULL, "Custom attribute constructor is null because the custom attribute type is not finished yet.");
-			goto return_null;
+			goto exit;
 		}
 	}
 
@@ -1539,7 +1539,7 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	}
 	goto exit;
 return_null:
-	result = MONO_HANDLE_CAST (MonoArray, mono_new_null ());
+	result = NULL_HANDLE;
 exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoArray, result);
 }
@@ -1574,7 +1574,7 @@ mono_custom_attrs_data_construct (MonoCustomAttrInfo *cinfo, MonoError *error)
 	}
 	goto exit;
 return_null:
-	result = MONO_HANDLE_CAST (MonoArray, mono_new_null ());
+	result = NULL_HANDLE;
 exit:
 	HANDLE_FUNCTION_RETURN_REF (MonoArray, result);
 }
@@ -2224,7 +2224,9 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj_raw, MonoClass *attr_k
 MonoArrayHandle
 mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass *attr_klass, MonoError *error)
 {
-	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArrayHandle result = NULL_HANDLE;
 	MonoCustomAttrInfo *cinfo;
 
 	error_init (error);
@@ -2232,15 +2234,15 @@ mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass
 	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
 	goto_if_nok (error, leave);
 	if (cinfo) {
-		MONO_HANDLE_ASSIGN (result, mono_custom_attrs_construct_by_type (cinfo, attr_klass, error));
+		result = mono_custom_attrs_construct_by_type (cinfo, attr_klass, error);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
 	} else {
-		MONO_HANDLE_ASSIGN (result, mono_array_new_handle (mono_domain_get (), mono_defaults.attribute_class, 0, error));
+		result = mono_array_new_handle (mono_domain_get (), mono_defaults.attribute_class, 0, error);
 	}
 
 leave:
-	return result;
+	HANDLE_FUNCTION_RETURN_REF (result);
 }
 
 /**
@@ -2291,29 +2293,28 @@ mono_reflection_get_custom_attrs_data (MonoObject *obj_raw)
 MonoArrayHandle
 mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *error)
 {
-	MonoArrayHandle result = MONO_HANDLE_NEW (MonoArray, NULL);
+	HANDLE_FUNCTION_ENTER ();
+
+	MonoArrayHandle result = NULL_HANDLE;
 	MonoCustomAttrInfo *cinfo;
 
 	error_init (error);
 
 	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
-	goto_if_nok (error, leave);
+	goto_if_nok (error, exit);
 	if (cinfo) {
-		MONO_HANDLE_ASSIGN (result, mono_custom_attrs_data_construct (cinfo, error));
+		result = mono_custom_attrs_data_construct (cinfo, error);
 		if (!cinfo->cached)
 			mono_custom_attrs_free (cinfo);
-		goto_if_nok (error, leave);
+		goto_if_nok (error, exit);
 	} else  {
 		MonoClass *cattr_data = try_get_cattr_data_class (error);
-		goto_if_nok (error, return_null);
+		goto_if_nok (error, exit);
 
-		MONO_HANDLE_ASSIGN (result, mono_array_new_handle (mono_domain_get (), cattr_data, 0, error));
+		result = mono_array_new_handle (mono_domain_get (), cattr_data, 0, error);
 	}
-	goto leave;
-return_null:
-	result = MONO_HANDLE_CAST (MonoArray, mono_new_null ());
-leave:
-	return result;
+exit:
+	HANDLE_FUNCTION_RETURN_REF (result);
 }
 
 static gboolean
@@ -2326,7 +2327,9 @@ custom_attr_class_name_from_methoddef (MonoImage *image, guint32 method_token, c
 		/* Bad method token (could not find corresponding typedef) */
 		return FALSE;
 	}
+
 	type_token |= MONO_TOKEN_TYPE_DEF;
+
 	{
 		/* mono_class_create_from_typedef () */
 		MonoTableInfo *tt = &image->tables [MONO_TABLE_TYPEDEF];

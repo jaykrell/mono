@@ -407,7 +407,7 @@ mono_gc_thread_attach (MonoThreadInfo* info)
 	if (res == GC_UNIMPLEMENTED)
 	    return NULL; /* Cannot happen with GC v7+. */
 
-	info->handle_stack = mono_handle_stack_alloc ();
+	mono_handle_thread_init (&info->handles);
 
 	return info;
 }
@@ -422,8 +422,7 @@ mono_gc_thread_detach_with_lock (MonoThreadInfo *p)
 	if (p->runtime_thread)
 		mono_threads_add_joinable_thread ((gpointer)tid);
 
-	mono_handle_stack_free (p->handle_stack);
-	p->handle_stack = NULL;
+	mono_handle_thread_cleanup (&p->handles);
 }
 
 gboolean

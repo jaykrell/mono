@@ -1298,6 +1298,8 @@ leave:
 static MonoArrayHandle
 get_assembly_array_from_domain (MonoDomain *domain, MonoBoolean refonly, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	int i;
 	GPtrArray *assemblies;
 
@@ -1312,7 +1314,8 @@ get_assembly_array_from_domain (MonoDomain *domain, MonoBoolean refonly, MonoErr
 
 leave:
 	g_ptr_array_free (assemblies, TRUE);
-	return res;
+
+	HANDLE_FUNCTION_RETURN_REF (res);
 }
 
 #ifdef ENABLE_NETCORE
@@ -2864,9 +2867,12 @@ ves_icall_System_AppDomain_DoUnhandledException (MonoAppDomainHandle ad, MonoExc
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomainHandle ad,
-					    MonoReflectionAssemblyHandle refass, MonoArrayHandle args,
+					    MonoReflectionAssemblyHandle refass,
+					    MonoArrayHandle args,
 					    MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoImage *image;
 	MonoMethod *method;
 
@@ -2882,12 +2888,12 @@ ves_icall_System_AppDomain_ExecuteAssembly (MonoAppDomainHandle ad,
 
 	if (MONO_HANDLE_IS_NULL (args)) {
 		MonoDomain *domain = MONO_HANDLE_GETVAL (ad, data);
-		MONO_HANDLE_ASSIGN (args , mono_array_new_handle (domain, mono_defaults.string_class, 0, error));
+		MONO_HANDLE_ASSIGN (args, mono_array_new_handle (domain, mono_defaults.string_class, 0, error));
 		mono_error_assert_ok (error);
 	}
 
 	int res = mono_runtime_exec_main_checked (method, MONO_HANDLE_RAW (args), error);
-	return res;
+	HANDLE_FUNCTION_RETURN_VAL (res);
 }
 
 MonoAppDomainHandle
@@ -2901,7 +2907,7 @@ ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomainHandle ad, MonoError*
 		return MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
 	}
 
-	return MONO_HANDLE_NEW (MonoAppDomain, old_domain->domain);
+	RETURN_MONO_HANDLE_NEW (MonoAppDomain, old_domain->domain);
 }
 
 MonoAppDomainHandle
@@ -2915,7 +2921,7 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid, MonoError *er
 		return MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
 	}
 
-	return MONO_HANDLE_NEW (MonoAppDomain, current_domain->domain);
+	RETURN_MONO_HANDLE_NEW (MonoAppDomain, current_domain->domain);
 }
 
 void

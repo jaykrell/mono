@@ -97,6 +97,8 @@ mono_icall_is_64bit_os (void)
 MonoArrayHandle
 mono_icall_get_environment_variable_names (MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoArrayHandle names;
 	MonoDomain *domain;
 	MonoStringHandle str;
@@ -150,8 +152,8 @@ cleanup:
 	if (env_strings)
 		FreeEnvironmentStrings (env_strings);
 	if (!is_ok (error))
-		return NULL_HANDLE_ARRAY;
-	return names;
+		names = NULL_HANDLE_ARRAY;
+	HANDLE_FUNCTION_RETURN_REF (names);
 }
 
 #if HAVE_API_SUPPORT_WIN32_SH_GET_FOLDER_PATH

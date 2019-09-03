@@ -64,14 +64,14 @@ Combine: MonoDefaults, GENERATE_GET_CLASS_WITH_CACHE, TYPED_HANDLE_DECL and frie
  * always be valid.
  */
 
-static HandleStack*
+static MonoHandleValue*
 new_handle_stack (void)
 {
-	return g_new (HandleStack, 1);
+	return 0;
 }
 
 static void
-free_handle_stack (HandleStack *stack)
+free_handle_stack (MonoHandleValue *stack)
 {
 	g_free (stack);
 }
@@ -120,7 +120,7 @@ chunk_element (HandleChunk *chunk, int idx)
 
 #ifdef MONO_HANDLE_TRACK_SP
 void
-mono_handle_chunk_leak_check (HandleStack *handles) {
+mono_handle_chunk_leak_check (MonoHandleValue *handles) {
 	if (handles->stackmark_sp) {
 		/* walk back from the top to the topmost non-empty chunk */
 		HandleChunk *c = handles->top;
@@ -166,7 +166,7 @@ mono_handle_new (MonoObject *obj, MonoThreadInfo *info, const char *owner)
 {
 	info = info ? info : mono_thread_info_current ();
 
-	HandleStack *handles = info->handle_stack;
+	MonoHandleValue *handles = info->handle_stack;
 	HandleChunk *top = handles->top;
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_handle_chunk_leak_check (handles);
@@ -215,24 +215,8 @@ retry:
 	goto retry;
 }
 
-HandleStack*
-mono_handle_stack_alloc (void)
-{
-	HandleStack *stack = new_handle_stack ();
-	HandleChunk *chunk = new_handle_chunk ();
-
-	chunk->prev = chunk->next = NULL;
-	chunk->size = 0;
-	mono_memory_write_barrier ();
-	stack->top = stack->bottom = chunk;
-#ifdef MONO_HANDLE_TRACK_SP
-	stack->stackmark_sp = NULL;
-#endif
-	return stack;
-}
-
 void
-mono_handle_stack_free (HandleStack *stack)
+mono_handle_stack_free (MonoHandleValue *stack)
 {
 	if (!stack)
 		return;
@@ -249,7 +233,7 @@ mono_handle_stack_free (HandleStack *stack)
 }
 
 void
-mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
+mono_handle_stack_free_domain (MonoHandleValue *stack, MonoDomain *domain)
 {
 	/* Called by the GC while clearing out objects of the given domain from the heap. */
 	/* If there are no handles-related bugs, there is nothing to do: if a
@@ -261,57 +245,23 @@ mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
 	/* Root domain only unloaded when mono is shutting down, don't need to check anything */
 	if (domain == mono_get_root_domain () || mono_runtime_is_shutting_down ())
 		return;
-	HandleChunk *cur = stack->bottom;
-	HandleChunk *last = stack->top;
-	if (!cur)
-		return;
-	while (cur) {
-		for (int idx = 0; idx < cur->size; ++idx) {
-			HandleChunkElem *elem = &cur->elems[idx];
-			if (!elem->o)
-				continue;
-			g_assert (mono_object_domain (elem->o) != domain);
-		}
-		if (cur == last)
-			break;
-		cur = cur->next;
-	}
+
+	for (stack ; stack ; stack = stack->previous)
+		g_assert (!stack->object || mono_object_domain (stack->object) != domain);
 }
 
 static void
-check_handle_stack_monotonic (HandleStack *stack)
+check_handle_stack_monotonic (MonoHandleValue *stack)
 {
 	/* check that every allocated handle in the current handle stack is at no higher in the native stack than its predecessors */
-#ifdef MONO_HANDLE_TRACK_SP
-	HandleChunk *cur = stack->bottom;
-	HandleChunk *last = stack->top;
-	if (!cur)
-		return;
-	HandleChunkElem *prev = NULL;
-	gboolean monotonic = TRUE;
-	while (cur) {
-		for (int i = 0;i < cur->size; ++i) {
-			HandleChunkElem *elem = chunk_element (cur, i);
-			if (prev && elem->alloc_sp > prev->alloc_sp) {
-				monotonic = FALSE;
-#ifdef MONO_HANDLE_TRACK_OWNER
-				g_warning ("Handle %p (object %p) (allocated from \"%s\") was allocated deeper in the call stack than its successor Handle %p (object %p) (allocated from \"%s\").", prev, prev->o, prev->owner, elem, elem->o, elem->owner);
-#else
-				g_warning ("Handle %p (object %p) was allocated deeper in the call stack than its successor Handle %p (object %p).", prev, prev->o, elem, elem->o);
-#endif
-			}
-			prev = elem;
-		}
-		if (cur == last)
-			break;
-		cur = cur->next;
-	}
-	g_assert (monotonic);
-#endif
+	// FIXME stack direction, i.e. port to HPPA.
+	// Other parts of mono depend on a grow-down stack (where GC aligns the stack up)
+	for (stack ; stack ; stack = stack->previous)
+		g_assert (!stack->previous || stack < stack->previous);
 }
 
 void
-mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check)
+mono_handle_stack_scan (MonoHandleValue *stack, GcScanFunc func, gpointer gc_data, gboolean precise, gboolean check)
 {
 	if (check) /* run just once (per handle stack) per GC */
 		check_handle_stack_monotonic (stack);
@@ -324,58 +274,47 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 	if (precise)
 		return;
 
-	HandleChunk *cur = stack->bottom;
-	HandleChunk *last = stack->top;
-
-	while (cur) {
-		for (int i = 0; i < cur->size; ++i) {
-			HandleChunkElem* elem = chunk_element (cur, i);
-			gpointer* obj_slot = &elem->o;
-			if (*obj_slot != NULL)
-				func (obj_slot, gc_data);
-		}
-		if (cur == last)
-			break;
-		cur = cur->next;
+	for (stack ; stack ; stack = stack->previous) {
+		if (stack->o)
+			func (stack->o, gc_data);
 	}
 }
 
-MonoThreadInfo*
-mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name)
+void
+mono_handle_frame_pop (MonoHandleFrame *frame)
 {
-	info = info ? info : mono_thread_info_current ();
+	// FIXME? Where are barriers needed here?
 
-	HandleStack *handles = info->handle_stack;
-	HandleChunk *cur = stackmark->chunk;
-	int size = -stackmark->size; //discard the starting point of the stack
-	while (cur) {
-		size += cur->size;
-		if (cur == handles->top)
-			break;
-		cur = cur->next;
-	}
+	g_assert (frame);
 
-	if (size > THIS_IS_AN_OK_NUMBER_OF_HANDLES)
-		g_warning ("%s USED %d handles\n", func_name, size);
+	MonoHandleFrame *previous = frame->previous;
+	frame->thread.handles.frame = previous;
+	frame->thread.handles.stack = previous ? previous->stack : NULL;
 
-	return info;
+	if (frame->count > THIS_IS_AN_OK_NUMBER_OF_HANDLES)
+		g_warning ("%s USED %d handles\n", frame->func_name, size);
 }
 
 /*
- * Pop the stack until @stackmark and make @value the top value.
+ * Pop the stack until @frame and make @value the top value.
  *
  * @return the new handle for what @value points to 
  */
 MonoRawHandle
-mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, MonoRawHandle value)
+mono_stack_mark_pop_value (MonoHandleFrame *frame, MonoRawHandle value)
 {
-	MonoObject *obj = value ? *((MonoObject**)value) : NULL;
-	mono_stack_mark_pop (info, stackmark);
-#ifndef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new (obj, info);
-#else
-	return mono_handle_new (obj, info, "<mono_stack_mark_pop_value>");
-#endif
+	g_assert (frame);
+
+	MonoHandleFrame *previous = frame->previous;
+
+	g_assert (previous);
+
+	mono_handle_frame_pop (frame);
+
+	// Move handle from current frame to previous frame.o
+
+	previous->return_value = value ? *(MonoObject**)value : NULL;
+	return &previous->return_value;
 }
 
 /* Temporary place for some of the handle enabled wrapper functions*/
@@ -452,7 +391,7 @@ mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArr
 }
 
 gboolean
-mono_handle_stack_is_empty (HandleStack *stack)
+mono_handle_stack_is_empty (MonoHandleValue *stack)
 {
 	return stack->top == stack->bottom && stack->top->size == 0;
 }

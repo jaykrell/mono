@@ -2133,7 +2133,7 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 
 	SGEN_LOG (3, "registered thread %p (%p) stack end %p", info, (gpointer)mono_thread_info_get_tid (info), info->client_info.info.stack_end);
 
-	info->client_info.info.handle_stack = mono_handle_stack_alloc ();
+	mono_handle_thread_init (&info->client_info.info.handles);
 }
 
 void
@@ -2161,9 +2161,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 	sgen_binary_protocol_thread_unregister ((gpointer)tid);
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
 
-	HandleStack *handles = p->client_info.info.handle_stack;
-	p->client_info.info.handle_stack = NULL;
-	mono_handle_stack_free (handles);
+	mono_handle_thread_cleanup (&info->client_info.info.handles);
 }
 
 void
@@ -2182,8 +2180,7 @@ mono_gc_skip_thread_changing (gboolean skip)
 		 * If we skip scanning a thread with a non-empty handle stack, we may move an
 		 * object but fail to update the reference in the handle.
 		 */
-		HandleStack *stack = mono_thread_info_current ()->client_info.info.handle_stack;
-		g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
+		g_assert (mono_handle_stack_is_empty (&mono_thread_info_current ()->client_info.info.handle_thread));
 	}
 }
 
@@ -2298,8 +2295,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 				 * resumes running we may potentially move an object but fail to
 				 * update the reference in the handle.
 				 */
-				HandleStack *stack = info->client_info.info.handle_stack;
-				g_assert (stack == NULL || mono_handle_stack_is_empty (stack));
+				g_assert (mono_handle_stack_is_empty (&mono_thread_info_current ()->client_info.info.handle_thread));
 			}
 			continue;
 		}

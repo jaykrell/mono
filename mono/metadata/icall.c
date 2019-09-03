@@ -1322,6 +1322,8 @@ ves_icall_System_Object_MemberwiseClone (MonoObjectHandle this_obj, MonoError *e
 gint32
 ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoArrayHandleOut fields, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoClass *klass;
 	MonoClassField **unhandled = NULL;
 	int count = 0;
@@ -1332,7 +1334,7 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 	klass = mono_handle_class (this_obj);
 
 	if (mono_class_num_fields (klass) == 0)
-		return result;
+		goto exit;
 
 	/*
 	 * Compute the starting value of the hashcode for fields of primitive
@@ -1370,19 +1372,24 @@ ves_icall_System_ValueType_InternalGetHashCode (MonoObjectHandle this_obj, MonoA
 
 	if (unhandled) {
 		MonoArrayHandle fields_arr = mono_array_new_handle (mono_domain_get (), mono_defaults.object_class, count, error);
-		return_val_if_nok (error, 0);
+		goto_if_nok (error, return_0);
 		MONO_HANDLE_ASSIGN (fields, fields_arr);
 		MonoObjectHandle h = MONO_HANDLE_NEW (MonoObject, NULL);
 		for (int i = 0; i < count; ++i) {
 			MonoObject *o = mono_field_get_value_object_checked (mono_handle_domain (this_obj), unhandled [i], MONO_HANDLE_RAW (this_obj), error);
-			return_val_if_nok (error, 0);
+			goto_if_nok (error, return_0);
 			MONO_HANDLE_ASSIGN_RAW (h, o);
 			mono_array_handle_setref (fields_arr, i, h);
 		}
 	} else {
 		MONO_HANDLE_ASSIGN (fields, NULL_HANDLE);
 	}
-	return result;
+	goto exit;
+return_0:
+	result = 0;
+	goto exit;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 MonoBoolean

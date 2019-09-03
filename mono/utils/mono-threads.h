@@ -256,8 +256,9 @@ typedef struct _MonoThreadInfo {
 
 	MonoThreadInfoInterruptToken *interrupt_token;
 
-	/* HandleStack for coop handles */
-	MonoHandleStack *handle_stack;
+	/* Handles and frames for coop handles */
+	MonoHandleValue *handle_stack;
+	MonoHandleFrame *handle_frame;
 
 	/* Stack mark for targets that explicitly require one */
 	gpointer stack_mark;
