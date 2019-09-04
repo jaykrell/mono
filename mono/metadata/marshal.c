@@ -196,6 +196,7 @@ mono_marshal_init (void)
 		mono_coop_mutex_init_recursive (&marshal_mutex);
 		marshal_mutex_initialized = TRUE;
 
+		// First type in the signature is the return type.
 		register_icall (mono_marshal_string_to_utf16, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_marshal_string_to_utf16_copy, mono_icall_sig_ptr_obj, FALSE);
 		register_icall (mono_string_to_utf16_internal, mono_icall_sig_ptr_obj, FALSE);
@@ -2939,6 +2940,8 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
+
+	g_assert (!sig->hasthis);
 
 	/* Add an explicit this argument */
 	if (sig->hasthis)

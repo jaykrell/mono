@@ -112,15 +112,8 @@ emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_obje
 char*
 mono_mb_strdup (MonoMethodBuilder *mb, const char *s)
 {
-	char *res;
-	if (!mb->dynamic)
-		res = mono_image_strdup (get_method_image (mb->method), s);
-	else
-		res = g_strdup (s);
-	return res;
+	return mb->dynamic ? g_strdup (s) : mono_image_strdup (get_method_image (mb->method), s);
 }
-
-
 
 /*
  * mono_mb_emit_exception_marshal_directive:
@@ -6270,20 +6263,22 @@ emit_create_string_hack_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *csig,
 /* How the arguments of an icall should be wrapped */
 typedef enum {
 	/* Don't wrap at all, pass the argument as is */
-	ICALL_HANDLES_WRAP_NONE,
+	ICALL_HANDLES_WRAP_NONE = 0,
 	/* Wrap the argument in an object handle, pass the handle to the icall */
-	ICALL_HANDLES_WRAP_OBJ,
+	ICALL_HANDLES_WRAP_OBJ = 1,
 	/* Wrap the argument in an object handle, pass the handle to the icall,
 	   write the value out from the handle when the icall returns */
-	ICALL_HANDLES_WRAP_OBJ_INOUT,
+	ICALL_HANDLES_WRAP_OBJ_INOUT = 2,
 	/* Initialized an object handle to null, pass to the icalls,
 	   write the value out from the handle when the icall returns */
-	ICALL_HANDLES_WRAP_OBJ_OUT,
+	ICALL_HANDLES_WRAP_OBJ_OUT = 3,
 	/* Wrap the argument (a valuetype reference) in a handle to pin its
 	   enclosing object, but pass the raw reference to the icall.  This is
 	   also how we pass byref generic parameter arguments to generic method
 	   icalls (eg, System.Array:GetGenericValueImpl<T>(int idx, T out value)) */
-	ICALL_HANDLES_WRAP_VALUETYPE_REF,
+	ICALL_HANDLES_WRAP_VALUETYPE_REF = 4,
+	// This enum should fit within 4 bits, for the sake of signature_uses_handles.
+	// else it could allocate an array.
 } IcallHandlesWrap;
 
 typedef struct {
@@ -6338,26 +6333,51 @@ signature_param_uses_handles (MonoMethodSignature *sig, MonoMethodSignature *gen
 		return ICALL_HANDLES_WRAP_NONE;
 }
 
-static void
-emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
+static gint64
+signature_uses_handles (MonoMethodSignature *sig)
 {
-	// FIXME:
-	MonoMethodSignature *call_sig = csig;
+	// This function conceptually is returning a boolean, however
+	// there are three signatures per function floating around.
+	// What are their differences? We can avoid that question by asserting their
+	// partial equivalence.
+
+	gint64 result = 0;
+
+	g_assert (!sig->hasthis);
+	g_assert (sig->param_count < 16);
+
+	for (int i = 0; i < sig->param_count; ++i)
+		result |= signature_param_uses_handles (sig, NULL, i) << (i * 4);
+
+	return result;
+}
+
+static void
+emit_icall_wrapper_ilgen_common (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo, MonoJitICallId jit_icall, gint64 jit_uses_handles_details)
+{
+	MonoMethodSignature *call_sig = csig; // FIXME:
 	gboolean uses_handles = FALSE;
 	gboolean foreign_icall = FALSE;
 	IcallHandlesLocal *handles_locals = NULL;
-	MonoMethodSignature *sig = mono_method_signature_internal (method);
+	MonoMethodSignature *sig = jit_icall ? csig : mono_method_signature_internal (method);
 	gboolean need_gc_safe = FALSE;
 	GCSafeTransitionBuilder gc_safe_transition_builder;
 
-	(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles, &foreign_icall);
+	if (jit_icall) {
+		uses_handles = jit_uses_handles_details != 0;
+		g_assert (mb->method);
+		g_assert (mb->method == method);
+		g_assert (!sig->hasthis);
+	} else {
+		(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles, &foreign_icall);
 
-	if (G_UNLIKELY (foreign_icall)) {
-		/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
-		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);
+		if (G_UNLIKELY (foreign_icall)) {
+			/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
+			need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);
 
-		if (need_gc_safe)
-			gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
+			if (need_gc_safe)
+				gc_safe_transition_builder_add_locals (&gc_safe_transition_builder);
+		}
 	}
 
 	if (sig->hasthis) {
@@ -6384,8 +6404,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		// Add a MonoError argument (due to a fragile test external/coreclr/tests/src/CoreMangLib/cti/system/weakreference/weakreferenceisaliveb.exe),
 		// vs. on the native side.
 		// FIXME: The stuff from mono_metadata_signature_dup_internal_with_padding ()
-		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count + 1);
-		call_sig->param_count = csig->param_count + 1;
+		call_sig = mono_metadata_signature_alloc (get_method_image (method), csig->param_count + !jit_icall);
+		call_sig->param_count = csig->param_count + !jit_icall;
 		call_sig->ret = csig->ret;
 		call_sig->pinvoke = csig->pinvoke;
 
@@ -6393,9 +6413,10 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 		g_assert (!sig->hasthis || !m_class_is_valuetype (mono_method_get_class (method)));
 
 		/* Add MonoError* param */
-		MonoClass * const error_class = mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
-		int const error_var = mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
-		call_sig->params [csig->param_count] = mono_class_get_byref_type (error_class);
+		MonoClass * const error_class = jit_icall ? 0 : mono_class_load_from_name (mono_get_corlib (), "Mono", "RuntimeStructs/MonoError");
+		int const error_var = jit_icall ? 0 : mono_mb_add_local (mb, m_class_get_byval_arg (error_class));
+		if (!jit_icall)
+			call_sig->params [csig->param_count] = mono_class_get_byref_type (error_class);
 
 		handles_locals = g_new0 (IcallHandlesLocal, csig->param_count);
 
@@ -6422,6 +6443,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 			// Add a local var to hold the references for each out arg.
 			switch (w) {
+				// Volatile args instead of volatile locals, in case
+				// reference is to native frame instead of managed frame.
 				case ICALL_HANDLES_WRAP_OBJ_INOUT:
 				case ICALL_HANDLES_WRAP_OBJ_OUT:
 					// FIXME better type
@@ -6483,7 +6506,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 					g_assert_not_reached ();
 			}
 		}
-		mono_mb_emit_ldloc_addr (mb, error_var);
+		if (!jit_icall)
+			mono_mb_emit_ldloc_addr (mb, error_var);
 	} else {
 		for (int i = 0; i < csig->param_count; i++)
 			mono_mb_emit_ldarg (mb, i);
@@ -6492,7 +6516,11 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (need_gc_safe)
 		gc_safe_transition_builder_emit_enter (&gc_safe_transition_builder, &piinfo->method, aot);
 
-	if (aot) {
+	if (jit_icall) {
+		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+		mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
+		mono_mb_emit_i4 (mb, jit_icall);
+	} else if (aot) {
 		mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 		mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
 		mono_mb_emit_calli (mb, call_sig);
@@ -6504,6 +6532,8 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (need_gc_safe)
 		gc_safe_transition_builder_emit_exit (&gc_safe_transition_builder);
 
+	// Volatile args instead of volatile locals, in case
+	// reference is to native frame instead of managed frame.
 	// Copy back ObjOut and ObjInOut from locals through parameters.
 	if (mb->volatile_locals) {
 		g_assert (handles_locals);
@@ -6525,6 +6555,12 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 	if (check_exceptions)
 		emit_thread_interrupt_checkpoint (mb);
 	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *piinfo)
+{
+	emit_icall_wrapper_ilgen_common (mb, method, csig, check_exceptions, aot, piinfo, 0, 0);
 }
 
 static void
@@ -6553,23 +6589,21 @@ emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_
 }
 
 static void
-emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, MonoMethodSignature *csig2, gboolean check_exceptions)
+emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, MonoMethodSignature *sig, gboolean check_exceptions)
 {
-	MonoMethodSignature *const sig = callinfo->sig;
+	g_assert (callinfo->sig);
+	g_assert (sig->param_count < 16); // This limit is to ease assertions about signature equivalence. array of int is correct generalization
+	g_assert (callinfo->sig->param_count < 16); // This limit is to ease assertions about signature equivalence.
+	g_assert (!sig->hasthis);
+	g_assert (!callinfo->sig->hasthis);
+	g_assert (mb->method);
+	g_assert (!mb->method->is_inflated);
 
-	if (sig->hasthis)
-		mono_mb_emit_byte (mb, CEE_LDARG_0);
+	// FIXME Computing this at compile-time would be nice.
+	const gint64 uses_handles = signature_uses_handles (sig);
+	g_assert (uses_handles == signature_uses_handles (callinfo->sig));
 
-	for (int i = 0; i < sig->param_count; i++)
-		mono_mb_emit_ldarg (mb, i + sig->hasthis);
-
-	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_byte (mb, CEE_MONO_JIT_ICALL_ADDR);
-	mono_mb_emit_i4 (mb, mono_jit_icall_info_index (callinfo));
-	mono_mb_emit_calli (mb, csig2);
-	if (check_exceptions)
-		emit_thread_interrupt_checkpoint (mb);
-	mono_mb_emit_byte (mb, CEE_RET);
+	emit_icall_wrapper_ilgen_common (mb, mb->method, sig, check_exceptions, FALSE/*aot*/, NULL, mono_jit_icall_info_index (callinfo), uses_handles);
 }
 
 static void

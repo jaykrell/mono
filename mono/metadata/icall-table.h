@@ -444,7 +444,9 @@ func ## _raw ( MONO_HANDLE_FOREACH_ARG_RAW_ ## n argtypes MONO_HANDLE_COMMA_ ## 
 // Implement ves_icall_foo_raw over ves_icall_foo.
 // Raw handles are converted to/from typed handles and the rest is passed through.
 // This is for functions in icall-def.h.
-
+//
+// FIXME Only create frames if needed, i.e. manually in the next layer down.
+//
 #define MONO_HANDLE_IMPLEMENT(id, name, func, rettype, n, argtypes)	\
 										\
 MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
@@ -464,27 +466,28 @@ MONO_HANDLE_DECLARE_RAW (id, name, func, rettype, n, argtypes)			\
 	MONO_HANDLE_RETURN_END (rettype)					\
 }										\
 
-// Declare the function that takes/returns raw pointers and no MonoError.
+// Declare the function wrapper that takes raw handles and no MonoError and returns a raw pointer.
+//
 #define MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW(func, rettype, n, argtypes)	\
 ICALL_EXPORT MONO_HANDLE_TYPE_RAWPOINTER (rettype)				\
 func ( MONO_HANDLE_FOREACH_ARG_RAWPOINTER_ ## n argtypes)
 
 // Implement ves_icall_foo over ves_icall_foo_impl.
 //
-// Raw pointers are converted to/from handles and the rest is passed through.
+// Raw handles are converted to/from typed handles and the rest is passed through.
 // The in/out/inout-ness of parameters must be correct. (unlike MONO_HANDLE_IMPLEMENT)
 // Valuetype-refs are not handled. (unlike MONO_HANDLE_IMPLEMENT)
 // Handle creation is less efficient than MONO_HANDLE_IMPLEMENT (marshal-ilgen.c) -- using TLS
 // and per-handle work.
 //
-// In future this should produce an array of IcallHandlesWrap and send that through
-// to emit_native_icall_wrapper_ilgen to gain its efficient handles.
-//
-// Or put the handles directly in the coop frame, or pointers to them.
-// i.e. one TLS access at function start and end.
+// Handles are created in marshal-ilgen.c very efficiently.
 //
 // This is for functions passed to mono_register_jit_icall_info, etc.
-
+//
+// This is like MONO_HANDLE_IMPLEMENT, except for the placement of MonoError.
+//
+// FIXME Only create frames if needed, i.e. manually in the next layer down.
+//
 #define MONO_HANDLE_REGISTER_ICALL_IMPLEMENT(func, rettype, n, argtypes)	\
 										\
 MONO_HANDLE_REGISTER_ICALL_DECLARE_RAW (func, rettype, n, argtypes)		\

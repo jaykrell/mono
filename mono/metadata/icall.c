@@ -9215,6 +9215,7 @@ typedef enum ICallSigType {
 #define ICALL_SIG_TYPES(n, types) ICALL_SIG_TYPES_ ## n types
 
 // A scheme to make these const would be nice.
+// FIXME Producing an array of IcallHandlesWrap here would be nice.
 static struct {
 #define ICALL_SIG(n, xtypes) 			\
 	struct {				\
