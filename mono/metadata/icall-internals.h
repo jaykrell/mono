@@ -89,16 +89,24 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 #include <type_traits>
 
 template <typename T>
+#if HOST_ANDROID // type_traits does not work well
+inline T
+#else
 inline typename std::enable_if<std::is_function<T>::value ||
 			       std::is_function<typename std::remove_pointer<T>::type>::value >::type
+#endif
 mono_add_internal_call_with_flags (const char *name, T method, gboolean cooperative)
 {
 	return mono_add_internal_call_with_flags (name, (const void*)method, cooperative);
 }
 
 template <typename T>
+#if HOST_ANDROID // type_traits does not work well
+inline T
+#else
 inline typename std::enable_if<std::is_function<T>::value ||
 			       std::is_function<typename std::remove_pointer<T>::type>::value >::type
+#endif
 mono_add_internal_call_internal (const char *name, T method)
 {
 	return mono_add_internal_call_internal (name, (const void*)method);
