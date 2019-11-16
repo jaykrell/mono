@@ -1011,11 +1011,9 @@ MonoClass* mono_class_try_get_##shortname##_class (void);
 //
 #define GENERATE_GET_CLASS_WITH_CACHE(shortname,name_space,name) \
 MonoClass*	\
-mono_class_get_##shortname##_class (void)	\
-{	\
-	static MonoClass *tmp_class;	\
-	MonoClass *klass = tmp_class;	\
-	if (!klass) {	\
+mono_class_get_##shortname##_class (void)							\
+{												\
+	MONO_STATIC_POINTER_INIT (MonoClass, klass)						\
 		klass = mono_class_load_from_name (mono_defaults.corlib, name_space, name);	\
 		mono_memory_barrier ();	/* FIXME excessive? */ \
 		tmp_class = klass;	\
@@ -1039,11 +1037,12 @@ mono_class_try_get_##shortname##_class (void)	\
 	mono_memory_barrier ();	\
 	if (!inited) {	\
 		klass = mono_class_try_load_from_name (mono_defaults.corlib, name_space, name);	\
-		tmp_class = klass;	\
-		mono_memory_barrier ();	\
-		inited = TRUE;	\
-	}	\
-	return klass;	\
+		mono_memory_barrier ();								\
+		static_class = klass;								\
+		mono_memory_barrier ();								\
+		inited = TRUE;									\
+	}											\
+	return klass;										\
 }
 
 GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (safehandle)
