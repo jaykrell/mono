@@ -62,7 +62,6 @@
 
 #include "interp.h"
 #include "interp-internals.h"
-#include "mintops.h"
 
 #include <mono/mini/mini.h>
 #include <mono/mini/mini-runtime.h>
@@ -3475,6 +3474,8 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 /* Save the state of the interpeter main loop into FRAME */
 #define SAVE_INTERP_STATE(frame) do { \
 	frame->state.ip = ip;  \
+	frame->state.o = o; \
+	frame->state.opcode = opcode; \
 	frame->state.sp = sp; \
 	frame->state.vt_sp = vt_sp; \
 	frame->state.is_void = is_void; \
@@ -3485,6 +3486,8 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 /* Load and clear state from FRAME */
 #define LOAD_INTERP_STATE(frame) do { \
 	ip = frame->state.ip; \
+	o = frame->state.o; \
+	opcode = frame->state.opcode; \
 	sp = frame->state.sp; \
 	is_void = frame->state.is_void; \
 	vt_sp = frame->state.vt_sp; \
@@ -3514,6 +3517,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 {
 	InterpMethod *cmethod;
 	gboolean is_void;
+	MonoObject *o; // See the comment about GC safety.
 	stackval *retval;
 
 	/* Interpreter main loop state (InterpState) */
@@ -5123,7 +5127,6 @@ call:;
 		MINT_IN_CASE(MINT_NEWOBJ_FAST) {
 			MonoVTable *vtable = (MonoVTable*) frame->imethod->data_items [ip [3]];
 			INIT_VTABLE (vtable);
-			MonoObject *o; // See the comment about GC safety.
 			guint16 param_count;
 			guint16 imethod_index = ip [1];
 
@@ -5147,17 +5150,11 @@ call:;
 				sp [1].data.o = o;
 				sp += param_count + 2;
 			} else {
-				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
+				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
 				frame->ip = ip;
-
-				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
-
-				// FIXME Remove recursion.
-				interp_exec_method_newobj_fast (child_frame, context, error);
-
-				CHECK_RESUME_STATE (context);
-				sp [0].data.o = o;
-				sp++;
+				retval = NULL;
+				opcode = MINT_NEWOBJ_FAST;
+				goto call;
 			}
 			ip += 4;
 
@@ -7168,6 +7165,7 @@ exit_frame:
 		/* Return to the main loop after a non-recursive interpreter call */
 		//printf ("R: %s -> %s %p\n", mono_method_get_full_name (frame->imethod->method), mono_method_get_full_name (frame->parent->imethod->method), frame->parent->state.ip);
 		stackval *retval = frame->retval;
+		MintOpcode opcode;
 
 		InterpFrame *child_frame = frame;
 
@@ -7180,7 +7178,11 @@ exit_frame:
 
 		if (retval && !is_void) {
 			*sp = *retval;
-			sp ++;
+			++sp;
+		} else if (opcode == MINT_NEWOBJ_FAST) {
+			sp [0].data.o = o;
+			++sp;
+			ip += 4;
 		}
 		goto main_loop;
 	}

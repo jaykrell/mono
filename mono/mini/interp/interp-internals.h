@@ -9,6 +9,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include "interp.h"
+#include "mintops.h"
 
 #define MINT_TYPE_I1 0
 #define MINT_TYPE_U1 1
@@ -191,6 +192,8 @@ typedef struct {
 	const unsigned short  *ip;
 	GSList *finally_ips;
 	FrameClauseArgs *clause_args;
+	MonoObject * WASM_VOLATILE o;
+	MintOpcode opcode;
 	gboolean is_void : 1;
 } InterpState;
 
