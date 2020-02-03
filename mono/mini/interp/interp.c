@@ -292,14 +292,6 @@ static gboolean interp_init_done = FALSE;
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
 
 static MONO_NEVER_INLINE void
-interp_exec_method_newobj_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
-// This function makes WebAsssembly stacks clearer, so you can see which recursion
-// is occuring, in the absence of line numbers in the debugger.
-{
-	interp_exec_method_full (frame, context, NULL, error);
-}
-
-static MONO_NEVER_INLINE void
 interp_exec_method_newobj_vtst_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
 // This function makes WebAsssembly stacks clearer, so you can see which recursion
 // is occuring, in the absence of line numbers in the debugger.
@@ -5135,23 +5127,20 @@ call:;
 			}
 
 			sp [0].data.o = o;
+			ip += 4;
 			if (is_inlined) {
 				sp [1].data.o = o;
 				sp += param_count + 2;
 			} else {
-				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
-				frame->ip = ip;
-
-				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
-
-				// FIXME Remove recursion.
-				interp_exec_method_newobj_fast (child_frame, context, error);
-
-				CHECK_RESUME_STATE (context);
-				sp [0].data.o = o;
-				sp++;
+				// Store o past the parameters on the stack so GC will see it,
+				// and where it is needed when the call returns.
+				cmethod = (InterpMethod*)frame->imethod->data_items [imethod_index];
+				frame->ip = ip - 4;
+				retval = NULL;
+				is_void = TRUE;
+				sp [-(int)param_count - 1].data.o = o;
+				goto call;
 			}
-			ip += 4;
 
 			MINT_IN_BREAK;
 		}
