@@ -3911,24 +3911,53 @@ main_loop:
 				sp [0].data.p = unboxed;
 			}
 
-			SAVE_INTERP_STATE (frame);
+			InterpMethodCodeType code_type = imethod->code_type;
 
-			if (G_UNLIKELY (!imethod->transformed)) {
-				MonoException *ex;
-				gboolean tracing;
+			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
+			          code_type == IMETHOD_CODE_INTERP ||
+			          code_type == IMETHOD_CODE_COMPILED);
 
-				// FIXME &retval looks wrong
+			if (G_UNLIKELY (code_type == IMETHOD_CODE_UNKNOWN)) {
+				MonoMethodSignature *sig = mono_method_signature_internal (imethod->method);
+				if (mono_interp_jit_call_supported (imethod->method, sig))
+					code_type = IMETHOD_CODE_COMPILED;
+				else
+					code_type = IMETHOD_CODE_INTERP;
+				imethod->code_type = code_type;
+			}
+
+			if (code_type == IMETHOD_CODE_INTERP) {
+				SAVE_INTERP_STATE (frame);
+
 				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
-				method_entry (context, child_frame, &tracing, &ex);
-				if (G_UNLIKELY (ex)) {
-					frame = child_frame;
-					frame->ip = NULL;
-					THROW_EX (ex, NULL);
-					EXCEPTION_CHECKPOINT;
+
+				if (G_UNLIKELY (!imethod->transformed)) {
+					MonoException *ex;
+					gboolean tracing;
+
+					method_entry (context, child_frame, &tracing, &ex);
+					if (G_UNLIKELY (ex)) {
+						frame = child_frame;
+						frame->ip = NULL;
+						THROW_EX (ex, NULL);
+						EXCEPTION_CHECKPOINT;
+					}
+				} else {
+					alloc_stack_data (context, child_frame, imethod->alloca_size);
 				}
-			} else {
-				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
-				alloc_stack_data (context, child_frame, imethod->alloca_size);
+
+				frame = child_frame;
+				clause_args = NULL;
+				INIT_INTERP_STATE (frame, clause_args);
+			} else if (code_type == IMETHOD_CODE_COMPILED) {
+				error_init_reuse (error);
+				do_jit_call (sp, vt_sp, context, frame, imethod, error);
+				if (!is_ok (error)) {
+					MonoException *ex = mono_error_convert_to_exception (error);
+					THROW_EX (ex, ip);
+				}
+				if (imethod->rtype->type != MONO_TYPE_VOID)
+					sp++;
 			}
 
 			frame = child_frame;
