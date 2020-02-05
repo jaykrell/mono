@@ -187,7 +187,8 @@ typedef struct {
 	unsigned char *vt_sp;
 	const unsigned short  *ip;
 	GSList *finally_ips;
-	gpointer clause_args;
+	FrameClauseArgs *clause_args;
+	gboolean is_void : 1;
 } InterpState;
 
 struct _InterpFrame {
