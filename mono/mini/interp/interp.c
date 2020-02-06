@@ -84,7 +84,7 @@
 #endif
 
 /* Arguments that are passed when invoking only a finally/filter clause from the frame */
-typedef struct {
+struct FrameClauseArgs {
 	/* Where we start the frame execution from */
 	const guint16 *start_with_ip;
 	/*
@@ -98,7 +98,7 @@ typedef struct {
 	/* Exception that we are filtering */
 	MonoException *filter_exception;
 	InterpFrame *base_frame;
-} FrameClauseArgs;
+};
 
 /*
  * This code synchronizes with interp_mark_stack () using compiler memory barriers.
@@ -3496,7 +3496,7 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
 
 /* Initialize interpreter state for executing FRAME */
 #define INIT_INTERP_STATE(frame, _clause_args) do {	 \
-	ip = _clause_args ? ((FrameClauseArgs*)_clause_args)->start_with_ip : (frame)->imethod->code; \
+	ip = (_clause_args) ? (_clause_args)->start_with_ip : (frame)->imethod->code; \
 	sp = (frame)->stack; \
 	vt_sp = (unsigned char *) sp + (frame)->imethod->stack_size; \
 	locals = (unsigned char *) vt_sp + (frame)->imethod->vt_stack_size; \
@@ -3825,8 +3825,8 @@ main_loop:
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}
@@ -3911,6 +3911,7 @@ main_loop:
 				sp [0].data.p = unboxed;
 			}
 
+#if 0
 			InterpMethodCodeType code_type = imethod->code_type;
 
 			g_assert (code_type == IMETHOD_CODE_UNKNOWN ||
@@ -3926,7 +3927,9 @@ main_loop:
 				imethod->code_type = code_type;
 			}
 
-			if (code_type == IMETHOD_CODE_INTERP) {
+			if (code_type == IMETHOD_CODE_INTERP)
+#endif
+			{
 				SAVE_INTERP_STATE (frame);
 
 				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
@@ -3949,7 +3952,9 @@ main_loop:
 				frame = child_frame;
 				clause_args = NULL;
 				INIT_INTERP_STATE (frame, clause_args);
-			} else if (code_type == IMETHOD_CODE_COMPILED) {
+			}
+#if 0
+			else if (code_type == IMETHOD_CODE_COMPILED) {
 				error_init_reuse (error);
 				do_jit_call (sp, vt_sp, context, frame, imethod, error);
 				if (!is_ok (error)) {
@@ -3959,10 +3964,10 @@ main_loop:
 				if (imethod->rtype->type != MONO_TYPE_VOID)
 					sp++;
 			}
-
+#endif
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}
@@ -4059,8 +4064,8 @@ call:;
 			}
 
 			frame = child_frame;
-			INIT_INTERP_STATE (frame, NULL);
 			clause_args = NULL;
+			INIT_INTERP_STATE (frame, clause_args);
 
 			MINT_IN_BREAK;
 		}

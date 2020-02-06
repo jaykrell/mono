@@ -181,6 +181,9 @@ typedef struct {
 	int inited;
 } FrameStack;
 
+/* Arguments that are passed when invoking only a finally/filter clause from the frame */
+typedef struct FrameClauseArgs FrameClauseArgs;
+
 /* State of the interpreter main loop */
 typedef struct {
 	stackval *sp;
