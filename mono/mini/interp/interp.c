@@ -101,131 +101,131 @@ struct FrameClauseArgs {
 };
 
 /*
- * This code synchronizes with interp_mark_stack () using compiler memory barriers.
- */
+MonoInterpStack:
+ - multiple alloca calls per frame are adjacent
+ - manager one growable chunk
+ - allocation is pointer bump, and if not enough space, also alloca to grow
+ - free is pointer restore
+ - chunk reclaim is return, like alloca
+ - detect stack direction at runtime and act accordingly
+ - EH (native_stack_addr) and GC (callback) interactions go back to the old way
+ - Carefully use macros to keep alloca in caller.
+*/
 
-static StackFragment*
-stack_frag_new (int size)
+typedef struct MonoInterpStack MonoInterpStack;
+typedef struct MonoInterpStackAllocation MonoInterpStackAllocation;
+
+enum StackDirection
 {
-	StackFragment *frag = (StackFragment*)g_malloc (size);
+	GrowsDown, // everything else
+	GrowsUp    // HPPA
+};
 
-	frag->pos = (guint8*)&frag->data;
-	frag->end = (guint8*)frag + size;
-	frag->next = NULL;
-	return frag;
+static
+int
+stack_inc (char *stack, int n, StackDirection direction)
+{
+	return G_LIKELY(direction == GrowsDown) ? (stack - n) : (stack + n);
 }
+
+struct MonoInterpStack
+{
+	char *initial;
+	char *current;
+	int total_size;
+	int size_remaining
+	StackDirection direction;
+};
+
+struct MonoInterpStackAllocation
+{
+	char *previous;
+};
+
+static boolean
+stack_alloc_check (MonoInterpStack *stack, int size)
+{
+	return size <= stack->size_remaining;
+}
+
+static MONO_NEVER_INLINE void
+stack_init_function (MonoInterpStack *stack, char *chunk, int size)
+{
+	stack->direction = (alloca (1) < chunk) ? GrowsDown : GrowsUp;
+	stack->intitial = chunk;
+	if (stack->direction == GrowsDown)
+		stack->current = chunk + size;
+	else
+		stack->current = chunk;
+	stack->size_remaining = size;
+	stack->total_size = size;
+}
+
+#define stack_init(stack) stack_init_function (stack, alloca(65536), 65536)
 
 static void
-frame_stack_init (FrameStack *stack, int size)
+stack_free (MonoInterpStack *stack, char *chunk, int size)
 {
-	StackFragment *frag;
-
-	frag = stack_frag_new (size);
-	stack->first = stack->last = stack->current = frag;
-	mono_compiler_barrier ();
-	stack->inited = 1;
-}
-
-static StackFragment*
-add_frag (FrameStack *stack, int size)
-{
-	StackFragment *new_frag;
-
-	// FIXME:
-	int frag_size = 4096;
-	if (size + sizeof (StackFragment) > frag_size)
-		frag_size = size + sizeof (StackFragment);
-	new_frag = stack_frag_new (frag_size);
-	mono_compiler_barrier ();
-	stack->last->next = new_frag;
-	stack->last = new_frag;
-	stack->current = new_frag;
-	return new_frag;
-}
-
-static MONO_ALWAYS_INLINE gpointer
-frame_stack_alloc_ovf (FrameStack *stack, int size, StackFragment **out_frag)
-{
-	StackFragment *current = stack->current;
-	gpointer res;
-
-	if (current->next && current->next->pos + size <= current->next->end) {
-		current = stack->current = current->next;
-		current->pos = (guint8*)&current->data;
-	} else {
-		current = add_frag (stack, size);
+	if (stack->direction == GrowsDown)
+	{
+		stack->current = chunk + size;
+		stack->size_remaining =  stack->initial + stack->total_size - stack->current;
 	}
-	g_assert (current->pos + size <= current->end);
-	res = (gpointer)current->pos;
-	current->pos += size;
-
-	mono_compiler_barrier ();
-
-	if (out_frag)
-		*out_frag = current;
-	return res;
-}
-
-static MONO_ALWAYS_INLINE gpointer
-frame_stack_alloc (FrameStack *stack, int size, StackFragment **out_frag)
-{
-	StackFragment *current = stack->current;
-	gpointer res;
-
-	if (G_LIKELY (current->pos + size <= current->end)) {
-		res = current->pos;
-		current->pos += size;
-		mono_compiler_barrier ();
-
-		if (out_frag)
-			*out_frag = current;
-		return res;
-	} else {
-		return frame_stack_alloc_ovf (stack, size, out_frag);
+	else
+	{
+		stack->current = chunk;
+		stack->size_remaining = chunk + size - stack->initial;
 	}
 }
 
-static MONO_ALWAYS_INLINE void
-frame_stack_pop (FrameStack *stack, StackFragment *frag, gpointer pos)
+static gpointer
+stack_alloc_fast (MonoInterpStack *stack, int size)
 {
-	g_assert ((guint8*)pos >= (guint8*)&frag->data && (guint8*)pos <= (guint8*)frag->end);
-	stack->current = frag;
-	mono_compiler_barrier ();
-	stack->current->pos = (guint8*)pos;
-	mono_compiler_barrier ();
-	//memset (stack->current->pos, 0, stack->current->end - stack->current->pos);
+	char *current = stack->current;
+	if (stack->direction == GrowsDown)
+	{
+		current -= size;
+		stack->current = current;
+	}
+	else
+	{
+		stack->current = current + size;
+	}
+	stack->size_remaining -= size;
+	return current;
 }
 
-static void
-frame_stack_free (FrameStack *stack)
+#define stack_alloc(stack, size)			\
+	(size <= stack->size_remaining) ?		\
+		stack_alloc_fast (stack, size) :	\
+		stack_alloc_slow (stack, size, alloca (size - stack->size_remaining), size - stack->size_remaining)
+static gpointer
+stack_alloc_slow (MonoInterpStack *stack, int size, char *next_chunk, int next_chunk_size)
 {
-	stack->inited = 0;
-	mono_compiler_barrier ();
-	StackFragment *frag = stack->first;
-	while (frag) {
-		StackFragment *next = frag->next;
-		g_free (frag);
-		frag = next;
-	}
+	int real_next_chunk_size;
+
+	if (stack->direction == GrowsDown)
+		real_next_chunk_size = stack->initial - stack->total_size - next_chunk;
+	else
+		real_next_chunk_size = next_chunk + next_chunk_size - (stack->initial + stack->total_size;
+
+	g_assert (real_next_chunk_size >= next_chunk_size);
+
+	stack->size_remaining += real_next_chunk_size;
+	stack->total_size += real_next_chunk_size;
+	return stack_alloc_fast (stack, size);
 }
 
 /*
- * alloc_frame:
+ * init_frame:
  *
  *   Allocate a new frame from the frame stack.
  */
-static MONO_ALWAYS_INLINE InterpFrame*
-alloc_frame (ThreadContext *ctx, gpointer native_stack_addr, InterpFrame *parent, InterpMethod *imethod, stackval *args, stackval *retval)
+static InterpFrame*
+init_frame (gpointer p, InterpFrame *parent, InterpMethod *imethod, stackval *args, stackval *retval)
 {
-	StackFragment *frag;
-	InterpFrame *frame;
-
-	// FIXME: Add stack overflow checks
-	frame = (InterpFrame*)frame_stack_alloc (&ctx->iframe_stack, sizeof (InterpFrame), &frag);
-
-	frame->iframe_frag = frag;
+	InterpFrame *frame = (InterpFrame*)p;
 	frame->parent = parent;
-	frame->native_stack_addr = native_stack_addr;
 	frame->imethod = imethod;
 	frame->stack_args = args;
 	frame->retval = retval;
@@ -236,46 +236,8 @@ alloc_frame (ThreadContext *ctx, gpointer native_stack_addr, InterpFrame *parent
 	return frame;
 }
 
-/*
- * alloc_data_stack:
- *
- *   Allocate stack space for a frame.
- */
-static MONO_ALWAYS_INLINE void
-alloc_stack_data (ThreadContext *ctx, InterpFrame *frame, int size)
-{
-	StackFragment *frag;
-	gpointer res;
-
-	res = frame_stack_alloc (&ctx->data_stack, size, &frag);
-
-	frame->stack = (stackval*)res;
-	frame->data_frag = frag;
-}
-
-static gpointer
-alloc_extra_stack_data (ThreadContext *ctx, int size)
-{
-	StackFragment *frag;
-
-	return frame_stack_alloc (&ctx->data_stack, size, &frag);
-}
-
-/*
- * pop_frame:
- *
- *   Pop FRAME and its child frames from the frame stack.
- * FRAME stays valid until the next alloc_frame () call.
- */
-static void
-pop_frame (ThreadContext *context, InterpFrame *frame)
-{
-	if (frame->stack)
-		frame_stack_pop (&context->data_stack, frame->data_frag, frame->stack);
-	frame_stack_pop (&context->iframe_stack, frame->iframe_frag, frame);
-}
-
-#define interp_exec_method(frame, context, error) interp_exec_method_full ((frame), (context), NULL, error)
+#define alloc_frame(stack, parent, imethod, args, retval) \
+	init_frame (stack_alloc (stack, sizeof (InterpFrame)), (parent), (imethod), (args), (retval))
 
 /*
  * List of classes whose methods will be executed by transitioning to JITted code.
@@ -289,7 +251,15 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
-static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error);
+static void
+interp_exec_method (
+	InterpFrame *parent,
+	InterpMethod *imethod,
+	stackval *args,
+	stackval *retval,
+	ThreadContext *context,
+	FrameClauseArgs *clause_args,
+	MonoError *error);
 
 static MONO_NEVER_INLINE void
 interp_exec_method_newobj_fast (InterpFrame *frame, ThreadContext *context, MonoError *error)
@@ -458,12 +428,6 @@ get_context (void)
 	ThreadContext *context = (ThreadContext *) mono_native_tls_get_value (thread_context_id);
 	if (context == NULL) {
 		context = g_new0 (ThreadContext, 1);
-		/*
-		 * Use two stacks, one for InterpFrame structures, one for data.
-		 * This is useful because InterpFrame structures don't need to be GC tracked.
-		 */
-		frame_stack_init (&context->iframe_stack, 8192);
-		frame_stack_init (&context->data_stack, 8192);
 		set_context (context);
 	}
 	return context;
@@ -472,11 +436,7 @@ get_context (void)
 static void
 interp_free_context (gpointer ctx)
 {
-	ThreadContext *context = (ThreadContext*)ctx;
-
-	frame_stack_free (&context->iframe_stack);
-	frame_stack_free (&context->data_stack);
-	g_free (context);
+	g_free ((ThreadContext*)ctx);
 }
 
 static void
@@ -1114,7 +1074,7 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, con
 
 	MonoContext ctx;
 	memset (&ctx, 0, sizeof (MonoContext));
-	MONO_CONTEXT_SET_SP (&ctx, frame->native_stack_addr);
+	MONO_CONTEXT_SET_SP (&ctx, frame);
 
 	/*
 	 * Call the JIT EH code. The EH code will call back to us using:
@@ -1894,7 +1854,6 @@ dump_args (InterpFrame *inv)
 static MonoObject*
 interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
-	InterpFrame *frame;
 	ThreadContext *context = get_context ();
 	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
@@ -1926,9 +1885,7 @@ interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject 
 
 	InterpMethod *imethod = mono_interp_get_imethod (domain, invoke_wrapper, error);
 	mono_error_assert_ok (error);
-	frame = alloc_frame (context, &result, NULL, imethod, args, &result);
-
-	interp_exec_method (frame, context, error);
+	interp_exec_method (NULL, imethod, args, &result, context, NULL, error);
 
 	if (context->has_resume_state) {
 		// This can happen on wasm !?
@@ -2019,7 +1976,6 @@ interp_entry (InterpEntryData *data)
 
 	memset (&result, 0, sizeof (result));
 	retval = &result;
-	frame = alloc_frame (context, &result, NULL, data->rmethod, args, retval);
 
 	type = rmethod->rtype;
 	switch (type->type) {
@@ -2035,7 +1991,13 @@ interp_entry (InterpEntryData *data)
 	}
 
 	ERROR_DECL (error);
-	interp_exec_method (frame, context, error);
+	interp_exec_method (
+		NULL,
+		data->rmethod,
+		args,
+		retval),
+		context,
+		error);
 
 	g_assert (!context->has_resume_state);
 
@@ -2751,7 +2713,7 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 	args = (stackval*)alloca (sizeof (stackval) * (sig->param_count + (sig->hasthis ? 1 : 0)));
 
-	frame = alloc_frame (context, &result, NULL, rmethod, args, &result);
+	frame = init_frame (stack_alloc (stack, sizeof (*frame)), NULL, rmethod, args, &result);
 
 	/* Allocate storage for value types */
 	for (i = 0; i < sig->param_count; i++) {
@@ -3504,10 +3466,9 @@ method_entry (ThreadContext *context, InterpFrame *frame, gboolean *out_tracing,
  * If CLAUSE_ARGS is non-null, start executing from it.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
  * to return error information.
- * FRAME is only valid until the next call to alloc_frame ().
  */
 static MONO_NEVER_INLINE void
-interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
+interp_exec_method_full (InterpFrame *proto_frame, ThreadContext *context, FrameClauseArgs *clause_args, MonoError *error)
 {
 	InterpMethod *cmethod;
 	gboolean is_void;
@@ -3801,7 +3762,7 @@ main_loop:
 			/* Non-recursive call */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, imethod, sp, retval);
+			child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), (frame, imethod, sp, retval);
 
 			if (G_UNLIKELY (!imethod->transformed)) {
 				MonoException *ex;
@@ -3854,7 +3815,7 @@ main_loop:
 			--sp;
 			guchar* const code = (guchar*)sp->data.p;
 			retval = sp;
-			child_frame = alloc_frame (context, &retval, frame, NULL, NULL, retval);
+			child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, NULL, NULL, retval);
 
 			sp->data.p = vt_sp;
 			/* decrement by the actual number of args */
@@ -3924,8 +3885,7 @@ main_loop:
 			if (code_type == IMETHOD_CODE_INTERP) {
 				SAVE_INTERP_STATE (frame);
 
-				// FIXME &retval looks wrong
-				child_frame = alloc_frame (context, &retval, frame, imethod, sp, retval);
+				child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, imethod, sp, retval);
 
 				if (G_UNLIKELY (!imethod->transformed)) {
 					MonoException *ex;
@@ -4032,7 +3992,7 @@ call:;
 			 */
 			SAVE_INTERP_STATE (frame);
 
-			child_frame = alloc_frame (context, native_stack_addr, frame, cmethod, sp, retval);
+			child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, cmethod, sp, retval);
 
 			if (G_UNLIKELY (!cmethod->transformed)) {
 				MonoException *ex;
@@ -5142,7 +5102,7 @@ call:;
 				InterpMethod *ctor_method = (InterpMethod*) frame->imethod->data_items [imethod_index];
 				frame->ip = ip;
 
-				child_frame = alloc_frame (context, &vtable, frame, ctor_method, sp, NULL);
+				child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, ctor_method, sp, NULL);
 
 				// FIXME Remove recursion.
 				interp_exec_method_newobj_fast (child_frame, context, error);
@@ -5157,13 +5117,12 @@ call:;
 		}
 		MINT_IN_CASE(MINT_NEWOBJ_VT_FAST)
 		MINT_IN_CASE(MINT_NEWOBJ_VTST_FAST) {
-			int dummy;
 			// This is split up to:
 			//  - conserve stack
 			//  - keep exception handling and resume mostly in the main function
 
 			frame->ip = ip;
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
+			child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, (InterpMethod*) frame->imethod->data_items [ip [1]], NULL, NULL);
 			guint16 const param_count = ip [2];
 
 			if (param_count) {
@@ -5194,7 +5153,6 @@ call:;
 		}
 
 		MINT_IN_CASE(MINT_NEWOBJ) {
-			int dummy;
 			// This is split up to:
 			//  - conserve stack
 			//  - keep exception handling and resume mostly in the main function
@@ -5204,7 +5162,7 @@ call:;
 			guint32 const token = ip [1];
 			ip += 2; // FIXME: Do this after throw?
 
-			child_frame = alloc_frame (context, &dummy, frame, (InterpMethod*)frame->imethod->data_items [token], NULL, NULL);
+			child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, (InterpMethod*)frame->imethod->data_items [token], NULL, NULL);
 			MonoMethodSignature* const csig = mono_method_signature_internal (child_frame->imethod->method);
 
 			g_assert (csig->hasthis);
@@ -6422,7 +6380,7 @@ call:;
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
 
 			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				child_frame = alloc_frame (context, &dummy, frame, NULL, NULL, NULL);
+				child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), frame, NULL, NULL, NULL);
 				MonoException *abort_exc = mono_interp_leave (child_frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, frame->ip);
@@ -7305,7 +7263,7 @@ interp_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, g
 	 * Have to run the clause in a new frame which is a copy of IFRAME, since
 	 * during debugging, there are two copies of the frame on the stack.
 	 */
-	child_frame = alloc_frame (context, &retval, iframe, iframe->imethod, iframe->stack_args, &retval);
+	child_frame = init_frame (stack_alloc (stack, sizeof (*frame)), iframe, iframe->imethod, iframe->stack_args, &retval);
 
 	memset (&clause_args, 0, sizeof (FrameClauseArgs));
 	clause_args.start_with_ip = (const guint16*)handler_ip;
