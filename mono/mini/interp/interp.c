@@ -220,20 +220,14 @@ frame_stack_free (FrameStack *stack)
 }
 
 /*
- * alloc_frame:
+ * init_frame:
  *
- *   Allocate a new frame from the frame stack.
+ *   Initialize a frame.
  */
-static InterpFrame*
-alloc_frame (ThreadContext *ctx, gpointer native_stack_addr, InterpFrame *parent, InterpMethod *imethod, stackval *stack_args, stackval *retval)
+static void
+init_frame (InterpFrame *frame, gpointer native_stack_addr, InterpFrame *parent, InterpMethod *imethod, stackval *stack_args, stackval *retval, StackFragment *iframe_frag)
 {
-	StackFragment *frag;
-	InterpFrame *frame;
-
-	// FIXME: Add stack overflow checks
-	frame = (InterpFrame*)frame_stack_alloc (&ctx->iframe_stack, sizeof (InterpFrame), &frag);
-
-	frame->iframe_frag = frag;
+	frame->iframe_frag = iframe_frag;
 	frame->parent = parent;
 	frame->native_stack_addr = native_stack_addr;
 	frame->imethod = imethod;
@@ -242,6 +236,22 @@ alloc_frame (ThreadContext *ctx, gpointer native_stack_addr, InterpFrame *parent
 	frame->stack = NULL;
 	frame->ip = NULL;
 	frame->state.ip = NULL;
+}
+
+/*
+ * alloc_frame:
+ *
+ *   Allocate a new frame from the frame stack.
+ */
+static InterpFrame*
+alloc_frame (ThreadContext *thread_context, gpointer native_stack_addr, InterpFrame *parent, InterpMethod *imethod, stackval *stack_args, stackval *retval)
+{
+	StackFragment *iframe_frag;
+
+	// FIXME: Add stack overflow checks
+	InterpFrame *frame = (InterpFrame*)frame_stack_alloc (&thread_context->iframe_stack, sizeof (InterpFrame), &iframe_frag);
+
+	init_frame (frame, native_stack_addr, parent, imethod, stack_args, retval, iframe_frag);
 
 	return frame;
 }
@@ -3682,14 +3692,14 @@ main_loop:
 			if (csignature->hasthis)
 				--sp;
 
-			// FIXME Free this frame earlier?
-			InterpFrame* const child_frame = alloc_frame (context, &retval, frame, NULL, sp, retval);
+			InterpFrame child_frame;
+			init_frame (&child_frame, &retval, frame, NULL, sp, retval, NULL);
 
 			if (frame->imethod->method->dynamic && csignature->pinvoke) {
-				mono_interp_calli_nat_dynamic_pinvoke (child_frame, code, context, csignature, error);
+				mono_interp_calli_nat_dynamic_pinvoke (&child_frame, code, context, csignature, error);
 			} else {
 				const gboolean save_last_error = ip [-3 + 2];
-				ves_pinvoke_method (child_frame, csignature, (MonoFuncV) code, context, save_last_error);
+				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, context, save_last_error);
 			}
 			CHECK_RESUME_STATE (context);
 
@@ -6293,9 +6303,9 @@ call_newobj:
 			gboolean const check = opcode == MINT_LEAVE_CHECK || opcode == MINT_LEAVE_S_CHECK;
 
 			if (check && frame->imethod->method->wrapper_type != MONO_WRAPPER_RUNTIME_INVOKE) {
-				// FIXME Free this frame earlier?
-				InterpFrame* const child_frame = alloc_frame (context, &dummy, frame, NULL, NULL, NULL);
-				MonoException *abort_exc = mono_interp_leave (child_frame);
+				InterpFrame child_frame;
+				init_frame (&child_frame, &dummy, frame, NULL, NULL, NULL, NULL);
+				MonoException *abort_exc = mono_interp_leave (&child_frame);
 				if (abort_exc)
 					THROW_EX (abort_exc, frame->ip);
 			}
